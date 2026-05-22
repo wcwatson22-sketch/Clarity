@@ -7,13 +7,11 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.clarityfinancialtools.app
       vars:
         XCODE_WORKSPACE: frontend/ios/App/App.xcworkspace
         XCODE_SCHEME: App
         APP_ID: com.clarityfinancialtools.app
+        BUNDLE_ID: com.clarityfinancialtools.app
       node: 20.17.0
       xcode: 16.2
       cocoapods: default
