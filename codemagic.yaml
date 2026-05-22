@@ -41,13 +41,43 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles
 
       - name: Build .ipa
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          # Extract profile UUID and Team ID from the downloaded provisioning profile
+          PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+          UUID=$(security cms -D -i "$PROFILE" | grep -A1 '<key>UUID</key>' | tail -1 | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
+          TEAM=$(security cms -D -i "$PROFILE" | grep -A1 '<key>TeamIdentifier</key>' | grep string | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
+          echo "Using Profile UUID: $UUID  Team: $TEAM"
+
+          # Archive with explicit manual signing
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/ios/App.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM" \
+            PROVISIONING_PROFILE="$UUID" \
+            CODE_SIGN_IDENTITY="Apple Distribution"
+
+          # Generate exportOptions with the real team ID
+          cat > /tmp/exportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>uploadSymbols</key><true/>
+            <key>compileBitcode</key><false/>
+          </dict></plist>
+          EOF
+
+          # Export IPA
+          xcodebuild -exportArchive \
+            -archivePath build/ios/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /tmp/exportOptions.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
