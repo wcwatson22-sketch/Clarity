@@ -1,0 +1,136 @@
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Loan Preparation</h1>
+    <p class="page-sub">Know exactly what to gather, when to start, and what to avoid before applying.</p>
+  </div>
+
+  <!-- ── Premium Gate ──────────────────────────────────────────────────── -->
+  @if (!hasAccess()) {
+    <div class="gate-card">
+      <div class="gate-icon">🔒</div>
+      <h2 class="gate-title">Premium Feature</h2>
+      <p class="gate-desc">
+        The Loan Preparation guide is included with your Premium plan.
+        Get step-by-step document checklists, key qualification numbers, and
+        do's &amp; don'ts for every major loan type.
+      </p>
+      <a routerLink="/settings" class="btn-upgrade-gate">Upgrade to Premium — $5/mo</a>
+    </div>
+  }
+
+  <!-- ── Loan Type Grid ─────────────────────────────────────────────────── -->
+  @else if (!selected()) {
+    <div class="loan-grid">
+      @for (guide of guides; track guide.id) {
+        <button class="loan-card" (click)="select(guide)">
+          <span class="loan-emoji">{{ guide.emoji }}</span>
+          <span class="loan-label">{{ guide.label }}</span>
+          <span class="loan-arrow">→</span>
+        </button>
+      }
+    </div>
+    <p class="grid-note">Select a loan type to see exactly what you need to prepare.</p>
+  }
+
+  <!-- ── Loan Detail ────────────────────────────────────────────────────── -->
+  @else {
+    <button class="btn-back" (click)="back()">
+      ← All Loan Types
+    </button>
+
+    <!-- Header -->
+    <div class="detail-header">
+      <span class="detail-emoji">{{ selected()!.emoji }}</span>
+      <div>
+        <h2 class="detail-title">{{ selected()!.label }}</h2>
+        <p class="detail-tagline">{{ selected()!.tagline }}</p>
+        <span class="detail-timeframe">🕐 {{ selected()!.timeframe }}</span>
+      </div>
+    </div>
+
+    <!-- Key Stats -->
+    <div class="stats-row">
+      @for (stat of selected()!.keyStats; track stat.label) {
+        <div class="stat-card">
+          <span class="stat-value">{{ stat.value }}</span>
+          <span class="stat-label">{{ stat.label }}</span>
+          <span class="stat-note">{{ stat.note }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Document Folder -->
+    <div class="section-card">
+      <h3 class="section-title">📁 Set Up Your Document Folder</h3>
+      <p class="section-sub">
+        Create a folder on your computer called
+        <strong>{{ selected()!.folderName }}</strong> and organize it with these subfolders.
+        Having everything ready before you apply dramatically speeds up the process.
+      </p>
+      <div class="folder-list">
+        @for (folder of selected()!.folders; track folder.folder) {
+          <div class="folder-group">
+            <div class="folder-name">📂 {{ folder.folder }}/</div>
+            <ul class="folder-files">
+              @for (file of folder.files; track file) {
+                <li class="folder-file">{{ file }}</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="section-card">
+      <h3 class="section-title">✅ Pre-Application Checklist</h3>
+      @for (section of selected()!.checklist; track section.title) {
+        <div class="checklist-section">
+          <div class="checklist-heading">
+            <span class="checklist-icon">{{ section.icon }}</span>
+            <span>{{ section.title }}</span>
+          </div>
+          <div class="checklist-items">
+            @for (item of section.items; track item.text) {
+              <div class="checklist-item">
+                <span class="check-box">☐</span>
+                <div class="check-content">
+                  <span class="check-text">{{ item.text }}</span>
+                  @if (item.detail) {
+                    <span class="check-detail">{{ item.detail }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Do's & Don'ts -->
+    <div class="dos-donts">
+      <div class="do-card">
+        <h3 class="dos-title">✅ Do</h3>
+        <ul class="dos-list">
+          @for (item of selected()!.doList; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </div>
+      <div class="dont-card">
+        <h3 class="donts-title">❌ Avoid</h3>
+        <ul class="donts-list">
+          @for (item of selected()!.avoidList; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <button class="btn-back btn-back-bottom" (click)="back()">
+      ← Back to All Loan Types
+    </button>
+  }
+
+</div>

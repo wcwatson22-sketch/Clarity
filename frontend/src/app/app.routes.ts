@@ -63,6 +63,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/compare/compare.component').then(m => m.CompareComponent)
   },
   {
+    path: 'loan-prep',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/loan-prep/loan-prep.component').then(m => m.LoanPrepComponent)
+  },
+  {
     path: 'admin',
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent)
