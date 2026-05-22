@@ -2,7 +2,12 @@
 
   <div class="page-header">
     <h1 class="page-title">Loan Preparation</h1>
-    <p class="page-sub">Know exactly what to gather, when to start, and what to avoid before applying.</p>
+    <p class="page-sub">Guidance on what to gather and how to organize before applying — so your lender can move quickly and confidently.</p>
+  </div>
+
+  <div class="guidance-note">
+    <span class="guidance-icon">💡</span>
+    <span>This is organizational guidance, not financial advice. Every lender and situation is different — always confirm specific requirements directly with your lender.</span>
   </div>
 
   <!-- ── Premium Gate ──────────────────────────────────────────────────── -->
@@ -49,6 +54,11 @@
       </div>
     </div>
 
+    <!-- Guidance disclaimer -->
+    <div class="detail-disclaimer">
+      The numbers below reflect common industry benchmarks. Your lender will have their own specific requirements — use these as a preparation target, not a guarantee.
+    </div>
+
     <!-- Key Stats -->
     <div class="stats-row">
       @for (stat of selected()!.keyStats; track stat.label) {
@@ -84,7 +94,8 @@
 
     <!-- Checklist -->
     <div class="section-card">
-      <h3 class="section-title">✅ Pre-Application Checklist</h3>
+      <h3 class="section-title">✅ What Lenders Typically Like to See</h3>
+      <p class="section-sub" style="margin-bottom:16px">These steps help you walk in organized and prepared — lenders move faster and more favorably when everything is in order upfront.</p>
       @for (section of selected()!.checklist; track section.title) {
         <div class="checklist-section">
           <div class="checklist-heading">
@@ -111,7 +122,7 @@
     <!-- Do's & Don'ts -->
     <div class="dos-donts">
       <div class="do-card">
-        <h3 class="dos-title">✅ Do</h3>
+        <h3 class="dos-title">✅ Lenders Appreciate</h3>
         <ul class="dos-list">
           @for (item of selected()!.doList; track item) {
             <li>{{ item }}</li>
@@ -119,7 +130,7 @@
         </ul>
       </div>
       <div class="dont-card">
-        <h3 class="donts-title">❌ Avoid</h3>
+        <h3 class="donts-title">❌ Can Raise Red Flags</h3>
         <ul class="donts-list">
           @for (item of selected()!.avoidList; track item) {
             <li>{{ item }}</li>
