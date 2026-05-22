@@ -8,13 +8,12 @@ workflows:
 
     environment:
       vars:
-        XCODE_WORKSPACE: frontend/ios/App/App.xcworkspace
+        XCODE_PROJECT: frontend/ios/App/App.xcodeproj
         XCODE_SCHEME: App
         APP_ID: com.clarityfinancialtools.app
         BUNDLE_ID: com.clarityfinancialtools.app
       node: 22.13.0
       xcode: 16.2
-      cocoapods: default
 
     scripts:
       - name: Install Node dependencies
@@ -45,7 +44,7 @@ workflows:
       - name: Build .ipa
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
 
     artifacts:
