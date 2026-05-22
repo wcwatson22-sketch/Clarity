@@ -55,13 +55,10 @@ workflows:
         notify:
           success: true
           failure: true
-      # app_store_connect publishing will be enabled once Apple Developer
-      # account is activated and App Store Connect integration is configured
-      # in Codemagic Team settings. Uncomment when ready:
-      # app_store_connect:
-      #   auth: integration
-      #   submit_to_testflight: true
-      #   submit_to_app_store: false
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
 
   # ── Android Play Store build (future) ─────────────────────────────────────
   android-release:
