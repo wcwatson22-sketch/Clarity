@@ -280,24 +280,36 @@ export class DashboardComponent implements OnInit {
   // ── Computed: momentum ───────────────────────────────────────────────────
   lastSnapshot = computed(() => this.snapshots()[0] ?? null);
 
-  momentumItems = computed<MomentumItem[]>(() => {
-    const last = this.lastSnapshot();
-    if (!last) return [];
+  // Most recent snapshot taken before this month began — used as month-start baseline
+  monthStartSnapshot = computed(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return this.snapshots().find(s => new Date(s.createdAt as string).getTime() < monthStart) ?? null;
+  });
 
+  readonly currentMonthLabel = computed(() => {
+    return new Date().toLocaleDateString('en-US', { month: 'long' });
+  });
+
+  momentumItems = computed<MomentumItem[]>(() => {
+    const ref = this.monthStartSnapshot();
+    if (!ref) return [];
+
+    const month = this.currentMonthLabel();
     const items: MomentumItem[] = [];
 
     // 1. Net worth — always first
-    const nwDelta = this.netWorth() - last.netWorth;
-    const nwPct   = last.netWorth !== 0 ? nwDelta / Math.abs(last.netWorth) : 0;
+    const nwDelta = this.netWorth() - ref.netWorth;
+    const nwPct   = ref.netWorth !== 0 ? nwDelta / Math.abs(ref.netWorth) : 0;
     const nwPctStr = Math.abs(nwPct * 100) >= 0.1 ? ` (${(nwPct * 100).toFixed(1)}%)` : '';
     items.push({
-      sentence: `Net worth ${nwDelta >= 0 ? 'up' : 'down'} ${this.formatCurrency(Math.abs(nwDelta))}${nwPctStr} since last snapshot`,
+      sentence: `Net worth ${nwDelta >= 0 ? 'up' : 'down'} ${this.formatCurrency(Math.abs(nwDelta))}${nwPctStr} in ${month}`,
       delta: nwDelta,
       isGood: nwDelta >= 0,
     });
 
     // 2 & 3. Top account-level changes (requires lineItems in snapshot)
-    const lineItems = last.lineItems ?? [];
+    const lineItems = ref.lineItems ?? [];
     if (lineItems.length > 0) {
       const changes = this.accounts()
         .map(a => {
@@ -312,7 +324,7 @@ export class DashboardComponent implements OnInit {
           const dir    = delta > 0 ? 'up' : 'down';
           const pctStr = Math.abs(pct * 100) >= 0.5 ? ` (${Math.abs(pct * 100).toFixed(1)}%)` : '';
           return {
-            sentence: `${a.name} ${dir} ${this.formatCurrency(absAmt)}${pctStr} since last snapshot`,
+            sentence: `${a.name} ${dir} ${this.formatCurrency(absAmt)}${pctStr} this month`,
             delta, isGood, absAmt,
           };
         })

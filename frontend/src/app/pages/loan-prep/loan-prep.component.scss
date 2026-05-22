@@ -146,39 +146,176 @@
 .section-title { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 8px; }
 .section-sub   { font-size: 13px; color: #6B7280; margin: 0 0 20px; line-height: 1.5; }
 
-// ── Folder list ───────────────────────────────────────────────────────────────
-.folder-list { display: flex; flex-direction: column; gap: 16px; }
-.folder-group { }
-.folder-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  background: #F3F4F6;
-  border-radius: 8px;
-  padding: 6px 12px;
-  margin-bottom: 6px;
-  font-family: 'Courier New', monospace;
+// ── Doc Checklist header row ──────────────────────────────────────────────────
+.doc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  .section-title { margin-bottom: 4px; }
+  .section-sub   { margin-bottom: 0; }
 }
-.folder-files {
+
+.doc-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.btn-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  &:hover { background: #E5E7EB; border-color: #D1D5DB; }
+}
+
+.btn-clear {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #DC2626;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+  &:hover { background: #FEF2F2; }
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.progress-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: #F3F4F6;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: #1D9E75;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+.progress-label {
+  font-size: 12px;
+  color: #6B7280;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+// ── Doc list ──────────────────────────────────────────────────────────────────
+.doc-list {
   margin: 0;
-  padding: 0 0 0 12px;
+  padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
-.folder-file {
-  font-size: 13px;
-  color: #4B5563;
-  padding: 3px 0 3px 16px;
-  position: relative;
-  line-height: 1.4;
-  &::before {
-    content: '—';
-    position: absolute;
-    left: 0;
-    color: #D1D5DB;
+
+.doc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.12s;
+  &:hover { background: #F9FAFB; }
+  &.doc-checked {
+    .doc-text { color: #9CA3AF; text-decoration: line-through; }
   }
+}
+
+.doc-check-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.doc-checkbox {
+  font-size: 17px;
+  color: #9CA3AF;
+  transition: color 0.12s;
+  display: block;
+}
+.doc-check-btn:hover .doc-checkbox { color: #1D9E75; }
+
+.doc-checkbox-sm {
+  font-size: 15px;
+}
+
+.doc-text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.5;
+  display: block;
+  transition: color 0.12s, text-decoration 0.12s;
+}
+
+.doc-sub-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doc-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.12s;
+  &:hover { background: #F3F4F6; }
+  &.doc-sub-checked {
+    .doc-sub-text { color: #9CA3AF; text-decoration: line-through; }
+  }
+}
+
+.doc-check-btn-sm {
+  padding: 0;
+}
+
+.doc-sub-text {
+  font-size: 12px;
+  color: #6B7280;
+  line-height: 1.4;
+  transition: color 0.12s, text-decoration 0.12s;
 }
 
 // ── Checklist ─────────────────────────────────────────────────────────────────
@@ -198,21 +335,29 @@
 }
 .checklist-icon { font-size: 16px; }
 
-.checklist-items { display: flex; flex-direction: column; gap: 10px; }
+.checklist-items { display: flex; flex-direction: column; gap: 6px; }
 .checklist-item {
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+  &:hover { background: #F9FAFB; }
+  &.chk-checked {
+    .check-text { color: #9CA3AF; text-decoration: line-through; }
+    .check-box { color: #1D9E75; }
+  }
 }
 .check-box {
   font-size: 16px;
   color: #9CA3AF;
   flex-shrink: 0;
   margin-top: 1px;
-  cursor: pointer;
 }
 .check-content { display: flex; flex-direction: column; gap: 2px; }
-.check-text   { font-size: 13px; font-weight: 500; color: #111827; line-height: 1.4; }
+.check-text   { font-size: 13px; font-weight: 500; color: #111827; line-height: 1.4; transition: color 0.12s; }
 .check-detail { font-size: 12px; color: #6B7280; line-height: 1.4; }
 
 // ── Do's & Don'ts ─────────────────────────────────────────────────────────────
@@ -259,4 +404,120 @@
   .detail-emoji { font-size: 40px; }
   .loan-grid { grid-template-columns: repeat(2, 1fr); }
   .section-card { padding: 18px 16px; }
+  .doc-header { flex-direction: column; gap: 10px; }
+  .doc-actions { width: 100%; justify-content: flex-end; }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+.print-only { display: none; }
+
+@media print {
+  // Hide screen-only UI
+  .print-hide { display: none !important; }
+  .print-only { display: block !important; }
+
+  // Page setup
+  .page {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  // Print header
+  .print-header {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #1D9E75;
+  }
+  .print-header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .print-loan-emoji { font-size: 36px; line-height: 1; }
+  .print-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+  }
+  .print-tagline {
+    font-size: 12px;
+    color: #4B5563;
+    margin: 0;
+  }
+  .print-disclaimer {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin: 0;
+    font-style: italic;
+  }
+
+  // Section cards — remove shadows/borders
+  .section-card {
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+  }
+  .section-title { font-size: 13px; margin-bottom: 6px; }
+  .section-sub   { font-size: 11px; margin-bottom: 12px; }
+
+  // Progress bar hidden in print
+  .progress-row { display: none; }
+
+  // Doc list print styles
+  .doc-list { gap: 0; }
+  .doc-item {
+    padding: 5px 6px;
+    border-radius: 0;
+    border-bottom: 1px solid #F3F4F6;
+    &:last-child { border-bottom: none; }
+    &:hover { background: transparent; }
+  }
+  .doc-text {
+    font-size: 12px;
+    color: #111827 !important;
+    text-decoration: none !important;
+  }
+  .doc-checkbox {
+    font-size: 14px;
+    color: #9CA3AF !important;
+  }
+  .doc-sub-list { margin-top: 4px; }
+  .doc-sub-item {
+    padding: 3px 4px;
+    &:hover { background: transparent; }
+  }
+  .doc-sub-text {
+    font-size: 11px;
+    color: #6B7280 !important;
+    text-decoration: none !important;
+  }
+
+  // Checklist print styles
+  .checklist-item {
+    padding: 5px 6px;
+    cursor: default;
+    &:hover { background: transparent; }
+  }
+  .check-text {
+    font-size: 12px;
+    color: #111827 !important;
+    text-decoration: none !important;
+  }
+  .check-detail { font-size: 11px; }
+
+  // Do's & Don'ts
+  .dos-donts {
+    grid-template-columns: 1fr 1fr;
+    page-break-inside: avoid;
+  }
+  .do-card, .dont-card { padding: 14px; }
+  .dos-list li, .donts-list li { font-size: 12px; }
+
+  // Headings
+  .checklist-heading { font-size: 12px; }
 }

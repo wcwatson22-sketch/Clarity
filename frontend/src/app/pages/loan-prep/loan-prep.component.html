@@ -1,11 +1,11 @@
 <div class="page">
 
-  <div class="page-header">
+  <div class="page-header print-hide">
     <h1 class="page-title">Loan Preparation</h1>
     <p class="page-sub">Guidance on what to gather and how to organize before applying — so your lender can move quickly and confidently.</p>
   </div>
 
-  <div class="guidance-note">
+  <div class="guidance-note print-hide">
     <span class="guidance-icon">💡</span>
     <span>This is organizational guidance, not financial advice. Every lender and situation is different — always confirm specific requirements directly with your lender.</span>
   </div>
@@ -40,12 +40,24 @@
 
   <!-- ── Loan Detail ────────────────────────────────────────────────────── -->
   @else {
-    <button class="btn-back" (click)="back()">
+    <button class="btn-back print-hide" (click)="back()">
       ← All Loan Types
     </button>
 
+    <!-- Print Header (only shows when printing) -->
+    <div class="print-header print-only">
+      <div class="print-header-top">
+        <span class="print-loan-emoji">{{ selected()!.emoji }}</span>
+        <div>
+          <h1 class="print-title">{{ selected()!.label }} — Loan Preparation Checklist</h1>
+          <p class="print-tagline">{{ selected()!.tagline }}</p>
+        </div>
+      </div>
+      <p class="print-disclaimer">This is organizational guidance, not financial advice. Confirm specific requirements with your lender.</p>
+    </div>
+
     <!-- Header -->
-    <div class="detail-header">
+    <div class="detail-header print-hide">
       <span class="detail-emoji">{{ selected()!.emoji }}</span>
       <div>
         <h2 class="detail-title">{{ selected()!.label }}</h2>
@@ -55,12 +67,12 @@
     </div>
 
     <!-- Guidance disclaimer -->
-    <div class="detail-disclaimer">
+    <div class="detail-disclaimer print-hide">
       The numbers below reflect common industry benchmarks. Your lender will have their own specific requirements — use these as a preparation target, not a guarantee.
     </div>
 
     <!-- Key Stats -->
-    <div class="stats-row">
+    <div class="stats-row print-hide">
       @for (stat of selected()!.keyStats; track stat.label) {
         <div class="stat-card">
           <span class="stat-value">{{ stat.value }}</span>
@@ -70,42 +82,77 @@
       }
     </div>
 
-    <!-- Document Folder -->
+    <!-- Document Checklist -->
     <div class="section-card">
-      <h3 class="section-title">📁 Set Up Your Document Folder</h3>
-      <p class="section-sub">
-        Create a folder on your computer called <strong>Financial Information</strong> and save
-        each document using the naming format below. Having everything ready before you apply
-        dramatically speeds up the process.
-      </p>
-      <div class="folder-list">
-        @for (folder of selected()!.folders; track folder.folder) {
-          <div class="folder-group">
-            <div class="folder-name">📂 {{ folder.folder }}/</div>
-            <ul class="folder-files">
-              @for (file of folder.files; track file) {
-                <li class="folder-file">{{ file }}</li>
-              }
-            </ul>
-          </div>
-        }
+      <div class="doc-header">
+        <div>
+          <h3 class="section-title">📋 Documents to Gather</h3>
+          <p class="section-sub">Check off each item as you collect it. Your progress is saved automatically.</p>
+        </div>
+        <div class="doc-actions print-hide">
+          @if (docCheckedCount() > 0) {
+            <button class="btn-clear" (click)="clearChecks()">Clear All</button>
+          }
+          <button class="btn-print" (click)="printChecklist()">🖨️ Print</button>
+        </div>
       </div>
+
+      <!-- Progress bar -->
+      <div class="progress-row print-hide">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill"
+               [style.width.%]="docTotalCount() > 0 ? (docCheckedCount() / docTotalCount()) * 100 : 0">
+          </div>
+        </div>
+        <span class="progress-label">{{ docCheckedCount() }} of {{ docTotalCount() }} gathered</span>
+      </div>
+
+      <!-- Doc list -->
+      <ul class="doc-list">
+        @for (doc of selected()!.docs; track $index; let i = $index) {
+          <li class="doc-item" [class.doc-checked]="isChecked('doc-' + i)">
+            <button class="doc-check-btn" (click)="toggleCheck('doc-' + i)"
+                    [attr.aria-label]="isChecked('doc-' + i) ? 'Uncheck' : 'Check'">
+              <span class="doc-checkbox">{{ isChecked('doc-' + i) ? '☑' : '☐' }}</span>
+            </button>
+            <div class="doc-text-wrap">
+              <span class="doc-text">{{ doc.text }}</span>
+              @if (doc.sub && doc.sub.length > 0) {
+                <ul class="doc-sub-list">
+                  @for (sub of doc.sub; track $index; let j = $index) {
+                    <li class="doc-sub-item" [class.doc-sub-checked]="isChecked('doc-' + i + '-' + j)">
+                      <button class="doc-check-btn doc-check-btn-sm"
+                              (click)="toggleCheck('doc-' + i + '-' + j)"
+                              [attr.aria-label]="isChecked('doc-' + i + '-' + j) ? 'Uncheck' : 'Check'">
+                        <span class="doc-checkbox doc-checkbox-sm">{{ isChecked('doc-' + i + '-' + j) ? '☑' : '☐' }}</span>
+                      </button>
+                      <span class="doc-sub-text">{{ sub }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </li>
+        }
+      </ul>
     </div>
 
     <!-- Checklist -->
     <div class="section-card">
       <h3 class="section-title">✅ What Lenders Typically Like to See</h3>
       <p class="section-sub" style="margin-bottom:16px">These steps help you walk in organized and prepared — lenders move faster and more favorably when everything is in order upfront.</p>
-      @for (section of selected()!.checklist; track section.title) {
+      @for (section of selected()!.checklist; track section.title; let si = $index) {
         <div class="checklist-section">
           <div class="checklist-heading">
             <span class="checklist-icon">{{ section.icon }}</span>
             <span>{{ section.title }}</span>
           </div>
           <div class="checklist-items">
-            @for (item of section.items; track item.text) {
-              <div class="checklist-item">
-                <span class="check-box">☐</span>
+            @for (item of section.items; track item.text; let ii = $index) {
+              <div class="checklist-item"
+                   [class.chk-checked]="isChecked('chk-' + si + '-' + ii)"
+                   (click)="toggleCheck('chk-' + si + '-' + ii)">
+                <span class="check-box">{{ isChecked('chk-' + si + '-' + ii) ? '☑' : '☐' }}</span>
                 <div class="check-content">
                   <span class="check-text">{{ item.text }}</span>
                   @if (item.detail) {
@@ -139,7 +186,7 @@
       </div>
     </div>
 
-    <button class="btn-back btn-back-bottom" (click)="back()">
+    <button class="btn-back btn-back-bottom print-hide" (click)="back()">
       ← Back to All Loan Types
     </button>
   }

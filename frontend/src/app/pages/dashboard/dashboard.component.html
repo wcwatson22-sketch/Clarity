@@ -398,9 +398,9 @@
   </div>
 
   <!-- ── Momentum ──────────────────────────────────────────────────── -->
-  @if (snapshots().length > 0) {
+  @if (monthStartSnapshot()) {
     <div class="section-card">
-      <h3 class="section-title">Momentum</h3>
+      <h3 class="section-title">{{ currentMonthLabel() }} so far</h3>
       <div class="momentum-list">
         @for (item of momentumItems(); track item.sentence; let last = $last) {
           <div class="momentum-item" [class.momentum-divider]="!last">
@@ -418,8 +418,8 @@
     </div>
   } @else {
     <div class="section-card empty-state">
-      <p class="empty-title">Momentum</p>
-      <p class="empty-sub">Save a few snapshots to start seeing financial progress over time.</p>
+      <p class="empty-title">{{ currentMonthLabel() }} so far</p>
+      <p class="empty-sub">Save a snapshot before the month ends to start seeing month-over-month progress here.</p>
     </div>
   }
 
