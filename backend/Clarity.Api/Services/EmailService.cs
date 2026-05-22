@@ -221,7 +221,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         var name      = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
         var planLabel = plan == "base" ? "Base ($1/month)" : "Premium ($5/month)";
         var features  = plan == "base"
-            ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget</li><li>📸 20 snapshots per month</li><li>📚 Learn &amp; PFS</li>"
+            ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget</li><li>📸 10 snapshots per month</li><li>📚 Learn &amp; PFS</li>"
             : "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget</li><li>📸 Unlimited snapshots</li><li>📚 Learn &amp; PFS</li><li>📈 Benchmarking &amp; compare</li>";
 
         var html = $"""

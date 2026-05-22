@@ -73,6 +73,25 @@ export class DashboardComponent implements OnInit {
     !this.trialActive() && !(this.auth.currentUser()?.isPaid ?? false)
   );
 
+  // ── Snapshot quota ────────────────────────────────────────────────────────
+  private readonly BASE_SNAPSHOT_LIMIT = 10;
+  readonly isPremium  = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Premium');
+  readonly isBasePaid = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Base');
+
+  readonly snapshotsThisMonth = computed(() => {
+    const now = new Date();
+    return this.snapshots().filter(s => {
+      const d = new Date(s.createdAt);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+  });
+
+  // null = unlimited (Premium or trial); number = remaining for Base plan
+  readonly snapshotsRemaining = computed(() => {
+    if (!this.isBasePaid()) return null;
+    return Math.max(0, this.BASE_SNAPSHOT_LIMIT - this.snapshotsThisMonth());
+  });
+
   // ── First-name modal (shown for existing users who don't have one yet) ────
   showFirstNameModal = signal(false);
   firstNameInput     = signal('');

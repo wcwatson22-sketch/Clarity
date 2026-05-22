@@ -14,7 +14,7 @@ public class SnapshotsController(AppDbContext db) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    private const int BaseMonthlyLimit = 4;
+    private const int BaseMonthlyLimit = 10;
 
     [HttpGet]
     public async Task<IActionResult> GetAll() =>

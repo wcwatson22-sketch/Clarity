@@ -7,14 +7,14 @@
         <div class="modal-icon">📈</div>
         <h2 class="modal-title">Snapshot limit reached</h2>
         <p class="modal-body">
-          The <strong>Base plan</strong> includes 4 snapshots per month.
+          The <strong>Base plan</strong> includes 10 snapshots per month.
           Upgrade to <strong>Premium</strong> for unlimited snapshots and advanced insights.
         </p>
         <div class="modal-plans">
           <div class="plan-chip base">
             <span class="plan-name">Base</span>
             <span class="plan-price">$1<span>/mo</span></span>
-            <span class="plan-detail">4 snapshots/month</span>
+            <span class="plan-detail">10 snapshots/month</span>
           </div>
           <div class="plan-chip premium">
             <span class="plan-name">Premium ✦</span>
@@ -72,7 +72,7 @@
             <ul class="plan-features">
               <li>✓ Full dashboard</li>
               <li>✓ Cash flow tracking</li>
-              <li>✓ 4 snapshots/month</li>
+              <li>✓ 10 snapshots/month</li>
               <li>✓ Learn &amp; PFS</li>
             </ul>
             <a class="plan-btn base-btn" routerLink="/settings">Get Base</a>
@@ -243,9 +243,16 @@
   <div class="nw-card">
     <div class="nw-header">
       <span class="nw-label">Net Worth</span>
-      <button class="btn-snapshot" (click)="saveSnapshot()">
-        {{ snapshotSaved() ? '✓ Saved' : 'Save Snapshot' }}
-      </button>
+      <div class="snapshot-btn-group">
+        <button class="btn-snapshot" (click)="saveSnapshot()">
+          {{ snapshotSaved() ? '✓ Saved' : 'Save Snapshot' }}
+        </button>
+        @if (snapshotsRemaining() !== null) {
+          <span class="snapshot-quota" [class.quota-low]="snapshotsRemaining()! <= 2">
+            {{ snapshotsRemaining() }} left this month
+          </span>
+        }
+      </div>
     </div>
     <div class="nw-amount" [style.color]="netWorthColor()">{{ formatCurrency(netWorth()) }}</div>
     <div class="nw-meta">
