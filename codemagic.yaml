@@ -1,0 +1,109 @@
+workflows:
+
+  # ── iOS App Store build ────────────────────────────────────────────────────
+  ios-release:
+    name: iOS — App Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.clarityfinancialtools.app
+      vars:
+        XCODE_WORKSPACE: frontend/ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+        APP_ID: com.clarityfinancialtools.app
+      node: 20.17.0
+      xcode: 16.2
+      cocoapods: default
+
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          cd frontend
+          npm ci
+
+      - name: Build Angular app
+        script: |
+          cd frontend
+          npm run build
+
+      - name: Capacitor sync (copy web assets into iOS project)
+        script: |
+          cd frontend
+          npx cap sync ios
+
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Build .ipa
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - wcwatson22@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false   # flip to true when ready for full release
+
+  # ── Android Play Store build (future) ─────────────────────────────────────
+  android-release:
+    name: Android — Play Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      android_signing:
+        - clarity_keystore
+      vars:
+        PACKAGE_NAME: com.clarityfinancialtools.app
+      node: 20.17.0
+      java: 17
+
+    scripts:
+      - name: Install Node dependencies
+        script: |
+          cd frontend
+          npm ci
+
+      - name: Build Angular app
+        script: |
+          cd frontend
+          npm run build
+
+      - name: Capacitor sync
+        script: |
+          cd frontend
+          npx cap sync android
+
+      - name: Build Android release APK/AAB
+        script: |
+          cd frontend/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+    artifacts:
+      - frontend/android/app/build/outputs/**/*.aab
+      - frontend/android/app/build/outputs/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - wcwatson22@gmail.com
+        notify:
+          success: true
+          failure: true
