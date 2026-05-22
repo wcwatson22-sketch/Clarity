@@ -42,7 +42,7 @@ workflows:
             --create \
             --issuer-id "$ASC_ISSUER_ID" \
             --key-id "$ASC_KEY_ID" \
-            --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY"
+            --private-key "@file:$ASC_PRIVATE_KEY_PATH"
           keychain add-certificates
 
       - name: Build .ipa
