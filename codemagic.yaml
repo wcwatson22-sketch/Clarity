@@ -39,7 +39,10 @@ workflows:
           app-store-connect fetch-signing-files \
             com.clarityfinancialtools.app \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --issuer-id "$ASC_ISSUER_ID" \
+            --key-id "$ASC_KEY_ID" \
+            --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY"
           keychain add-certificates
 
       - name: Build .ipa
