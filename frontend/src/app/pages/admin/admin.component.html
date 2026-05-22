@@ -1,0 +1,97 @@
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">🛡️ Admin — User Roster</h1>
+      <p class="page-sub">Confidential. Do not share. Access logged.</p>
+    </div>
+    <button class="export-btn" (click)="exportCsv()" [disabled]="loading()">⬇ Export CSV</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">Loading user data…</div>
+  } @else if (error()) {
+    <div class="error-state">{{ error() }}</div>
+  } @else {
+
+    <!-- Summary chips -->
+    @if (summary(); as s) {
+      <div class="summary-chips">
+        <div class="chip">
+          <span class="chip-val">{{ s.total }}</span>
+          <span class="chip-label">Total Users</span>
+        </div>
+        <div class="chip chip-green">
+          <span class="chip-val">{{ s.onTrial }}</span>
+          <span class="chip-label">On Trial</span>
+        </div>
+        <div class="chip chip-blue">
+          <span class="chip-val">{{ s.paid }}</span>
+          <span class="chip-label">Paid</span>
+        </div>
+        <div class="chip chip-red">
+          <span class="chip-val">{{ s.expired }}</span>
+          <span class="chip-label">Expired</span>
+        </div>
+      </div>
+    }
+
+    <!-- Search -->
+    <input class="search-input" type="text" placeholder="Search by city or state…"
+      [value]="search()" (input)="search.set($any($event.target).value)" />
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="roster-table">
+        <thead>
+          <tr>
+            <th (click)="sort('id')">#</th>
+            <th (click)="sort('emailVerified')">✉ Verified</th>
+            <th (click)="sort('age')">Age</th>
+            <th (click)="sort('city')">Location</th>
+            <th (click)="sort('tier')">Tier</th>
+            <th (click)="sort('trialActive')">Trial</th>
+            <th (click)="sort('trialEndsAt')">Trial Ends</th>
+            <th (click)="sort('createdAt')">Signed Up</th>
+            <th (click)="sort('accountCount')">Accts</th>
+            <th (click)="sort('snapshotCount')">Snaps</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of filteredUsers(); track u.id) {
+            <tr [class.row-admin]="u.isAdmin" [class.row-paid]="u.isPaid" [class.row-expired]="!u.trialActive && !u.isPaid">
+              <td class="col-id">{{ u.id }}</td>
+              <td class="col-center">
+                @if (u.emailVerified) { <span class="badge badge-green">Yes</span> }
+                @else { <span class="badge badge-gray">No</span> }
+              </td>
+              <td class="col-center">{{ u.age }}</td>
+              <td>{{ u.city }}, {{ u.state }}</td>
+              <td class="col-center">
+                @if (u.tier === 'Premium') { <span class="badge badge-blue">Premium</span> }
+                @else if (u.isPaid) { <span class="badge badge-green">Base ✓</span> }
+                @else { <span class="badge badge-gray">Base</span> }
+              </td>
+              <td class="col-center">
+                @if (u.isPaid) { <span class="badge badge-blue">Paid</span> }
+                @else if (u.trialActive) { <span class="badge badge-green">Active</span> }
+                @else { <span class="badge badge-red">Ended</span> }
+              </td>
+              <td class="col-date">{{ u.trialEndsAt }}</td>
+              <td class="col-date">{{ u.createdAt }}</td>
+              <td class="col-center">{{ u.accountCount }}</td>
+              <td class="col-center">{{ u.snapshotCount }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (filteredUsers().length === 0) {
+        <div class="empty-state">No users match your search.</div>
+      }
+    </div>
+
+    <p class="row-count">{{ filteredUsers().length }} of {{ users().length }} users shown</p>
+  }
+
+</div>

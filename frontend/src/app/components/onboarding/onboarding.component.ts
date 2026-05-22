@@ -1,0 +1,176 @@
+﻿import { Component, inject, signal, output } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
+import { MeResponse } from '../../models/auth.models';
+import { environment } from '../../../environments/environment';
+
+@Component({
+  selector: 'app-onboarding',
+  standalone: true,
+  template: `
+    <div class="onboarding-backdrop">
+      <div class="onboarding-card">
+
+        <!-- Step dots -->
+        <div class="step-dots">
+          @for (s of steps; track s; let i = $index) {
+            <span class="dot" [class.active]="i === step()"></span>
+          }
+        </div>
+
+        <!-- Step content -->
+        @if (step() === 0) {
+          <div class="step-content">
+            <div class="step-icon">👋</div>
+            <h2 class="step-title">Welcome to Clarity</h2>
+            <p class="step-body">
+              Clarity is your personal financial dashboard. Track your <strong>net worth</strong>,
+              monitor <strong>assets and debts</strong>, analyze your <strong>cash flow</strong>,
+              and build a clearer picture of your finances over time — all in one place.
+            </p>
+            <p class="step-body">
+              Everything is private to your account and saved automatically.
+            </p>
+          </div>
+        }
+
+        @if (step() === 1) {
+          <div class="step-content">
+            <div class="step-icon">📊</div>
+            <h2 class="step-title">Track what you own and owe</h2>
+            <p class="step-body">
+              Use the <strong>Dashboard</strong> to add your assets (savings, investments,
+              property) and liabilities (loans, credit cards, mortgage).
+            </p>
+            <p class="step-body">
+              Hit <strong>Save Snapshot</strong> whenever your balances change — over time,
+              your net worth chart fills in and you can see your financial trajectory
+              across 2 weeks, 30 days, 3 months, 6 months, or a full year.
+            </p>
+            <p class="step-body">
+              The <strong>Cash Flow</strong> tab lets you track income and monthly expenses
+              to understand exactly where your money is going.
+            </p>
+          </div>
+        }
+
+        @if (step() === 2) {
+          <div class="step-content">
+            <div class="step-icon">📚</div>
+            <h2 class="step-title">Build your financial knowledge</h2>
+            <p class="step-body">
+              Head to the <strong>Learn</strong> tab to explore lessons on budgeting,
+              debt management, investing, and more — written to help you understand
+              the numbers you're entering, not just track them.
+            </p>
+            <p class="step-body">
+              You're all set. Start by adding your first asset or liability on the Dashboard.
+            </p>
+          </div>
+        }
+
+        <!-- Actions -->
+        <div class="step-actions">
+          @if (step() < steps.length - 1) {
+            <button class="btn-next" (click)="next()">Next →</button>
+            <button class="btn-skip" (click)="finish()">Skip</button>
+          } @else {
+            <button class="btn-next" (click)="finish()" [disabled]="saving()">
+              {{ saving() ? 'Loading…' : 'Get Started' }}
+            </button>
+          }
+        </div>
+
+      </div>
+    </div>
+  `,
+  styles: [`
+    .onboarding-backdrop {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .onboarding-card {
+      background: #fff; border-radius: 24px;
+      padding: 40px 36px; max-width: 460px; width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-dots {
+      display: flex; gap: 8px; justify-content: center; margin-bottom: 28px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #E5E7EB; transition: background 0.2s;
+    }
+    .dot.active { background: #1D9E75; }
+
+    .step-content { text-align: center; }
+    .step-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+    .step-title {
+      font-size: 22px; font-weight: 700; color: #111827;
+      margin: 0 0 16px;
+    }
+    .step-body {
+      font-size: 15px; color: #4B5563; line-height: 1.65;
+      margin: 0 0 12px;
+    }
+    .step-body strong { color: #111827; font-weight: 600; }
+
+    .step-actions {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; margin-top: 28px;
+    }
+    .btn-next {
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 12px;
+      padding: 14px 32px; font-size: 15px; font-weight: 600;
+      cursor: pointer; width: 100%;
+      transition: background 0.15s;
+      &:hover:not(:disabled) { background: #085041; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+    .btn-skip {
+      background: none; border: none;
+      color: #9CA3AF; font-size: 13px; cursor: pointer;
+      &:hover { color: #6B7280; }
+    }
+  `]
+})
+export class OnboardingComponent {
+  private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  readonly done = output<void>();
+
+  step   = signal(0);
+  saving = signal(false);
+  readonly steps = [0, 1, 2];
+
+  next() { this.step.update(s => s + 1); }
+
+  finish() {
+    this.saving.set(true);
+    this.http.post<MeResponse>(`${environment.apiUrl}/auth/complete-onboarding`, {}).subscribe({
+      next: user => {
+        this.auth.updateCachedUser(user);
+        this.saving.set(false);
+        this.done.emit();
+      },
+      error: () => {
+        // Even on error, dismiss the modal so it's not blocking
+        this.saving.set(false);
+        this.done.emit();
+      }
+    });
+  }
+}

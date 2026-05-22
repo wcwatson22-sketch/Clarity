@@ -1,0 +1,28 @@
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+# appsettings.Production.json is SAFE to commit (no secrets — only domain/log config)
+# All secrets live in /etc/clarity/env on the server, set via environment variables
+appsettings.*.Local.json
+.env
+.env.*
+*.pfx
+*.p12
+
+# ── .NET / Backend ────────────────────────────────────────────────────────────
+bin/
+obj/
+publish_out/
+*.user
+*.db
+*.db-shm
+*.db-wal
+backend_out.txt
+backend_err.txt
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+.angular/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

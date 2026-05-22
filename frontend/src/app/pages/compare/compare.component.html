@@ -1,0 +1,106 @@
+<div class="page">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">How You Compare</h1>
+      <p class="page-sub">See how your finances stack up against others in your age bracket — anonymously.</p>
+    </div>
+    @if (ageBracket()) {
+      <span class="bracket-chip">Ages {{ ageBracket() }}</span>
+    }
+  </div>
+
+  <!-- ── Loading ────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="state-card">
+      <div class="spinner"></div>
+      <p class="state-msg">Loading your comparison…</p>
+    </div>
+  }
+
+  <!-- ── Error ──────────────────────────────────────────────────────── -->
+  @else if (error()) {
+    <div class="state-card">
+      <span class="state-icon">⚠️</span>
+      <p class="state-msg">{{ error() }}</p>
+    </div>
+  }
+
+  <!-- ── Not enough data yet ────────────────────────────────────────── -->
+  @else if (!hasData()) {
+    <div class="locked-card">
+      <div class="locked-icon">🔒</div>
+      <h2 class="locked-title">Comparison coming soon</h2>
+      <p class="locked-body">
+        Clarity needs at least <strong>30 users</strong> in your age bracket
+        (<strong>{{ ageBracket() }}</strong>) before showing comparisons — so your
+        data is never tied back to any individual.
+      </p>
+      <p class="locked-body">
+        Your financial data is already being collected anonymously and will
+        automatically appear here once the threshold is reached.
+        Tell a friend about Clarity to help unlock it sooner!
+      </p>
+      <div class="locked-steps">
+        <div class="locked-step">
+          <span class="step-check">✓</span>
+          <span>Your data is being collected</span>
+        </div>
+        <div class="locked-step">
+          <span class="step-pending">○</span>
+          <span>30+ users in your age bracket needed</span>
+        </div>
+        <div class="locked-step">
+          <span class="step-pending">○</span>
+          <span>Comparison unlocks automatically</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Comparisons ────────────────────────────────────────────────── -->
+  @else {
+    <div class="compare-grid">
+      @for (item of items(); track item.category) {
+        <div class="compare-card" [class.above]="item.status === 'above'" [class.at]="item.status === 'at'" [class.below]="item.status === 'below'">
+          <div class="compare-header">
+            <span class="compare-label">{{ item.label }}</span>
+            <span class="status-badge" [class]="item.status">{{ statusLabel(item.status) }}</span>
+          </div>
+
+          <!-- Bars -->
+          <div class="bars">
+            <div class="bar-row">
+              <span class="bar-lbl">You</span>
+              <div class="bar-track">
+                <div class="bar-fill you" [style.width.%]="barWidth(item.userValue, item.userValue, item.avgValue)"></div>
+              </div>
+              <span class="bar-val">{{ fmt(item.userValue) }}</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-lbl">Avg</span>
+              <div class="bar-track">
+                <div class="bar-fill avg" [style.width.%]="barWidth(item.avgValue, item.userValue, item.avgValue)"></div>
+              </div>
+              <span class="bar-val">{{ fmt(item.avgValue) }}</span>
+            </div>
+          </div>
+
+          <p class="compare-msg">{{ item.message }}</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Privacy Note ───────────────────────────────────────────────── -->
+  @if (privacy()) {
+    <div class="privacy-note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>{{ privacy() }}</span>
+    </div>
+  }
+
+</div>

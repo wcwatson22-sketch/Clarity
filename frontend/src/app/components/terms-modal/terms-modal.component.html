@@ -1,0 +1,80 @@
+<div class="backdrop">
+  <div class="modal">
+
+    <div class="modal-header">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Clarity</span>
+    </div>
+
+    <h2 class="modal-title">Before you continue</h2>
+    <p class="modal-sub">We've updated our Privacy Policy and Terms of Service. Please review and accept to continue.</p>
+
+    <div class="scroll-body">
+
+      <!-- Privacy Policy -->
+      <section class="doc-section">
+        <h3 class="doc-heading">Privacy Policy</h3>
+        <p class="doc-effective">Effective: May 2025</p>
+
+        <h4 class="doc-sub">What We Collect</h4>
+        <p>When you create an account, we collect your name, email address, age, city, and state. We also store the financial data you enter — account balances, budgets, and income — to power the Clarity service. Payment information is handled exclusively by Stripe; we never see or store your card number.</p>
+
+        <h4 class="doc-sub">How We Use It</h4>
+        <p>Your data is used solely to provide and improve Clarity. We use Stripe for payment processing and Resend for transactional email delivery (verification, receipts, password resets). We do not sell, rent, or share your personal information with any third party for advertising or marketing purposes.</p>
+
+        <h4 class="doc-sub">Data Retention</h4>
+        <p>Your data is stored for as long as your account is active. Accounts that have been inactive for 12 or more months may be automatically removed. You may delete your account at any time from the Settings page — all associated data is permanently erased immediately.</p>
+
+        <h4 class="doc-sub">Security</h4>
+        <p>All data is transmitted over HTTPS. Passwords are hashed with BCrypt and never stored in plain text. Financial data is stored on a secured server with restricted access. No raw card data is ever stored on our servers.</p>
+
+        <h4 class="doc-sub">Your Rights</h4>
+        <p>You have the right to access, correct, or delete your personal data at any time. To delete your account and all associated data, go to Settings → Danger Zone. For any privacy concerns, contact us at <strong>support&#64;clarityfinance.app</strong>.</p>
+
+        <a class="doc-link" routerLink="/privacy" target="_blank">Read full Privacy Policy ↗</a>
+      </section>
+
+      <!-- Terms of Service -->
+      <section class="doc-section">
+        <h3 class="doc-heading">Terms of Service</h3>
+        <p class="doc-effective">Effective: May 2025</p>
+
+        <h4 class="doc-sub">Educational Tool Only</h4>
+        <p><strong>Clarity is a personal finance management tool and educational resource — not financial advice.</strong> Nothing on this platform constitutes investment advice, tax guidance, or professional financial services. Always consult a licensed financial advisor before making financial decisions.</p>
+
+        <h4 class="doc-sub">Eligibility</h4>
+        <p>You must be at least 18 years old to use Clarity. By accepting these terms, you confirm you meet this requirement.</p>
+
+        <h4 class="doc-sub">Your Responsibilities</h4>
+        <p>You are responsible for the accuracy of the financial data you enter. Do not share your login credentials. You agree not to use Clarity for any unlawful purpose or attempt to reverse-engineer, disrupt, or abuse the service.</p>
+
+        <h4 class="doc-sub">Subscriptions & Billing</h4>
+        <p>Paid plans (Base at $1/mo, Premium at $5/mo) are billed monthly and renew automatically. You may cancel your subscription at any time from the Settings page. Cancellation takes effect at the end of the current billing period. Refunds are not provided for partial months.</p>
+
+        <h4 class="doc-sub">Termination</h4>
+        <p>We reserve the right to suspend or terminate accounts that violate these terms. You may delete your account at any time with no penalty.</p>
+
+        <h4 class="doc-sub">Limitation of Liability</h4>
+        <p>Clarity is provided "as is." We are not liable for any financial decisions made based on information shown in the app, data loss, or service interruptions.</p>
+
+        <a class="doc-link" routerLink="/terms" target="_blank">Read full Terms of Service ↗</a>
+      </section>
+
+    </div>
+
+    <!-- Accept row -->
+    <div class="accept-row">
+      <label class="check-label">
+        <input type="checkbox" class="check-input"
+          [checked]="checked()"
+          (change)="checked.set($any($event.target).checked)" />
+        <span>I have read and agree to the <a routerLink="/privacy" target="_blank">Privacy Policy</a> and <a routerLink="/terms" target="_blank">Terms of Service</a></span>
+      </label>
+    </div>
+
+    <button class="accept-btn" [disabled]="!checked()" (click)="accept()">
+      Accept &amp; Continue
+    </button>
+
+  </div>
+</div>

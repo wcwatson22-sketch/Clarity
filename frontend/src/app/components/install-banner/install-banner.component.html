@@ -1,0 +1,22 @@
+@if (show) {
+  <div class="install-banner">
+    <div class="install-icon">
+      <img src="icons/icon-96x96.png" alt="Clarity" />
+    </div>
+    <div class="install-text">
+      @if (install$.isIos()) {
+        <strong>Install Clarity</strong>
+        <span>Tap <span class="share-icon">⎙</span> then <em>"Add to Home Screen"</em></span>
+      } @else {
+        <strong>Install Clarity</strong>
+        <span>Add to your home screen for the full app experience</span>
+      }
+    </div>
+    <div class="install-actions">
+      @if (!install$.isIos()) {
+        <button class="btn-install" (click)="install()">Install</button>
+      }
+      <button class="btn-dismiss" (click)="dismiss()" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+}

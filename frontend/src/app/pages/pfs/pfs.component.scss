@@ -1,0 +1,226 @@
+﻿/* ── Screen toolbar ─────────────────────────────────────────────────────── */
+.pfs-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 860px;
+  margin: 0 auto 24px;
+}
+.back-link {
+  font-size: 13px; color: #6B7280; text-decoration: none;
+  &:hover { color: #1D9E75; }
+}
+.print-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #1D9E75; color: #fff; border: none;
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #085041; }
+}
+
+/* ── PFS Document ───────────────────────────────────────────────────────── */
+.pfs-doc {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 40px 48px;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Header */
+.pfs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111827;
+}
+.pfs-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.pfs-sub { font-size: 12px; color: #6B7280; margin: 0; }
+.pfs-meta { text-align: right; }
+.pfs-brand { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-bottom: 4px; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: #1D9E75; }
+.brand-name { font-size: 14px; font-weight: 700; color: #111827; }
+.pfs-date { font-size: 12px; color: #6B7280; margin: 0; }
+
+/* Summary band */
+.pfs-summary {
+  display: flex;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.summary-item {
+  flex: 1; padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 4px;
+  &.highlight { background: #F0FBF7; }
+}
+.summary-divider { width: 1px; background: #E5E7EB; }
+.summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; font-weight: 600; }
+.summary-value { font-size: 20px; font-weight: 700; }
+.green { color: #1D9E75; }
+.coral { color: #D85A30; }
+
+/* Two-column layout */
+.pfs-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.pfs-section { }
+.section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #111827;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.account-group { margin-bottom: 12px; }
+.group-header {
+  display: flex; justify-content: space-between;
+  font-weight: 600; font-size: 12px; color: #374151;
+  padding: 4px 0; background: #F9FAFB;
+  padding: 4px 6px; border-radius: 4px; margin-bottom: 2px;
+}
+.account-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #6B7280;
+  padding: 3px 6px;
+}
+.account-name { }
+.account-value { font-variant-numeric: tabular-nums; }
+
+.section-total {
+  display: flex; justify-content: space-between;
+  font-size: 12px; font-weight: 700; color: #111827;
+  border-top: 1px solid #111827;
+  padding: 6px 6px 0;
+  margin-top: 6px;
+}
+
+/* Ratios */
+.ratios-table { }
+.ratio-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; padding: 4px 0;
+  border-bottom: 1px solid #F3F4F6;
+  &.bold { font-weight: 700; color: #111827; border-top: 1px solid #E5E7EB; margin-top: 2px; }
+}
+.ratio-label { color: #374151; }
+.ratio-value { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ratio-good { color: #1D9E75; }
+.ratio-warn { color: #D97706; }
+.ratio-bad  { color: #D85A30; }
+
+/* Cash Flow section */
+.pfs-cashflow {
+  border-top: 1px solid #E5E7EB;
+  padding-top: 20px;
+  margin-bottom: 24px;
+}
+.cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 12px; }
+.cf-col { }
+.cf-header {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #6B7280;
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid #E5E7EB;
+}
+.cf-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #374151; padding: 3px 0;
+  border-bottom: 1px dashed #F3F4F6;
+  &.bold { font-weight: 700; color: #111827; border-top: 1px solid #E5E7EB; border-bottom: none; margin-top: 2px; padding-top: 6px; }
+}
+
+/* Disclaimer */
+.pfs-disclaimer {
+  border: 1px solid #E5E7EB;
+  background: #F9FAFB;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 10px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* Footer / signature */
+.pfs-footer {
+  border-top: 1px solid #E5E7EB;
+  padding-top: 20px;
+}
+.certification {
+  font-size: 11px; color: #9CA3AF; line-height: 1.6; margin: 0 0 20px;
+}
+.sig-row { display: flex; gap: 48px; }
+.sig-block {
+  flex: 1;
+  p { font-size: 11px; color: #9CA3AF; margin: 4px 0 0; }
+}
+.sig-line {
+  height: 1px; background: #374151; margin-bottom: 4px; width: 100%;
+}
+
+/* ── Mobile styles ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .pfs-doc {
+    padding: 20px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+  .pfs-title  { font-size: 16px; }
+  .pfs-sub    { font-size: 10px; }
+
+  /* Let the financial tables scroll horizontally rather than overflow */
+  .pfs-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pfs-table  { min-width: 340px; }
+
+  /* Summary row: stack on mobile */
+  .pfs-summary { flex-direction: column; gap: 10px; }
+  .summary-box { min-width: unset; }
+  .summary-value { font-size: 18px; }
+
+  /* Signature row: stack blocks */
+  .sig-row { flex-direction: column; gap: 16px; }
+  .sig-block { min-width: unset; width: 100%; }
+
+  /* Action buttons */
+  .pfs-actions { flex-direction: column; gap: 8px; }
+  .btn-print, .btn-pdf { width: 100%; justify-content: center; }
+}
+
+/* ── Print styles ───────────────────────────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+
+  body { background: #fff; margin: 0; }
+
+  .pfs-doc {
+    border: none;
+    border-radius: 0;
+    padding: 20px 28px;
+    max-width: 100%;
+    margin: 0;
+    font-size: 11px;
+    box-shadow: none;
+  }
+
+  .pfs-title { font-size: 16px; }
+  .summary-value { font-size: 16px; }
+
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+}

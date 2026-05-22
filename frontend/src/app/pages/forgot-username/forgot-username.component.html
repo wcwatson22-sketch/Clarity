@@ -1,0 +1,38 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Clarity</span>
+    </div>
+
+    @if (!sent()) {
+      <h1 class="auth-title">Forgot your username?</h1>
+      <p class="auth-sub">Enter your email and we'll send you your username.</p>
+
+      @if (error()) {
+        <div class="auth-error">{{ error() }}</div>
+      }
+
+      <form (ngSubmit)="submit()" class="auth-form">
+        <div class="field-group">
+          <label class="field-label">Email Address</label>
+          <input class="field-input" type="email" placeholder="you@example.com"
+            [value]="email()" (input)="email.set($any($event.target).value)" />
+        </div>
+        <button class="auth-btn" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Sending…' : 'Send My Username' }}
+        </button>
+      </form>
+    } @else {
+      <div class="success-state">
+        <span class="success-icon">✉️</span>
+        <h2 class="auth-title">Check your inbox</h2>
+        <p class="auth-sub">If that email is registered with Clarity, you'll receive your username shortly.</p>
+      </div>
+    }
+
+    <p class="auth-switch">
+      <a routerLink="/login">Back to Sign In</a>
+    </p>
+  </div>
+</div>

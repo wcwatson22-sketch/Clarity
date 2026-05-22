@@ -1,0 +1,296 @@
+<div class="page">
+
+  <!-- ── Income Card ───────────────────────────────────────────────── -->
+  <div class="income-card">
+    <div class="income-header">
+      <h2 class="card-title">Income</h2>
+      <div class="header-right">
+        <!-- Monthly / Annual toggle -->
+        <div class="toggle-group small">
+          <button class="toggle-btn" [class.active]="!showAnnual()" (click)="showAnnual.set(false)">Monthly</button>
+          <button class="toggle-btn" [class.active]="showAnnual()"  (click)="showAnnual.set(true)">Annual</button>
+        </div>
+        <div class="toggle-group">
+          <button class="toggle-btn" [class.active]="income().type === 'stable'"   (click)="setIncomeType('stable')">Stable / W-2</button>
+          <button class="toggle-btn" [class.active]="income().type === 'variable'" (click)="setIncomeType('variable')">Variable</button>
+        </div>
+      </div>
+    </div>
+
+    @if (income().type === 'stable') {
+      <div class="income-fields">
+        <div class="field-group">
+          <label class="field-label">Gross Monthly Income</label>
+          <div class="input-prefix">
+            <span class="prefix">$</span>
+            <input type="number" [value]="income().grossMonthlyIncome" min="0"
+              (change)="updateGross($any($event.target).value)" class="dollar-input" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Net / Take-Home Pay</label>
+          <div class="input-prefix">
+            <span class="prefix">$</span>
+            <input type="number" [value]="income().netMonthlyIncome" min="0"
+              (change)="updateNet($any($event.target).value)" class="dollar-input" />
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="variable-grid">
+        @for (m of income().variableMonths; track m.month; let i = $index) {
+          <div class="field-group">
+            <label class="field-label">{{ fmtMonth(m.month) }}</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" [value]="m.amount" min="0"
+                (change)="updateVariableMonth(i, $any($event.target).value)" class="dollar-input" />
+            </div>
+          </div>
+        }
+      </div>
+      @if (grossIncome() > 0) {
+        <div class="variable-summary">
+          <span>6-month average: <strong>{{ fmt(grossIncome()) }}/mo gross</strong></span>
+          <span class="muted">Est. take-home: {{ fmt(netIncome()) }}/mo</span>
+        </div>
+      }
+    }
+  </div>
+
+  @if (loading()) {
+    <!-- ── Skeleton ──────────────────────────────────────────────── -->
+    <div class="sk-summary">
+      <div class="sk sk-sum"></div>
+      <div class="sk sk-sum"></div>
+      <div class="sk sk-sum"></div>
+    </div>
+    <div class="sk sk-bar-card"></div>
+    <div class="sk-metrics">
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+    </div>
+  } @else {
+
+  <!-- ── Summary Row ───────────────────────────────────────────────── -->
+  @if (netIncome() > 0) {
+    <div class="summary-row">
+      <div class="sum-card blue">
+        <span class="sum-label">Take-Home</span>
+        <span class="sum-val">{{ fmt(dispNet()) }}</span>
+        <span class="sum-period">{{ showAnnual() ? 'per year' : 'per month' }}</span>
+      </div>
+      <div class="sum-card coral">
+        <span class="sum-label">Total Outflow</span>
+        <span class="sum-val">{{ fmt(dispOutflow()) }}</span>
+        <span class="sum-period">{{ showAnnual() ? 'per year' : 'per month' }}</span>
+      </div>
+      <div class="sum-card" [class.green]="freeCashFlow() >= 0" [class.coral]="freeCashFlow() < 0">
+        <span class="sum-label">Free Cash Flow</span>
+        <span class="sum-val">{{ fmt(dispFCF()) }}</span>
+        <span class="sum-period">{{ (fcfRate() * 100).toFixed(0) }}% of take-home</span>
+      </div>
+    </div>
+  }
+
+  <!-- ── Spending Bar ──────────────────────────────────────────────── -->
+  @if (netIncome() > 0 && barSegments().length) {
+    <div class="bar-card">
+      <h3 class="bar-title">Where take-home pay goes</h3>
+      <div class="bar-track">
+        @for (seg of barSegments(); track seg.label) {
+          <div class="bar-seg" [style.width]="barWidth(seg.pct)" [style.background]="seg.color"
+            [title]="seg.label + ': ' + fmt(seg.value)"></div>
+        }
+        <!-- Remaining FCF -->
+        @if (freeCashFlow() > 0) {
+          <div class="bar-seg bar-seg-fcf"
+            [style.width]="barWidth(freeCashFlow() / netIncome())"
+            title="Free Cash Flow: {{ fmt(freeCashFlow()) }}"></div>
+        }
+      </div>
+      <div class="bar-legend">
+        @for (seg of barSegments(); track seg.label) {
+          <div class="legend-item">
+            <span class="legend-dot" [style.background]="seg.color"></span>
+            <span>{{ seg.label }} — {{ fmt(showAnnual() ? seg.value * 12 : seg.value) }}</span>
+          </div>
+        }
+        @if (freeCashFlow() > 0) {
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#E5E7EB"></span>
+            <span class="muted">Remaining — {{ fmt(showAnnual() ? freeCashFlow() * 12 : freeCashFlow()) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ── Metric Cards ──────────────────────────────────────────────── -->
+  @if (grossIncome() > 0) {
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">DTI Ratio</span>
+        <span class="metric-val" [class.coral]="dti() > 0.43" [class.amber]="dti() > 0.36 && dti() <= 0.43">
+          {{ dti() | percent:'1.0-1' }}
+        </span>
+        <span class="metric-sub">&lt; 43% for qualified mortgage</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Savings Rate</span>
+        <span class="metric-val"
+          [class.green]="savingsRate() >= 0.20"
+          [class.amber]="savingsRate() >= 0.10 && savingsRate() < 0.20"
+          [class.coral]="savingsRate() < 0.10">{{ savingsRate() | percent:'1.0-1' }}</span>
+        <span class="metric-sub">Target: ≥ 20% of take-home</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Housing Ratio</span>
+        <span class="metric-val" [class.amber]="housingRatio() > 0.28" [class.coral]="housingRatio() > 0.35">
+          {{ housingRatio() | percent:'1.0-1' }}
+        </span>
+        <span class="metric-sub">Target: ≤ 28–30% of gross</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Annual Savings</span>
+        <span class="metric-val" [class.green]="totalSavings() > 0">
+          {{ fmt(dispSavings()) }}
+        </span>
+        <span class="metric-sub">{{ showAnnual() ? 'this year' : 'per month to savings' }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- ── 50/30/20 Benchmark ────────────────────────────────────────── -->
+  @if (grossIncome() > 0) {
+    <div class="benchmark-card">
+      <div class="benchmark-header">
+        <h3 class="section-title">50 / 30 / 20 Rule</h3>
+        <span class="benchmark-hint">A popular framework: 50% needs, 30% wants, 20% savings</span>
+      </div>
+      <div class="benchmark-rows">
+        @for (row of benchmark503020(); track row.label) {
+          <div class="benchmark-row">
+            <div class="bm-meta">
+              <span class="bm-label">{{ row.label }}</span>
+              <span class="bm-detail">{{ row.detail }}</span>
+            </div>
+            <div class="bm-bars">
+              <div class="bm-bar-track">
+                <div class="bm-bar-fill" [style.width]="benchmarkWidth(row.actual, row.target)"
+                  [class.good]="row.status === 'good'"
+                  [class.caution]="row.status === 'caution'"
+                  [class.over]="row.status === 'over'"></div>
+                <!-- target marker -->
+                <div class="bm-target-line" [style.left]="'66.7%'" title="Target"></div>
+              </div>
+            </div>
+            <div class="bm-values">
+              <span class="bm-actual" [class.good]="row.status === 'good'" [class.caution]="row.status === 'caution'" [class.over]="row.status === 'over'">
+                {{ (row.actual * 100).toFixed(0) }}%
+              </span>
+              <span class="bm-target">/ {{ (row.target * 100).toFixed(0) }}% target</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ── Insights ──────────────────────────────────────────────────── -->
+  @if (insights().length) {
+    <div class="insight-card">
+      <h3 class="insight-title">Your cash flow in plain English</h3>
+      <ul class="insight-list">
+        @for (insight of insights(); track insight.text) {
+          <li class="insight-item" [class]="insight.tone">{{ insight.text }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <!-- ── Expense Groups ────────────────────────────────────────────── -->
+  @for (group of groups; track group.key) {
+    <div class="expense-group">
+      <button class="group-header" (click)="toggleGroup(group.key)"
+        [style.borderLeft]="'4px solid ' + group.color"
+        [style.background]="group.bg">
+        <span class="group-name-block">
+          <span class="group-name">{{ group.label }}</span>
+          <span class="group-sub">{{ group.sub }}</span>
+        </span>
+        <div class="group-right">
+          <span class="group-total" [class.over-budget]="targetOver(group.key)">
+            {{ fmt(showAnnual() ? sumGroup(group.key) * 12 : sumGroup(group.key)) }}
+          </span>
+          @if (getTarget(group.key) > 0) {
+            <span class="group-budget-label" [class.over]="targetOver(group.key)">
+              / {{ fmt(showAnnual() ? getTarget(group.key) * 12 : getTarget(group.key)) }} budget
+            </span>
+          }
+        </div>
+        <span class="chevron" [class.open]="isExpanded(group.key)">▾</span>
+      </button>
+
+      <!-- Budget target progress bar (when set) -->
+      @if (getTarget(group.key) > 0) {
+        <div class="budget-progress">
+          <div class="budget-bar-fill"
+            [style.width]="(targetProgress(group.key) * 100) + '%'"
+            [class.over]="targetOver(group.key)"></div>
+        </div>
+      }
+
+      @if (isExpanded(group.key)) {
+        <div class="group-rows">
+          @for (item of itemsForGroup(group.key); track item.id) {
+            <div class="expense-row">
+              <input class="item-name" [value]="item.name"
+                (blur)="updateItem(item, 'name', $any($event.target).value)" />
+              <div class="input-prefix small">
+                <span class="prefix">$</span>
+                <input type="number" class="dollar-input" [value]="item.amount" min="0"
+                  (change)="updateItem(item, 'amount', $any($event.target).value)" />
+              </div>
+              <button class="delete-btn" (click)="deleteItem(item.id, item.name)">✕</button>
+            </div>
+          }
+          <div class="group-footer">
+            <button class="add-row-btn" (click)="addItem(group.key)">+ Add item</button>
+            <!-- Budget target setter -->
+            <div class="target-setter">
+              @if (editingTarget() === group.key) {
+                <input class="target-input" type="number" placeholder="Monthly budget…" min="0" autofocus
+                  (blur)="setTarget(group.key, $any($event.target).value)"
+                  (keydown.enter)="setTarget(group.key, $any($event.target).value)"
+                  (keydown.escape)="editingTarget.set(null)"
+                  [value]="getTarget(group.key) || ''" />
+              } @else {
+                <button class="target-btn" (click)="editingTarget.set(group.key)">
+                  {{ getTarget(group.key) ? '✏ Budget: ' + fmt(getTarget(group.key)) : '+ Set budget' }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Empty State ───────────────────────────────────────────────── -->
+  @if (!netIncome()) {
+    <div class="empty-state">
+      <p class="empty-title">Start with your income.</p>
+      <ol class="empty-steps">
+        <li>Enter your gross monthly income above.</li>
+        <li>Enter your take-home pay.</li>
+        <li>Fill in your monthly expenses below.</li>
+      </ol>
+    </div>
+  }
+
+  } <!-- end @else (loading) -->
+
+</div>

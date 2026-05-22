@@ -1,0 +1,349 @@
+<div class="page">
+
+  <div class="page-header">
+    <h1 class="page-title">Account Settings</h1>
+    <p class="page-sub">Manage your profile, security, and subscription</p>
+  </div>
+
+  <!-- ── Account Info Banner ─────────────────────────────────────────── -->
+  <div class="info-banner">
+    <div class="avatar-lg">{{ user()?.username?.charAt(0)?.toUpperCase() }}</div>
+    <div class="info-text">
+      <p class="info-username">{{ user()?.username }}</p>
+      <p class="info-meta">User ID #{{ user()?.id }} &nbsp;·&nbsp;
+        <span class="tier-chip" [class.premium]="isPremium()" [class.paid]="isBasePaid()">
+          @if (isPremium()) { Premium Plan }
+          @else if (isBasePaid()) { Base Plan }
+          @else { Free Trial }
+        </span>
+      </p>
+      <p class="info-verify">
+        @if (user()?.emailVerified) {
+          <span class="verified">✓ Email verified</span>
+        } @else {
+          <span class="unverified">⚠ Email not verified — check your inbox</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Profile Details ─────────────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Profile Details</h2>
+    <p class="card-sub">Update your contact info and location</p>
+
+    @if (profileError()) {
+      <div class="alert alert-error">{{ profileError() }}</div>
+    }
+    @if (profileSuccess()) {
+      <div class="alert alert-success">{{ profileSuccess() }}</div>
+    }
+
+    <form (ngSubmit)="saveProfile()" class="settings-form">
+      <div class="field-group">
+        <label class="field-label">First Name</label>
+        <input class="field-input" type="text" placeholder="Your first name"
+          [value]="firstName()" (input)="firstName.set($any($event.target).value)"
+          autocomplete="given-name" />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input class="field-input" type="email"
+          [value]="email()" (input)="email.set($any($event.target).value)" />
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">State</label>
+          <select class="field-input field-select"
+            [value]="state()" (change)="state.set($any($event.target).value)">
+            @for (s of US_STATES; track s) {
+              <option [value]="s" [selected]="s === state()">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">City</label>
+          <input class="field-input" type="text"
+            [value]="city()" (input)="city.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <div class="field-group field-age">
+        <label class="field-label">Age</label>
+        <input class="field-input" type="number" min="18" max="120"
+          [value]="age()" (input)="age.set($any($event.target).value)" />
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" [disabled]="profileSaving()">
+          {{ profileSaving() ? 'Saving…' : 'Save Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Change Password ─────────────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Change Password</h2>
+    <p class="card-sub">Choose a strong password of at least 6 characters</p>
+
+    @if (pwError()) {
+      <div class="alert alert-error">{{ pwError() }}</div>
+    }
+    @if (pwSuccess()) {
+      <div class="alert alert-success">{{ pwSuccess() }}</div>
+    }
+
+    <form (ngSubmit)="changePassword()" class="settings-form">
+      <div class="field-group">
+        <label class="field-label">Current Password</label>
+        <input class="field-input" type="password" placeholder="Enter current password"
+          [value]="currentPw()" (input)="currentPw.set($any($event.target).value)" />
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">New Password</label>
+          <input class="field-input" type="password" placeholder="Min 6 characters"
+            [value]="newPw()" (input)="newPw.set($any($event.target).value)" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Confirm New Password</label>
+          <input class="field-input" type="password" placeholder="Repeat password"
+            [value]="confirmPw()" (input)="confirmPw.set($any($event.target).value)" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" [disabled]="pwSaving()">
+          {{ pwSaving() ? 'Updating…' : 'Update Password' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Subscription ────────────────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Subscription</h2>
+    <p class="card-sub">Your current plan and available upgrades</p>
+
+    <!-- Active subscription banner -->
+    @if (isBasePaid()) {
+      <div class="trial-banner active-plan-banner">
+        <span class="trial-icon">✅</span>
+        <div>
+          <strong>Base plan active</strong> — your subscription is current.
+          Upgrade to Premium below to unlock unlimited snapshots and more.
+        </div>
+      </div>
+    } @else if (isPremium()) {
+      <div class="trial-banner active-plan-banner">
+        <span class="trial-icon">⭐</span>
+        <div><strong>Premium plan active</strong> — you have full access to everything Clarity offers.</div>
+      </div>
+    } @else if (trialActive()) {
+      <div class="trial-banner">
+        <span class="trial-icon">🎉</span>
+        <div>
+          <strong>Free trial active</strong> — you have full access to all features.
+          <span class="trial-days">{{ trialDaysLeft() }} day{{ trialDaysLeft() === 1 ? '' : 's' }} remaining.</span>
+          Pick a plan below before your trial ends to keep access.
+        </div>
+      </div>
+    }
+
+    <div class="plan-grid">
+
+      <!-- Base plan — only show when NOT already on Base or higher -->
+      @if (!isBasePaid() && !isPremium()) {
+        <div class="plan-card">
+          <div class="plan-header">
+            <span class="plan-name">Base</span>
+            <span class="plan-price">$1<span class="plan-period">/mo</span></span>
+          </div>
+          <ul class="plan-features">
+            <li>✓ Dashboard &amp; net worth tracking</li>
+            <li>✓ Cash flow budget</li>
+            <li>✓ Financial learning center</li>
+            <li>✓ 4 snapshots per month</li>
+            <li>✓ 90-day snapshot history</li>
+            <li class="muted">✗ Unlimited snapshots</li>
+            <li class="muted">✗ PFS one-pager PDF</li>
+            <li class="muted">✗ CSV data export</li>
+          </ul>
+          <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
+            {{ upgrading() ? 'Redirecting…' : 'Start for $1/mo' }}
+          </button>
+        </div>
+      }
+
+      <!-- Premium plan -->
+      <div class="plan-card premium" [class.active]="isPremium()">
+        <div class="plan-badge">Best Value</div>
+        <div class="plan-header">
+          <span class="plan-name">Premium</span>
+          <span class="plan-price">$5<span class="plan-period">/mo</span></span>
+        </div>
+        <ul class="plan-features">
+          <li>✓ Everything in Base</li>
+          <li>✓ Unlimited snapshots</li>
+          <li>✓ Full snapshot history</li>
+          <li>✓ PFS one-pager PDF (unlimited)</li>
+          <li>✓ CSV data export</li>
+          <li>✓ Priority support</li>
+        </ul>
+        @if (!isPremium()) {
+          <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
+            {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium' : 'Get Premium' }}
+          </button>
+        } @else {
+          <span class="plan-current">✓ Current Plan</span>
+        }
+      </div>
+    </div>
+
+    @if (upgradeError()) {
+      <div class="alert alert-error" style="margin-top:12px">{{ upgradeError() }}</div>
+    }
+    @if (upgradeSuccess()) {
+      <div class="alert alert-success" style="margin-top:12px">🎉 {{ upgradeSuccess() }}</div>
+    }
+
+    <!-- Cancel subscription -->
+    @if (isPaid()) {
+      <div class="cancel-section">
+        @if (!showCancelConfirm()) {
+          <button class="btn-cancel-plan" (click)="showCancelConfirm.set(true)" [disabled]="cancelling()">
+            Cancel subscription
+          </button>
+        } @else {
+          <div class="cancel-confirm">
+            <p class="cancel-confirm-text">Are you sure? You'll lose access to paid features at the end of your billing period.</p>
+            <div class="cancel-confirm-actions">
+              <button class="btn-confirm-cancel" (click)="cancelSubscription()" [disabled]="cancelling()">
+                {{ cancelling() ? 'Cancelling…' : 'Yes, cancel my subscription' }}
+              </button>
+              <button class="btn-keep-plan" (click)="showCancelConfirm.set(false)">Keep my plan</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <p class="plan-note">
+      Payments processed securely via Stripe.
+    </p>
+  </div>
+
+  <!-- ── Display Preferences ───────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Display</h2>
+    <p class="card-sub">Customize how information is presented</p>
+
+    <div class="notif-row">
+      <div class="notif-info">
+        <span class="notif-status" [class.on]="expandDefault()" [class.off]="!expandDefault()">
+          {{ expandDefault() ? '▾ Categories expanded by default' : '▸ Categories collapsed by default' }}
+        </span>
+        <p class="notif-desc">
+          Controls whether asset/liability groups on the Dashboard and expense groups on Cash Flow start open or closed.
+          Your manual expand/collapse choices are always remembered between visits.
+        </p>
+      </div>
+      <button
+        [class.btn-notif-on]="!expandDefault()"
+        [class.btn-notif-off]="expandDefault()"
+        (click)="toggleExpandDefault()">
+        {{ expandDefault() ? 'Set Collapsed' : 'Set Expanded' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Notifications ──────────────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Notifications</h2>
+    <p class="card-sub">Get alerts when your trial is ending or account activity occurs</p>
+
+    @if (!push.supported()) {
+      <div class="notif-row">
+        <div class="notif-info">
+          <span class="notif-status off">🔕 Notifications unavailable</span>
+          <p class="notif-desc">Push notifications are not supported in this browser. Try Chrome or Edge for the best experience, or install the app on your phone.</p>
+        </div>
+      </div>
+    } @else if (push.permission() === 'denied') {
+      <div class="alert alert-error">
+        Notifications are blocked in your browser. To enable them, go to your browser settings and allow notifications for this site.
+      </div>
+    } @else if (push.subscribed()) {
+      <div class="notif-row">
+        <div class="notif-info">
+          <span class="notif-status on">🔔 Notifications are on</span>
+          <p class="notif-desc">You'll be notified about trial expiry, subscription changes, and important updates.</p>
+        </div>
+        <button class="btn-notif-off" (click)="disableNotifications()" [disabled]="push.loading()">
+          {{ push.loading() ? 'Updating…' : 'Turn Off' }}
+        </button>
+      </div>
+    } @else {
+      <div class="notif-row">
+        <div class="notif-info">
+          <span class="notif-status off">🔕 Notifications are off</span>
+          <p class="notif-desc">Enable to get reminders when your trial is ending and other important alerts.</p>
+        </div>
+        <button class="btn-notif-on" (click)="enableNotifications()" [disabled]="push.loading()">
+          {{ push.loading() ? 'Enabling…' : 'Enable' }}
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- ── Danger Zone ────────────────────────────────────────────────── -->
+  <div class="settings-card danger-zone">
+    <h2 class="card-title danger-title">Danger Zone</h2>
+    <p class="card-sub">Permanent actions that cannot be undone.</p>
+
+    @if (!showDeleteConfirm()) {
+      <div class="danger-row">
+        <div>
+          <p class="danger-label">Delete Account</p>
+          <p class="danger-desc">Permanently deletes your account, all financial data, and cancels any active subscription. This cannot be undone.</p>
+        </div>
+        <button class="btn-danger" (click)="showDeleteConfirm.set(true)">Delete Account</button>
+      </div>
+    } @else {
+      <div class="delete-confirm-box">
+        <p class="delete-confirm-text">
+          This will permanently delete <strong>all your data</strong> — accounts, budgets, snapshots, and your subscription will be cancelled immediately.
+          <br><br>
+          Type <strong>DELETE</strong> below to confirm:
+        </p>
+        <input class="field-input delete-confirm-input"
+          type="text" placeholder="Type DELETE to confirm"
+          [value]="deleteConfirmText()"
+          (input)="deleteConfirmText.set($any($event.target).value)" />
+
+        @if (deleteError()) {
+          <div class="alert alert-error" style="margin-top:8px">{{ deleteError() }}</div>
+        }
+
+        <div class="delete-confirm-actions">
+          <button class="btn-confirm-delete" [disabled]="!deleteReady() || deleting()" (click)="deleteAccount()">
+            {{ deleting() ? 'Deleting…' : 'Permanently Delete My Account' }}
+          </button>
+          <button class="btn-keep-plan" (click)="showDeleteConfirm.set(false); deleteConfirmText.set('')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ── Legal ───────────────────────────────────────────────────────── -->
+  <div class="legal-links">
+    <a routerLink="/terms">Terms of Service</a>
+    <span class="dot">·</span>
+    <a routerLink="/privacy">Privacy Policy</a>
+  </div>
+
+</div>

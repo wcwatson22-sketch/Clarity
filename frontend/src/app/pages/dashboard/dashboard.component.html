@@ -1,0 +1,640 @@
+<div class="page">
+
+  <!-- ── Upgrade Modal (429 snapshot limit) ────────────────────────────── -->
+  @if (showUpgradeModal()) {
+    <div class="modal-backdrop" (click)="dismissUpgradeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-icon">📈</div>
+        <h2 class="modal-title">Snapshot limit reached</h2>
+        <p class="modal-body">
+          The <strong>Base plan</strong> includes 4 snapshots per month.
+          Upgrade to <strong>Premium</strong> for unlimited snapshots and advanced insights.
+        </p>
+        <div class="modal-plans">
+          <div class="plan-chip base">
+            <span class="plan-name">Base</span>
+            <span class="plan-price">$1<span>/mo</span></span>
+            <span class="plan-detail">4 snapshots/month</span>
+          </div>
+          <div class="plan-chip premium">
+            <span class="plan-name">Premium ✦</span>
+            <span class="plan-price">$5<span>/mo</span></span>
+            <span class="plan-detail">Unlimited snapshots</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <a class="modal-upgrade-btn" routerLink="/settings" (click)="dismissUpgradeModal()">View Plans</a>
+          <button class="modal-dismiss-btn" (click)="dismissUpgradeModal()">Maybe later</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── First-name prompt modal ──────────────────────────────────── -->
+  @if (showFirstNameModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-icon">👋</div>
+        <h2 class="modal-title">What should we call you?</h2>
+        <p class="modal-body">Add your first name so your dashboard feels a little more personal.</p>
+        @if (firstNameError()) {
+          <p class="modal-error">{{ firstNameError() }}</p>
+        }
+        <input class="modal-input" type="text" placeholder="First name"
+          [value]="firstNameInput()"
+          (input)="firstNameInput.set($any($event.target).value)"
+          (keyup.enter)="saveFirstName()"
+          autocomplete="given-name" />
+        <div class="modal-actions">
+          <button class="modal-upgrade-btn" (click)="saveFirstName()" [disabled]="savingFirstName()">
+            @if (savingFirstName()) { Saving… } @else { Save }
+          </button>
+          <button class="modal-dismiss-btn" (click)="showFirstNameModal.set(false)">Skip</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Trial expired upgrade wall ───────────────────────────────── -->
+  @if (dashboardLocked()) {
+    <div class="upgrade-wall">
+      <div class="upgrade-card">
+        <div class="upgrade-icon">🔒</div>
+        <h2 class="upgrade-title">Your free trial has ended</h2>
+        <p class="upgrade-body">
+          Choose a plan to keep access to your financial dashboard.
+          Your data is safe and waiting for you.
+        </p>
+        <div class="upgrade-plans">
+          <div class="plan-option">
+            <div class="plan-name">Base</div>
+            <div class="plan-price">$1<span>/mo</span></div>
+            <ul class="plan-features">
+              <li>✓ Full dashboard</li>
+              <li>✓ Cash flow tracking</li>
+              <li>✓ 4 snapshots/month</li>
+              <li>✓ Learn &amp; PFS</li>
+            </ul>
+            <a class="plan-btn base-btn" routerLink="/settings">Get Base</a>
+          </div>
+          <div class="plan-option featured">
+            <div class="plan-badge">Most popular</div>
+            <div class="plan-name">Premium ✦</div>
+            <div class="plan-price">$5<span>/mo</span></div>
+            <ul class="plan-features">
+              <li>✓ Everything in Base</li>
+              <li>✓ Unlimited snapshots</li>
+              <li>✓ Benchmarking &amp; compare</li>
+              <li>✓ Priority support</li>
+            </ul>
+            <a class="plan-btn premium-btn" routerLink="/settings">Get Premium</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Greeting ─────────────────────────────────────────────────── -->
+  <div class="greeting-bar">
+    <div>
+      <span class="greeting-text">{{ greeting() }}</span>
+      <span class="greeting-date">{{ today | date:'EEEE, MMMM d' }}</span>
+    </div>
+    <div class="greeting-actions">
+      @if (!install$.isInstalled()) {
+        <button class="get-app-btn" (click)="showInstallModal.set(true)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+          Get the App
+        </button>
+      }
+      <a class="pfs-btn" routerLink="/pfs">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        PFS
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Install App Modal (mobile only) ─────────────────────────────── -->
+  @if (showInstallModal()) {
+    <div class="install-modal-backdrop" (click)="showInstallModal.set(false)">
+      <div class="install-sheet" (click)="$event.stopPropagation()">
+
+        <div class="install-sheet-handle"></div>
+
+        <div class="install-sheet-header">
+          <img src="icons/logo.png" alt="Clarity" class="install-sheet-logo" />
+          <button class="install-sheet-close" (click)="showInstallModal.set(false)" aria-label="Close">✕</button>
+        </div>
+        <p class="install-sheet-sub">Free · No app store required</p>
+
+        <div class="install-safe-notice">
+          <span class="install-safe-icon">🔒</span>
+          <p>
+            <strong>100% safe.</strong> You're not downloading anything — you're just pinning this secure website to your home screen.
+            It looks and works exactly like a native app.
+            Clarity isn't on the App Store yet, so this is the official way to install it on your phone.
+          </p>
+        </div>
+
+        @if (install$.isIos()) {
+          <!-- iOS Instructions -->
+          <p class="install-steps-title">Follow these 3 steps on your iPhone or iPad:</p>
+          <div class="install-steps">
+            <div class="install-step">
+              <span class="step-num">1</span>
+              <div class="step-body">
+                <p class="step-label">Tap the Share button</p>
+                <p class="step-desc">At the bottom of Safari, tap the share icon <span class="ios-share">⎙</span></p>
+              </div>
+            </div>
+            <div class="install-step">
+              <span class="step-num">2</span>
+              <div class="step-body">
+                <p class="step-label">Scroll down and tap "Add to Home Screen"</p>
+                <p class="step-desc">You may need to scroll the share menu to find it</p>
+              </div>
+            </div>
+            <div class="install-step">
+              <span class="step-num">3</span>
+              <div class="step-body">
+                <p class="step-label">Tap "Add" in the top right</p>
+                <p class="step-desc">Clarity will appear on your home screen just like any other app</p>
+              </div>
+            </div>
+          </div>
+          <p class="install-note">⚠️ This only works in <strong>Safari</strong> — not Chrome or Firefox on iPhone.</p>
+
+        } @else {
+          <!-- Android / Chrome Instructions -->
+          <p class="install-steps-title">One tap to install:</p>
+          @if (install$.canInstall()) {
+            <button class="install-now-btn" (click)="triggerInstall()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Install Clarity Now
+            </button>
+          }
+          <p class="install-steps-title" style="margin-top: 20px">Or install manually:</p>
+          <div class="install-steps">
+            <div class="install-step">
+              <span class="step-num">1</span>
+              <div class="step-body">
+                <p class="step-label">Tap the three-dot menu <span class="menu-dots">⋮</span></p>
+                <p class="step-desc">In Chrome, tap the menu in the top-right corner</p>
+              </div>
+            </div>
+            <div class="install-step">
+              <span class="step-num">2</span>
+              <div class="step-body">
+                <p class="step-label">Tap "Add to Home screen"</p>
+                <p class="step-desc">Or look for "Install app" — either works</p>
+              </div>
+            </div>
+            <div class="install-step">
+              <span class="step-num">3</span>
+              <div class="step-body">
+                <p class="step-label">Tap "Add" to confirm</p>
+                <p class="step-desc">Clarity will appear on your home screen and launch in full-screen</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <button class="install-sheet-dismiss" (click)="showInstallModal.set(false)">Close</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <!-- ── Skeleton loading ──────────────────────────────────────────── -->
+    <div class="skeleton-card">
+      <div class="sk sk-label"></div>
+      <div class="sk sk-amount"></div>
+      <div class="sk-row">
+        <div class="sk sk-meta"></div>
+        <div class="sk sk-meta"></div>
+        <div class="sk sk-meta"></div>
+      </div>
+    </div>
+    <div class="sk-metrics">
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+      <div class="sk sk-metric"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="sk sk-label"></div>
+      <div class="sk sk-chart"></div>
+    </div>
+  } @else {
+
+  <!-- ── Net Worth Card ─────────────────────────────────────────────── -->
+  <div class="nw-card">
+    <div class="nw-header">
+      <span class="nw-label">Net Worth</span>
+      <button class="btn-snapshot" (click)="saveSnapshot()">
+        {{ snapshotSaved() ? '✓ Saved' : 'Save Snapshot' }}
+      </button>
+    </div>
+    <div class="nw-amount" [style.color]="netWorthColor()">{{ formatCurrency(netWorth()) }}</div>
+    <div class="nw-meta">
+      <div class="meta-item">
+        <span class="meta-label">Assets</span>
+        <span class="meta-value green">{{ formatCurrency(totalAssets()) }}</span>
+      </div>
+      <div class="meta-divider"></div>
+      <div class="meta-item">
+        <span class="meta-label">Debts</span>
+        <span class="meta-value coral">{{ formatCurrency(totalLiabilities()) }}</span>
+      </div>
+      <div class="meta-divider"></div>
+      <div class="meta-item">
+        <span class="meta-label">Liquidity</span>
+        <span class="meta-value">{{ formatCurrency(liquidityPosition()) }}</span>
+      </div>
+    </div>
+    @if (lastSnapshot()) {
+      <p class="last-snapshot">Last snapshot {{ lastSnapshot()!.createdAt | date:'mediumDate' }}</p>
+    } @else {
+      <p class="last-snapshot muted">Save your first snapshot to start tracking progress.</p>
+    }
+  </div>
+
+  <!-- ── Metric Cards ──────────────────────────────────────────────── -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <span class="metric-label metric-label-bold">Debt-to-Income (DTI)</span>
+      @if (debtToIncome() !== null) {
+        <span class="metric-value" [class.amber]="debtToIncome()! > 0.36 && debtToIncome()! <= 0.43" [class.coral]="debtToIncome()! > 0.43">
+          {{ debtToIncome()! | percent:'1.0-1' }}
+        </span>
+      } @else {
+        <span class="metric-value muted">—</span>
+      }
+      <span class="metric-sub">&lt; 45% preferred by lenders</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label metric-label-bold">Liquidity</span>
+      <span class="metric-value">{{ formatCurrency(liquidityPosition()) }}</span>
+      <span class="metric-sub">Cash + brokerage</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label metric-label-bold">Total Assets</span>
+      <span class="metric-value green">{{ formatCurrency(totalAssets()) }}</span>
+      <span class="metric-sub">Everything you own</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label metric-label-bold">Total Debt</span>
+      <span class="metric-value coral">{{ formatCurrency(totalLiabilities()) }}</span>
+      <span class="metric-sub">Everything you owe</span>
+    </div>
+  </div>
+
+  <!-- ── Net Worth Chart ───────────────────────────────────────────── -->
+  <div class="section-card chart-card">
+    <div class="chart-header">
+      <h3 class="section-title">Net Worth Trend</h3>
+      <div class="chart-controls">
+        <div class="period-tabs">
+          @for (p of periods; track p) {
+            <button class="period-btn" [class.active]="chartPeriod() === p" (click)="chartPeriod.set(p)">{{ p }}</button>
+          }
+        </div>
+        <button class="projection-btn" [class.active]="showProjection()" (click)="showProjection.set(!showProjection())">
+          📈 Projection
+        </button>
+      </div>
+    </div>
+
+    @if (showProjection()) {
+      <div class="projection-controls">
+        <span class="proj-label">Project</span>
+        @for (y of [1, 3, 5, 10]; track y) {
+          <button class="proj-yr-btn" [class.active]="projectionYears() === y" (click)="projectionYears.set(y)">{{ y }}yr</button>
+        }
+        <span class="proj-note">6% growth + {{ formatCurrency(monthlyDelta()) }}/mo savings</span>
+      </div>
+    }
+
+    <div class="series-legend">
+      <span class="legend-btn nw-color">
+        <span class="legend-dot nw-dot"></span>Net Worth
+      </span>
+      @if (showProjection() && monthlyDelta() > 0) {
+        <span class="legend-btn" style="color:#085041;opacity:0.7;cursor:default">
+          <span class="legend-dot" style="background:#1D9E75;opacity:0.4"></span>Projected NW
+        </span>
+      }
+    </div>
+
+    @if (chartSvg(); as svg) {
+      <svg viewBox="0 0 760 200" style="width:100%;height:auto;display:block;overflow:visible">
+        <defs>
+          <!-- Clip data lines/dots to the chart plot area (padL=60, padT=12, padR=16, padB=30) -->
+          <clipPath id="chart-clip">
+            <rect x="60" y="0" width="684" height="172"/>
+          </clipPath>
+        </defs>
+
+        @for (gl of svg.gridLines; track gl) {
+          <path [attr.d]="gl" stroke="#F3F4F6" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+        }
+        @for (lbl of svg.yLabels; track lbl.label) {
+          <text x="54" [attr.y]="lbl.textY" text-anchor="end" font-size="10" fill="#9CA3AF">{{ lbl.label }}</text>
+        }
+        @for (lbl of svg.xLabels; track lbl.label) {
+          <text [attr.x]="lbl.x" y="196" [attr.text-anchor]="lbl.anchor" font-size="10" fill="#9CA3AF">{{ lbl.label }}</text>
+        }
+
+        <!-- Clipped data group -->
+        <g clip-path="url(#chart-clip)">
+          <!-- Projection dashed line -->
+          @if (showProjection() && svg.projPath) {
+            <path [attr.d]="svg.projPath" fill="none" stroke="#1D9E75"
+              stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round" opacity="0.55"/>
+            @if (svg.projEndLabel) {
+              <circle [attr.cx]="svg.projEndX" [attr.cy]="svg.projEndY" r="4" fill="#1D9E75" opacity="0.5"/>
+            }
+          }
+          <!-- Net worth line only -->
+          <path [attr.d]="svg.nwPath" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          @for (d of svg.nwDots; track d.cx + d.cy) {
+            <circle [attr.cx]="d.cx" [attr.cy]="d.cy" r="4" fill="#1D9E75"/>
+          }
+        </g>
+
+        <!-- Projection end label (outside clip so it's readable at the edge) -->
+        @if (showProjection() && svg.projPath && svg.projEndLabel) {
+          <text [attr.x]="svg.projEndX" [attr.y]="+svg.projEndY - 8" text-anchor="end"
+            font-size="10" fill="#085041" font-weight="600">{{ svg.projEndLabel }}</text>
+        }
+      </svg>
+    } @else {
+      <div class="chart-empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <p>Hit <strong>Save Snapshot</strong> as your balances change to build your trend chart here.</p>
+      </div>
+    }
+  </div>
+
+  <!-- ── Momentum ──────────────────────────────────────────────────── -->
+  @if (snapshots().length > 0) {
+    <div class="section-card">
+      <h3 class="section-title">Momentum</h3>
+      <div class="momentum-list">
+        @for (item of momentumItems(); track item.sentence; let last = $last) {
+          <div class="momentum-item" [class.momentum-divider]="!last">
+            <span class="momentum-sentence"
+              [class.green]="item.isGood"
+              [class.coral]="!item.isGood">
+              {{ item.delta >= 0 ? '↑' : '↓' }}&nbsp;{{ item.sentence }}
+            </span>
+            <span class="momentum-amount" [class.green]="item.isGood" [class.coral]="!item.isGood">
+              {{ item.delta >= 0 ? '+' : '' }}{{ formatCurrency(item.delta) }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="section-card empty-state">
+      <p class="empty-title">Momentum</p>
+      <p class="empty-sub">Save a few snapshots to start seeing financial progress over time.</p>
+    </div>
+  }
+
+  <!-- ── Real Estate / LTV ──────────────────────────────────────────── -->
+  @if (showLtv()) {
+    <div class="section-card">
+      <h3 class="section-title">Real Estate</h3>
+      <div class="ltv-grid">
+        <div class="ltv-item">
+          <span class="ltv-label">Home Value</span>
+          <span class="ltv-val">{{ formatCurrency(homeValue()) }}</span>
+        </div>
+        <div class="ltv-item">
+          <span class="ltv-label">Mortgage Balance</span>
+          <span class="ltv-val coral">{{ formatCurrency(mortgageBalance()) }}</span>
+        </div>
+        <div class="ltv-item">
+          <span class="ltv-label">Equity</span>
+          <span class="ltv-val green">{{ formatCurrency(equity()) }}</span>
+        </div>
+        <div class="ltv-item">
+          <span class="ltv-label">LTV Ratio</span>
+          <span class="ltv-val"
+            [class.green]="ltv() <= 0.80"
+            [class.amber]="ltv() > 0.80 && ltv() <= 0.90"
+            [class.coral]="ltv() > 0.90">{{ ltv() | percent:'1.0-1' }}</span>
+          <span class="ltv-sub">≤ 80% avoids PMI</span>
+        </div>
+        <div class="ltv-item">
+          <span class="ltv-label">PMI Status</span>
+          <span class="ltv-val" [class.green]="!pmiRequired()" [class.coral]="pmiRequired()">
+            {{ pmiRequired() ? 'Likely applies' : 'None required' }}
+          </span>
+          <span class="ltv-sub">{{ pmiRequired() ? 'Pay down to 80% LTV to remove' : 'LTV is under 80%' }}</span>
+        </div>
+        <div class="ltv-item">
+          <span class="ltv-label">HELOC Available</span>
+          <span class="ltv-val" [class.green]="helocAvailable() > 0">
+            {{ helocAvailable() > 0 ? formatCurrency(helocAvailable()) : '—' }}
+          </span>
+          <span class="ltv-sub">Est. at 89.9% CLTV</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Assets ─────────────────────────────────────────────────────── -->
+  <div class="group-section">
+    <div class="group-heading-row">
+      <h2 class="group-heading">Assets</h2>
+      <button class="add-item-btn" (click)="addNewAccount('Asset')">+ Add Asset</button>
+    </div>
+
+    @if (assetGroups().length === 0) {
+      <div class="accounts-empty-state">
+        <div class="accounts-empty-icon">🏦</div>
+        <p class="accounts-empty-title">No assets yet</p>
+        <p class="accounts-empty-sub">Add your first asset to start tracking your net worth — savings accounts, investments, property, and more.</p>
+        <button class="accounts-empty-btn" (click)="addNewAccount('Asset')">+ Add Your First Asset</button>
+      </div>
+    }
+
+    @for (group of sortedAssetGroups(); track group.name; let first = $first; let last = $last) {
+      <div class="account-group">
+        <button class="group-header" (click)="toggleGroup(group.name)"
+          [style.borderLeft]="'4px solid ' + getGroupColor(group.name)"
+          [style.background]="getGroupBg(group.name)">
+          <span class="group-name">{{ group.name }}</span>
+          <span class="group-total">{{ formatCurrency(group.total) }}</span>
+          <span class="group-reorder">
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'up')" [disabled]="first" title="Move up">↑</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'down')" [disabled]="last" title="Move down">↓</button>
+          </span>
+          <span class="chevron" [class.open]="isExpanded(group.name)">▾</span>
+        </button>
+
+        @if (isExpanded(group.name)) {
+          <div class="group-rows">
+            @for (account of group.accounts; track account.id) {
+
+              <!-- New row: shows category dropdown + name input side by side -->
+              @if (newRowId() === account.id) {
+                <div class="account-row is-new">
+                  <input class="name-input name-input-new" autofocus
+                    placeholder="Account name…"
+                    [value]="account.name === 'New Account' ? '' : account.name"
+                    (blur)="updateName(account, $any($event.target).value)"
+                    (keydown.enter)="updateName(account, $any($event.target).value)" />
+                  <select class="cat-select-inline"
+                    (change)="updateCategory(account, $any($event.target).value)">
+                    @for (cat of getCategories(account.type); track cat.value) {
+                      <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
+                  <input class="value-input" type="number" placeholder="0" min="0"
+                    [value]="account.value || ''"
+                    (change)="updateValue(account, $any($event.target).value)" />
+                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                </div>
+
+              <!-- Existing row: name (click to edit) + value input -->
+              } @else {
+                <div class="account-row" [class.is-anchor-zero]="account.isAnchor && account.value === 0">
+                  @if (editingId() === account.id) {
+                    <input class="name-input" autofocus [value]="account.name"
+                      (blur)="updateName(account, $any($event.target).value)"
+                      (keydown.enter)="updateName(account, $any($event.target).value)" />
+                  } @else {
+                    <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
+                  }
+                  @if (editingValueId() === account.id) {
+                    <input class="value-input" type="number" autofocus [value]="account.value" min="0"
+                      (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
+                      (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
+                  } @else {
+                    <span class="value-display" (click)="editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
+                  }
+                  @if (!account.isAnchor) {
+                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  } @else {
+                    <span class="anchor-spacer"></span>
+                  }
+                </div>
+              }
+
+            }
+            <button class="add-row-btn" (click)="addToGroup(group.name, 'Asset', group.accounts[0].category ?? assetCategories[0].value)">
+              + Add account
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- ── Liabilities ───────────────────────────────────────────────── -->
+  <div class="group-section">
+    <div class="group-heading-row">
+      <h2 class="group-heading">Debts & Liabilities</h2>
+      <button class="add-item-btn" (click)="addNewAccount('Liability')">+ Add Liability</button>
+    </div>
+
+    @if (liabilityGroups().length === 0) {
+      <div class="accounts-empty-state">
+        <div class="accounts-empty-icon">💳</div>
+        <p class="accounts-empty-title">No debts tracked</p>
+        <p class="accounts-empty-sub">Add any loans, credit cards, or mortgages to see your full financial picture and debt-to-income ratio.</p>
+        <button class="accounts-empty-btn secondary" (click)="addNewAccount('Liability')">+ Add a Liability</button>
+      </div>
+    }
+
+    @for (group of sortedLiabGroups(); track group.name; let first = $first; let last = $last) {
+      <div class="account-group">
+        <button class="group-header" (click)="toggleGroup(group.name)"
+          [style.borderLeft]="'4px solid ' + getGroupColor(group.name)"
+          [style.background]="getGroupBg(group.name)">
+          <span class="group-name">{{ group.name }}</span>
+          <span class="group-total coral">{{ formatCurrency(group.total) }}</span>
+          <span class="group-reorder">
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'up')" [disabled]="first" title="Move up">↑</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'down')" [disabled]="last" title="Move down">↓</button>
+          </span>
+          <span class="chevron" [class.open]="isExpanded(group.name)">▾</span>
+        </button>
+
+        @if (isExpanded(group.name)) {
+          <div class="group-rows">
+            @for (account of group.accounts; track account.id) {
+
+              @if (newRowId() === account.id) {
+                <div class="account-row is-new">
+                  <input class="name-input name-input-new" autofocus
+                    placeholder="Account name…"
+                    [value]="account.name === 'New Account' ? '' : account.name"
+                    (blur)="updateName(account, $any($event.target).value)"
+                    (keydown.enter)="updateName(account, $any($event.target).value)" />
+                  <select class="cat-select-inline"
+                    (change)="updateCategory(account, $any($event.target).value)">
+                    @for (cat of getCategories(account.type); track cat.value) {
+                      <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
+                  <input class="value-input" type="number" placeholder="0" min="0"
+                    [value]="account.value || ''"
+                    (change)="updateValue(account, $any($event.target).value)" />
+                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                </div>
+
+              } @else {
+                <div class="account-row" [class.is-anchor-zero]="account.isAnchor && account.value === 0">
+                  @if (editingId() === account.id) {
+                    <input class="name-input" autofocus [value]="account.name"
+                      (blur)="updateName(account, $any($event.target).value)"
+                      (keydown.enter)="updateName(account, $any($event.target).value)" />
+                  } @else {
+                    <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
+                  }
+                  @if (editingValueId() === account.id) {
+                    <input class="value-input" type="number" autofocus [value]="account.value" min="0"
+                      (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
+                      (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
+                  } @else {
+                    <span class="value-display" (click)="editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
+                  }
+                  @if (!account.isAnchor) {
+                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  } @else {
+                    <span class="anchor-spacer"></span>
+                  }
+                </div>
+              }
+
+            }
+            <button class="add-row-btn" (click)="addToGroup(group.name, 'Liability', group.accounts[0].category ?? liabilityCategories[0].value)">
+              + Add debt
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  } <!-- end @else (loading) -->
+
+</div>

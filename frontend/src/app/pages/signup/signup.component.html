@@ -1,0 +1,111 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Clarity</span>
+    </div>
+
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-sub">Start your <strong>14-day free trial</strong> — no credit card required.</p>
+
+    @if (error()) {
+      <div class="auth-error">{{ error() }}</div>
+    }
+
+    <form (ngSubmit)="submit()" class="auth-form">
+
+      <!-- First Name -->
+      <div class="field-group">
+        <label class="field-label">First Name</label>
+        <input class="field-input" type="text" placeholder="Your first name"
+          [value]="firstName()" (input)="firstName.set($any($event.target).value)"
+          autocomplete="given-name" />
+      </div>
+
+      <!-- Username -->
+      <div class="field-group">
+        <label class="field-label">Username <span class="field-hint">(min 3 characters)</span></label>
+        <input class="field-input" type="text" placeholder="Choose a username"
+          [value]="username()" (input)="username.set($any($event.target).value)"
+          autocomplete="username" />
+      </div>
+
+      <!-- Email -->
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input class="field-input" type="email" placeholder="you@example.com"
+          [value]="email()" (input)="email.set($any($event.target).value)"
+          autocomplete="email" />
+      </div>
+
+      <!-- Password row -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Password <span class="field-hint">(min 6 chars)</span></label>
+          <input class="field-input" type="password" placeholder="Create a password"
+            [value]="password()" (input)="password.set($any($event.target).value)"
+            autocomplete="new-password" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Confirm Password</label>
+          <input class="field-input" type="password" placeholder="Repeat password"
+            [value]="confirmPassword()" (input)="confirmPassword.set($any($event.target).value)"
+            autocomplete="new-password" />
+        </div>
+      </div>
+
+      <!-- State + City -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">State</label>
+          <select class="field-input field-select"
+            [value]="state()" (change)="state.set($any($event.target).value)">
+            <option value="" disabled selected>Select state</option>
+            @for (s of states; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">City</label>
+          <input class="field-input" type="text" placeholder="Your city"
+            [value]="city()" (input)="city.set($any($event.target).value)" />
+        </div>
+      </div>
+
+      <!-- Age -->
+      <div class="field-group field-age">
+        <label class="field-label">Age</label>
+        <input class="field-input" type="number" placeholder="18" min="18" max="120"
+          [value]="age()" (input)="age.set($any($event.target).value)" />
+      </div>
+
+      <!-- Terms acceptance -->
+      <label class="terms-check-label">
+        <input type="checkbox" class="terms-check-input"
+          [checked]="termsAccepted()"
+          (change)="termsAccepted.set($any($event.target).checked)" />
+        <span>I agree to the <a routerLink="/privacy" target="_blank">Privacy Policy</a> and <a routerLink="/terms" target="_blank">Terms of Service</a></span>
+      </label>
+
+      <button class="auth-btn" type="submit" [disabled]="loading() || !termsAccepted()">
+        @if (loading()) { Creating account… } @else { Start Free Trial }
+      </button>
+
+      <p class="trial-notice">
+        🎉 <strong>14-day free trial</strong> — full access to all features. After 14 days, choose a Base ($1/mo) or Premium ($5/mo) plan to continue. No charge until your trial ends.
+      </p>
+
+      <p class="disclaimer-notice">
+        ⚠️ Clarity is a personal finance <strong>tool and educational resource only</strong>. It does not provide financial advice, investment guidance, or professional services. Always consult a licensed financial advisor for financial decisions.
+      </p>
+
+    </form>
+
+    <p class="auth-switch">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+
+  </div>
+</div>

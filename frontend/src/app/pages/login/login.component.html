@@ -1,0 +1,46 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Clarity</span>
+    </div>
+
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to your account to continue</p>
+
+    @if (error()) {
+      <div class="auth-error">{{ error() }}</div>
+    }
+
+    <form (ngSubmit)="submit()" class="auth-form">
+      <div class="field-group">
+        <label class="field-label">Username</label>
+        <input class="field-input" type="text" placeholder="Enter your username"
+          [value]="username()" (input)="username.set($any($event.target).value)"
+          autocomplete="username" />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" placeholder="Enter your password"
+          [value]="password()" (input)="password.set($any($event.target).value)"
+          autocomplete="current-password" />
+      </div>
+
+      <div class="forgot-wrap">
+        <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+        <a routerLink="/forgot-username" class="forgot-link">Forgot username?</a>
+      </div>
+
+      <button class="auth-btn" type="submit" [disabled]="loading()">
+        @if (loading()) { Signing in… } @else { Sign In }
+      </button>
+    </form>
+
+    <p class="auth-switch">
+      Don't have an account? <a routerLink="/signup">Create one</a>
+    </p>
+
+  </div>
+</div>

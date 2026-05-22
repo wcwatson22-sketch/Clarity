@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clarity-api-config
+  namespace: clarity
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  AllowedOrigins__0: "http://clarity-frontend"

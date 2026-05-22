@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clarity-frontend
+  namespace: clarity
+  labels:
+    app: clarity-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: clarity-frontend
+  template:
+    metadata:
+      labels:
+        app: clarity-frontend
+    spec:
+      containers:
+        - name: clarity-frontend
+          image: clarity-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      restartPolicy: Always

@@ -1,0 +1,32 @@
+__DOMAIN__ {
+    # Serve the Angular frontend
+    root * /var/www/clarity
+    file_server
+
+    # Proxy API requests to the .NET backend
+    handle /api/* {
+        reverse_proxy localhost:5000
+    }
+
+    # Proxy health checks
+    handle /healthz {
+        reverse_proxy localhost:5000
+    }
+    handle /readyz {
+        reverse_proxy localhost:5000
+    }
+
+    # Angular HTML5 routing — send all unmatched routes to index.html
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}

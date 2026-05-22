@@ -1,0 +1,17 @@
+Place your app icons here:
+
+  icon-192x192.png  — 192×192 PNG (required for Android PWA install prompt)
+  icon-512x512.png  — 512×512 PNG (required for splash screen)
+
+FASTEST WAY — use the built-in generator:
+  1. Open scripts/generate-icons.html in any browser (just double-click it)
+  2. Click "Download 192×192" and "Download 512×512"
+  3. Drop both files in this folder
+
+CUSTOM LOGO — if you have your own design:
+  1. Create a 512×512 PNG of your logo
+  2. Use https://realfavicongenerator.net or https://maskable.app to generate all sizes
+  3. Drop icon-192x192.png and icon-512x512.png here
+
+The app works fine without these icons — they only affect the
+"Add to Home Screen" install prompt on iOS and Android.

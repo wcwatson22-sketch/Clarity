@@ -1,0 +1,99 @@
+using System.Text.Json;
+using Clarity.Api.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace Clarity.Api.Data;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<BudgetItem> BudgetItems => Set<BudgetItem>();
+    public DbSet<UserIncome> Incomes => Set<UserIncome>();
+    public DbSet<Snapshot> Snapshots => Set<Snapshot>();
+    public DbSet<UserEducationProgress> EducationProgress => Set<UserEducationProgress>();
+    public DbSet<SurveyResponse> SurveyResponses => Set<SurveyResponse>();
+    public DbSet<PasswordResetToken> ResetTokens => Set<PasswordResetToken>();
+    public DbSet<UserPushSubscription> PushSubscriptions => Set<UserPushSubscription>();
+
+    private static readonly JsonSerializerOptions _json = new();
+
+    protected override void OnModelCreating(ModelBuilder mb)
+    {
+        // ── User ────────────────────────────────────────────────────────────
+        mb.Entity<User>(e =>
+        {
+            e.HasIndex(u => u.Username).IsUnique();
+            e.HasIndex(u => u.Email).IsUnique();
+            e.Property(u => u.Tier).HasConversion<string>();
+        });
+
+        // ── Account ─────────────────────────────────────────────────────────
+        mb.Entity<Account>(e =>
+        {
+            e.Property(a => a.Type).HasConversion<string>();
+            e.HasOne(a => a.User).WithMany(u => u.Accounts).HasForeignKey(a => a.UserId);
+        });
+
+        // ── BudgetItem ───────────────────────────────────────────────────────
+        mb.Entity<BudgetItem>(e =>
+        {
+            e.Property(b => b.Group).HasConversion<string>();
+            e.HasOne(b => b.User).WithMany(u => u.BudgetItems).HasForeignKey(b => b.UserId);
+        });
+
+        // ── UserIncome ───────────────────────────────────────────────────────
+        mb.Entity<UserIncome>(e =>
+        {
+            e.HasIndex(i => i.UserId).IsUnique();
+            e.HasOne(i => i.User).WithOne(u => u.Income).HasForeignKey<UserIncome>(i => i.UserId);
+            e.Property(i => i.VariableMonths)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<VariableMonth>>(v, _json) ?? new List<VariableMonth>())
+             .HasColumnType("TEXT");
+        });
+
+        // ── Snapshot ─────────────────────────────────────────────────────────
+        mb.Entity<Snapshot>(e =>
+        {
+            e.HasOne(s => s.User).WithMany(u => u.Snapshots).HasForeignKey(s => s.UserId);
+            e.Property(s => s.LineItems)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<SnapshotLineItem>>(v, _json) ?? new List<SnapshotLineItem>())
+             .HasColumnType("TEXT");
+        });
+
+        // ── EducationProgress ────────────────────────────────────────────────
+        mb.Entity<UserEducationProgress>(e =>
+        {
+            e.HasIndex(p => new { p.UserId, p.ArticleId }).IsUnique();
+            e.HasOne(p => p.User).WithMany(u => u.EducationProgress).HasForeignKey(p => p.UserId);
+        });
+
+        // ── SurveyResponse ───────────────────────────────────────────────────
+        mb.Entity<SurveyResponse>(e =>
+        {
+            e.HasOne(s => s.User).WithMany(u => u.SurveyResponses).HasForeignKey(s => s.UserId);
+            e.Property(s => s.Topics)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<string>>(v, _json) ?? new List<string>())
+             .HasColumnType("TEXT");
+        });
+
+        // ── PasswordResetToken ───────────────────────────────────────────────
+        mb.Entity<PasswordResetToken>(e =>
+        {
+            e.HasOne(t => t.User).WithMany(u => u.ResetTokens).HasForeignKey(t => t.UserId);
+        });
+
+        // ── UserPushSubscription ─────────────────────────────────────────────
+        mb.Entity<UserPushSubscription>(e =>
+        {
+            e.HasOne(p => p.User).WithMany(u => u.PushSubscriptions).HasForeignKey(p => p.UserId);
+            e.HasIndex(p => p.Endpoint).IsUnique();
+        });
+    }
+}
