@@ -37,22 +37,20 @@ workflows:
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
           chmod 600 /tmp/AuthKey.p8
 
-          # Archive with automatic signing via API key
-          xcodebuild \
+          # Archive — action first, build settings last
+          xcodebuild archive \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/ios/App.xcarchive \
-            CODE_SIGN_STYLE=Automatic \
             -allowProvisioningUpdates \
             -authenticationKeyPath /tmp/AuthKey.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            archive
+            CODE_SIGN_STYLE=Automatic
 
           # Export IPA
-          xcodebuild \
-            -exportArchive \
+          xcodebuild -exportArchive \
             -archivePath build/ios/App.xcarchive \
             -exportPath build/ios/ipa \
             -exportOptionsPlist frontend/ios/App/exportOptions.plist \
