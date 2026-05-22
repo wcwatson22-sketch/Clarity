@@ -6,14 +6,16 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    integrations:
+      app_store_connect: App Store Connect
+
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.clarityfinancialtools.app
       vars:
         XCODE_PROJECT: frontend/ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        APP_ID: com.clarityfinancialtools.app
-        BUNDLE_ID: com.clarityfinancialtools.app
-        ASC_KEY_ID: 24DJNHQWAS
-        ASC_ISSUER_ID: 55a91748-0078-45c8-ae86-f98d86a83c88
       node: 22.13.0
       xcode: 16.2
 
@@ -34,53 +36,13 @@ workflows:
           npx cap sync ios
 
       - name: Set up code signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files \
-            com.clarityfinancialtools.app \
-            --type IOS_APP_STORE \
-            --create \
-            --issuer-id "$ASC_ISSUER_ID" \
-            --key-id "$ASC_KEY_ID" \
-            --private-key "@file:$ASC_PRIVATE_KEY_PATH"
-          keychain add-certificates
+        script: xcode-project use-profiles
 
       - name: Build .ipa
         script: |
-          # Extract profile UUID and Team ID from the downloaded provisioning profile
-          PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
-          UUID=$(security cms -D -i "$PROFILE" | grep -A1 '<key>UUID</key>' | tail -1 | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
-          TEAM=$(security cms -D -i "$PROFILE" | grep -A1 '<key>TeamIdentifier</key>' | grep string | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
-          echo "Using Profile UUID: $UUID  Team: $TEAM"
-
-          # Archive with explicit manual signing
-          xcodebuild archive \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath build/ios/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$TEAM" \
-            PROVISIONING_PROFILE="$UUID" \
-            CODE_SIGN_IDENTITY="Apple Distribution"
-
-          # Generate exportOptions with the real team ID
-          cat > /tmp/exportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>teamID</key><string>$TEAM</string>
-            <key>uploadSymbols</key><true/>
-            <key>compileBitcode</key><false/>
-          </dict></plist>
-          EOF
-
-          # Export IPA
-          xcodebuild -exportArchive \
-            -archivePath build/ios/App.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/exportOptions.plist
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -95,9 +57,7 @@ workflows:
           success: true
           failure: true
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
         submit_to_app_store: false
 
