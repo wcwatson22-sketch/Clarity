@@ -10,7 +10,6 @@ interface KeyStat { label: string; value: string; note: string; }
 interface LoanGuide {
   id: string; label: string; emoji: string; tagline: string; timeframe: string;
   keyStats: KeyStat[];
-  folderName: string;
   folders: FolderItem[];
   checklist: ChecklistSection[];
   doList: string[];
@@ -28,41 +27,24 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Down Payment', value: '3.5–20%', note: '20% avoids PMI' },
       { label: 'Cash Reserves', value: '2–6 mo', note: 'Months of PITI payment' },
     ],
-    folderName: 'Mortgage_Application',
     folders: [
-      { folder: 'Tax_Returns', files: [
-        'Federal tax returns — last 2 years (all pages + all schedules)',
-        'State tax returns — last 2 years',
-        'Extensions if filed',
-        'All K-1 forms (if you receive income from partnerships, S-corps, or trusts)',
-      ]},
-      { folder: 'Income', files: [
-        'W-2s — last 2 years (all employers)',
-        'Pay stubs — most recent 30 days (2 most recent)',
-        'Award letters for Social Security, pension, or disability income',
-        'Rental income leases (if applicable)',
-        'Alimony or child support documentation (if counting as income)',
-      ]},
-      { folder: 'Bank_Statements', files: [
-        'All checking accounts — last 2–3 months (ALL pages including blank ones)',
-        'All savings accounts — last 2–3 months (all pages)',
-        'Investment / brokerage statements — last 2–3 months',
-        'Retirement accounts (401k, IRA) — most recent statement',
-      ]},
-      { folder: 'Property_Docs', files: [
-        'Signed purchase agreement or offer letter',
-        'MLS listing or property info sheet',
-        'HOA documents (if applicable)',
-      ]},
-      { folder: 'Identification', files: [
-        'Government-issued photo ID (driver\'s license or passport)',
-        'Social Security number (lender will verify)',
-      ]},
-      { folder: 'Additional_If_Applicable', files: [
-        'Divorce decree or separation agreement',
-        'Child support or alimony court order',
-        'Gift letter (if receiving gift funds for down payment)',
-        'Bankruptcy discharge papers (if applicable within last 4–7 years)',
+      { folder: 'Financial Information', files: [
+        'Tax Return_Your Name_2024',
+        'Tax Return_Your Name_2023',
+        'W-2_Your Name_2024  (one per employer, per year)',
+        'W-2_Your Name_2023',
+        'Pay Stub_Your Name_January 2025  (2 most recent)',
+        'Pay Stub_Your Name_February 2025',
+        'K-1_Your Name_2024  (if applicable — partnerships, S-corps, trusts)',
+        'Bank Statement_Your Name_January 2025  (all pages, last 2–3 months)',
+        'Bank Statement_Your Name_February 2025',
+        'Bank Statement_Your Name_March 2025',
+        'Investment Statement_Your Name_Q1 2025',
+        'Retirement Account Statement_Your Name_Q1 2025',
+        'Photo ID_Your Name',
+        'Purchase Agreement_Property Address_2025',
+        'Gift Letter_Your Name_2025  (if receiving gift funds for down payment)',
+        'Divorce Decree_Your Name_Year  (if applicable)',
       ]},
     ],
     checklist: [
@@ -75,7 +57,7 @@ export const LOAN_GUIDES: LoanGuide[] = [
         { text: 'Start saving for closing costs separately', detail: 'Budget 2–5% of the loan amount on top of your down payment' },
       ]},
       { title: '60 Days Before Applying', icon: '📋', items: [
-        { text: 'Create your "Mortgage_Application" folder', detail: 'Set up the subfolders listed in the Documents section above' },
+        { text: 'Create your "Financial Information" folder and start filling it', detail: 'Name every document using the format shown above — it keeps things organized for the lender' },
         { text: 'Collect tax returns for the last 2 years', detail: 'Include all pages and schedules — lenders reject incomplete returns' },
         { text: 'Download 2–3 months of bank statements', detail: 'Must include ALL pages, even blank ones. Missing pages raise red flags' },
         { text: 'Gather all W-2s and recent pay stubs', detail: 'You\'ll need documentation from every employer in the last 2 years' },
@@ -119,29 +101,20 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Break-Even', value: '< 3 yrs', note: 'Closing cost ÷ monthly savings' },
       { label: 'Max DTI', value: '43%', note: '36% preferred' },
     ],
-    folderName: 'Refinance_Application',
     folders: [
-      { folder: 'Current_Mortgage', files: [
-        'Most recent mortgage statement (shows balance, rate, payment)',
-        'Original closing disclosure or note (if available)',
-        'Homeowners insurance declarations page',
-        'Most recent property tax bill',
-        'HOA statement (if applicable)',
-      ]},
-      { folder: 'Tax_Returns', files: [
-        'Federal tax returns — last 2 years (all pages + schedules)',
-        'Extensions if filed',
-        'K-1s (if applicable)',
-      ]},
-      { folder: 'Income', files: [
-        'W-2s — last 2 years',
-        'Pay stubs — most recent 30 days',
-      ]},
-      { folder: 'Bank_Statements', files: [
-        'All accounts — last 2 months (all pages)',
-      ]},
-      { folder: 'Identification', files: [
-        'Government-issued photo ID',
+      { folder: 'Financial Information', files: [
+        'Tax Return_Your Name_2024',
+        'Tax Return_Your Name_2023',
+        'W-2_Your Name_2024',
+        'W-2_Your Name_2023',
+        'Pay Stub_Your Name_January 2025  (2 most recent)',
+        'Pay Stub_Your Name_February 2025',
+        'Bank Statement_Your Name_January 2025  (all pages, last 2 months)',
+        'Bank Statement_Your Name_February 2025',
+        'Mortgage Statement_Property Address_March 2025',
+        'Homeowners Insurance_Property Address_2025',
+        'Property Tax Bill_Property Address_2025',
+        'Photo ID_Your Name',
       ]},
     ],
     checklist: [
@@ -183,33 +156,28 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Min. Equity', value: '15–20%', note: 'Must have this in your home' },
       { label: 'Max DTI', value: '43%', note: 'Including new HELOC payment' },
     ],
-    folderName: 'HELOC_Application',
     folders: [
-      { folder: 'Property', files: [
-        'Most recent mortgage statement (remaining balance)',
-        'Homeowners insurance declarations page',
-        'Most recent property tax bill',
-        'HOA statement (if applicable)',
-      ]},
-      { folder: 'Income', files: [
-        'W-2s — last 2 years',
-        'Pay stubs — most recent 30 days',
-        'Tax returns — last 2 years (if self-employed)',
-      ]},
-      { folder: 'Bank_Statements', files: [
-        'All accounts — last 2 months (all pages)',
-      ]},
-      { folder: 'Identification', files: [
-        'Government-issued photo ID',
+      { folder: 'Financial Information', files: [
+        'Tax Return_Your Name_2024  (if self-employed)',
+        'Tax Return_Your Name_2023  (if self-employed)',
+        'W-2_Your Name_2024',
+        'Pay Stub_Your Name_January 2025  (2 most recent)',
+        'Pay Stub_Your Name_February 2025',
+        'Bank Statement_Your Name_January 2025  (all pages, last 2 months)',
+        'Bank Statement_Your Name_February 2025',
+        'Mortgage Statement_Property Address_March 2025',
+        'Homeowners Insurance_Property Address_2025',
+        'Property Tax Bill_Property Address_2025',
+        'Photo ID_Your Name',
       ]},
     ],
     checklist: [
       { title: 'Before Applying', icon: '📅', items: [
-        { text: 'Estimate your available equity', detail: 'Home value × 0.85 minus your current mortgage balance = rough maximum HELOC. Cross-reference with your Dashboard data' },
+        { text: 'Estimate your available equity', detail: 'Home value × 0.85 minus your current mortgage balance = rough maximum HELOC. Cross-reference with your Dashboard' },
         { text: 'Check your credit score', detail: '700+ gets the best terms. Below 680 and some lenders won\'t approve at all' },
         { text: 'Calculate your DTI including a hypothetical HELOC payment', detail: 'Lenders qualify you at a stressed rate, not just the current draw rate' },
         { text: 'Decide between HELOC vs. home equity loan', detail: 'HELOC = flexible revolving line. HE Loan = fixed lump sum. Different tools for different needs' },
-        { text: 'Understand the draw period vs. repayment period', detail: 'Draw period typically 10 years (interest-only payments), then 20-year repayment of principal + interest' },
+        { text: 'Understand the draw period vs. repayment period', detail: 'Draw period typically 10 years (interest-only), then 20-year repayment of principal + interest' },
       ]},
     ],
     doList: [
@@ -236,24 +204,17 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Down Payment', value: '10–20%', note: 'Keeps you above car\'s value' },
       { label: 'Max DTI', value: '50%', note: 'Including new car payment' },
     ],
-    folderName: 'Auto_Loan',
     folders: [
-      { folder: 'Income', files: [
-        'Pay stubs — most recent 30 days (2 most recent)',
-        'Tax return — last year (if self-employed)',
-      ]},
-      { folder: 'Bank_Statements', files: [
-        'Last 1–2 months of bank statements',
-      ]},
-      { folder: 'Vehicle', files: [
-        'Vehicle information sheet (Year, Make, Model, VIN, Mileage)',
-        'Purchase agreement or dealer quote',
-        'Carfax or vehicle history report (for used vehicles)',
-      ]},
-      { folder: 'Identification', files: [
-        'Driver\'s license (required)',
-        'Proof of insurance (required before driving off the lot)',
-        'Proof of residence (utility bill or lease)',
+      { folder: 'Financial Information', files: [
+        'Pay Stub_Your Name_January 2025  (2 most recent)',
+        'Pay Stub_Your Name_February 2025',
+        'Tax Return_Your Name_2024  (if self-employed)',
+        'Bank Statement_Your Name_January 2025',
+        'Vehicle Purchase Agreement_Make Model Year_2025',
+        'Vehicle History Report_VIN Number',
+        'Proof of Insurance_Your Name_2025',
+        'Drivers License_Your Name',
+        'Proof of Residence_Your Name_March 2025  (utility bill or lease)',
       ]},
     ],
     checklist: [
@@ -266,7 +227,7 @@ export const LOAN_GUIDES: LoanGuide[] = [
       ]},
       { title: 'At the Dealership', icon: '✅', items: [
         { text: 'Don\'t reveal your pre-approval rate immediately', detail: 'Let them try to beat it — sometimes manufacturer programs offer lower rates' },
-        { text: 'Read the financing agreement line by line before signing', detail: 'Check for add-ons (GAP, extended warranty, paint protection) that were quietly included' },
+        { text: 'Read the financing agreement line by line before signing', detail: 'Check for add-ons (GAP, extended warranty, paint protection) quietly included' },
         { text: 'Confirm the term length matches what you discussed verbally', detail: 'Dealers sometimes extend the term to lower payments without your explicit agreement' },
       ]},
     ],
@@ -296,22 +257,18 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Total Borrow', value: '≤ Yr 1 Salary', note: 'Rule of thumb: don\'t exceed it' },
       { label: 'Rate Type', value: 'Fixed', note: 'Prefer fixed over variable' },
     ],
-    folderName: 'Student_Loan',
     folders: [
-      { folder: 'Federal_FAFSA', files: [
-        'FSA ID (create at StudentAid.gov — both student and parent need one)',
-        'Social Security number',
-        'Parents\' most recent tax return (if filing as a dependent)',
-        'Student tax return (if filed)',
-        'Bank account balances as of FAFSA filing date',
-        'Investment account values (excluding retirement accounts)',
-      ]},
-      { folder: 'Private_Loan_Docs', files: [
-        'Acceptance letter from your school',
-        'Cost of Attendance (COA) letter from the financial aid office',
-        'Proof of enrollment',
-        'Photo ID for student and cosigner',
-        'Cosigner income documentation (pay stubs and tax returns)',
+      { folder: 'Financial Information', files: [
+        'Tax Return_Parent Name_2024  (if filing as a dependent)',
+        'Tax Return_Student Name_2024  (if filed)',
+        'Bank Statement_Your Name_Date  (asset balance for FAFSA filing)',
+        'Enrollment Verification_Your Name_2025',
+        'Cost of Attendance Letter_School Name_2025',
+        'Acceptance Letter_School Name_2025',
+        'Photo ID_Your Name',
+        'Cosigner Tax Return_Cosigner Name_2024  (for private loans)',
+        'Cosigner Pay Stub_Cosigner Name_January 2025  (for private loans)',
+        'Cosigner Photo ID_Cosigner Name  (for private loans)',
       ]},
     ],
     checklist: [
@@ -333,7 +290,7 @@ export const LOAN_GUIDES: LoanGuide[] = [
     doList: [
       'File FAFSA every single year — it does not auto-renew',
       'Accept grants and scholarships → federal subsidized → federal unsubsidized → private',
-      'Track your total borrowed amount across all loans over all years',
+      'Track your total borrowed amount across all loans and all years',
       'Look into income-driven repayment plans for federal loans',
       'Consider Public Service Loan Forgiveness if entering government or nonprofit work',
     ],
@@ -356,19 +313,14 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Loan Amounts', value: '$1K–$100K', note: 'Varies by lender' },
       { label: 'No Collateral', value: 'Unsecured', note: 'Your credit is all that matters' },
     ],
-    folderName: 'Personal_Loan',
     folders: [
-      { folder: 'Income', files: [
-        'Pay stubs — most recent 30 days',
-        'Tax returns — last 1–2 years (if self-employed)',
-        'Social Security or pension award letters (if applicable)',
-      ]},
-      { folder: 'Identification', files: [
-        'Government-issued photo ID',
-        'Social Security number',
-      ]},
-      { folder: 'Bank_Statements', files: [
-        'Last 1–2 months of bank statements',
+      { folder: 'Financial Information', files: [
+        'Pay Stub_Your Name_January 2025  (2 most recent)',
+        'Pay Stub_Your Name_February 2025',
+        'Tax Return_Your Name_2024  (if self-employed)',
+        'Bank Statement_Your Name_January 2025',
+        'Bank Statement_Your Name_February 2025',
+        'Photo ID_Your Name',
       ]},
     ],
     checklist: [
@@ -404,38 +356,25 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'DSCR', value: '1.25×+', note: 'Revenue must cover debt payments' },
       { label: 'Down Payment', value: '10–30%', note: 'Varies by loan type' },
     ],
-    folderName: 'Business_Loan',
     folders: [
-      { folder: 'Business_Financial_Docs', files: [
-        'Business tax returns — last 3 years (all pages)',
-        'Business bank statements — last 6–12 months (all pages)',
-        'Profit & Loss statement — current year to date',
-        'Balance sheet — current (within 60–90 days)',
-        'Business debt schedule (list of all existing business debt with balances and payments)',
-        'Accounts receivable and payable aging reports',
-      ]},
-      { folder: 'Business_Legal_Docs', files: [
-        'Articles of incorporation or organization',
-        'Operating agreement (LLC) or bylaws (corporation)',
-        'Business licenses and permits',
-        'EIN confirmation letter from IRS',
-        'Existing leases (office, equipment, vehicles)',
-        'Franchise agreement (if applicable)',
-      ]},
-      { folder: 'Personal_Financial_Docs', files: [
-        'Personal tax returns — last 3 years (all owners with 20%+ ownership)',
-        'Personal financial statement (assets and liabilities for each owner)',
-        'Personal bank statements — last 2–3 months',
-        'Resume or background summary for all principal owners',
-      ]},
-      { folder: 'Loan_Purpose_Docs', files: [
-        'Business plan with financial projections (for expansion or startup loans)',
-        'Use of proceeds statement (exact breakdown of how funds will be used)',
-        'Purchase contract (if buying real estate, a business, or major equipment)',
-        'Construction estimates (if applicable)',
-      ]},
-      { folder: 'Identification', files: [
-        'Government-issued photo ID for all owners with 20%+ ownership',
+      { folder: 'Financial Information', files: [
+        'Business Tax Return_Business Name_2024',
+        'Business Tax Return_Business Name_2023',
+        'Business Tax Return_Business Name_2022',
+        'Personal Tax Return_Your Name_2024',
+        'Personal Tax Return_Your Name_2023',
+        'Personal Tax Return_Your Name_2022',
+        'Business Bank Statement_Business Name_January 2025  (last 6–12 months)',
+        'Business Bank Statement_Business Name_February 2025',
+        'Personal Bank Statement_Your Name_January 2025  (last 2–3 months)',
+        'Personal Bank Statement_Your Name_February 2025',
+        'P&L Statement_Business Name_YTD 2025',
+        'Balance Sheet_Business Name_March 2025',
+        'Business Debt Schedule_Business Name_2025',
+        'Personal Financial Statement_Your Name_2025',
+        'Articles of Incorporation_Business Name',
+        'Business License_Business Name_2025',
+        'Photo ID_Your Name',
       ]},
     ],
     checklist: [
@@ -481,36 +420,27 @@ export const LOAN_GUIDES: LoanGuide[] = [
       { label: 'Time in Business', value: '2+ years', note: 'Startup programs also exist' },
       { label: 'DSCR', value: '1.25×+', note: 'Business income must cover payments' },
     ],
-    folderName: 'SBA_Loan',
     folders: [
-      { folder: 'SBA_Forms', files: [
-        'SBA Form 1919 — Borrower Information Form (complete for all 20%+ owners)',
-        'SBA Form 912 — Statement of Personal History',
-        'SBA Form 413 — Personal Financial Statement (all 20%+ owners)',
-        'SBA Form 148 — Unconditional Guarantee (if applicable)',
-      ]},
-      { folder: 'Business_Docs', files: [
-        'Business tax returns — last 3 years (all pages)',
-        'Business bank statements — last 6 months (all pages)',
-        'Year-to-date Profit & Loss statement (within 60 days)',
-        'Current balance sheet',
-        'Business debt schedule',
-        'Business licenses and registration',
-        'Articles of incorporation or operating agreement',
-        'All leases for business premises',
-      ]},
-      { folder: 'Personal_Docs', files: [
-        'Personal tax returns — last 3 years (all owners with 20%+ ownership)',
-        'Personal financial statement (SBA Form 413)',
-        'Personal bank statements — last 3 months',
-        'Photo ID for all 20%+ owners',
-      ]},
-      { folder: 'Loan_Purpose', files: [
-        'Business plan with 3–5 year financial projections',
-        'Detailed use of proceeds statement',
-        'Purchase contracts or invoices (if buying equipment or real estate)',
-        'Construction estimates (if applicable)',
-        'Environmental reports (if acquiring real estate)',
+      { folder: 'Financial Information', files: [
+        'SBA Form 1919_Your Name_2025',
+        'SBA Form 912_Your Name_2025',
+        'SBA Form 413_Your Name_2025  (Personal Financial Statement)',
+        'Business Tax Return_Business Name_2024',
+        'Business Tax Return_Business Name_2023',
+        'Business Tax Return_Business Name_2022',
+        'Personal Tax Return_Your Name_2024',
+        'Personal Tax Return_Your Name_2023',
+        'Personal Tax Return_Your Name_2022',
+        'Business Bank Statement_Business Name_January 2025  (last 6 months)',
+        'Business Bank Statement_Business Name_February 2025',
+        'Personal Bank Statement_Your Name_January 2025  (last 3 months)',
+        'P&L Statement_Business Name_YTD 2025',
+        'Balance Sheet_Business Name_March 2025',
+        'Business Plan_Business Name_2025',
+        'Use of Proceeds_Business Name_2025',
+        'Business License_Business Name',
+        'Articles of Incorporation_Business Name',
+        'Photo ID_Your Name',
       ]},
     ],
     checklist: [
