@@ -35,8 +35,8 @@ workflows:
 
       - name: Build .ipa
         script: |
-          # Write API key to temp file for xcodebuild auth
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/AuthKey.p8
+          # Write API key to temp file — convert escaped \n back to real newlines
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" | sed 's/\\n/\n/g' > /tmp/AuthKey.p8
           chmod 600 /tmp/AuthKey.p8
 
           # Archive — action first, build settings last
