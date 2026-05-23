@@ -122,6 +122,19 @@
     </div>
   </div>
 
+  <!-- ── In-app progress banner (active users only, privacy-safe) ────── -->
+  @if (progressMsg() && !bannerDismissed()) {
+    <div class="progress-banner" [class.dir-up]="progressDirUp() === true" [class.dir-down]="progressDirUp() === false">
+      <span class="progress-banner-icon">
+        @if (progressDirUp() === true)  { 📈 }
+        @else if (progressDirUp() === false) { 💡 }
+        @else { 📊 }
+      </span>
+      <span class="progress-banner-text">{{ progressMsg() }}</span>
+      <button class="progress-banner-close" (click)="dismissBanner()" aria-label="Dismiss">✕</button>
+    </div>
+  }
+
   <!-- ── Install App Modal (mobile only) ─────────────────────────────── -->
   @if (showInstallModal()) {
     <div class="install-modal-backdrop" (click)="showInstallModal.set(false)">

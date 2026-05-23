@@ -6,6 +6,7 @@ import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { AppInstallService } from '../../services/app-install.service';
+import { PushNotificationService } from '../../services/push-notification.service';
 import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.models';
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
@@ -32,11 +33,17 @@ interface ChartSvgData {
 export class DashboardComponent implements OnInit {
   private svc   = inject(FinanceService);
   private auth  = inject(AuthService);
+  private push  = inject(PushNotificationService);
   private toast = inject(ToastService);
   private http  = inject(HttpClient);
   private base  = environment.apiUrl;
   readonly install$ = inject(AppInstallService);
   readonly showInstallModal = signal(false);
+
+  // ── In-app progress banner ───────────────────────────────────────────────
+  progressMsg    = signal<string | null>(null);
+  progressDirUp  = signal<boolean | null>(null);  // true=improved, false=declined, null=neutral
+  bannerDismissed = signal(false);
 
   async triggerInstall() {
     const installed = await this.install$.install();
@@ -468,11 +475,41 @@ export class DashboardComponent implements OnInit {
     }
 
     let pending = 4;
-    const done = () => { if (--pending === 0) this.loading.set(false); };
+    const done = () => {
+      if (--pending === 0) {
+        this.loading.set(false);
+        this.computeProgressBanner();
+      }
+    };
     this.svc.getAccounts().subscribe({ next: a => { this.accounts.set(a); done(); }, error: done });
     this.svc.getSnapshots().subscribe({ next: s => { this.snapshots.set(s); done(); }, error: done });
     this.svc.getBudget().subscribe({ next: b => { this.budgetItems.set(b); done(); }, error: done });
     this.svc.getIncome().subscribe({ next: i => { this.income.set(i); done(); }, error: done });
+  }
+
+  // ── In-app progress banner ───────────────────────────────────────────────
+  private computeProgressBanner() {
+    const snaps = this.snapshots();
+    const msg   = this.push.pickInAppMessage(snaps);
+    if (!msg) return;
+
+    this.progressMsg.set(msg);
+
+    // Determine direction for icon/colour
+    if (snaps.length >= 2) {
+      const [latest, prev] = snaps;
+      const improved = [
+        latest.netWorth > prev.netWorth,
+        latest.totalAssets > prev.totalAssets,
+        latest.totalLiabilities < prev.totalLiabilities,
+      ].filter(Boolean).length;
+      this.progressDirUp.set(improved >= 2 ? true : improved <= 0 ? false : null);
+    }
+  }
+
+  dismissBanner() {
+    this.bannerDismissed.set(true);
+    this.progressMsg.set(null);
   }
 
   // ── Logout ───────────────────────────────────────────────────────────────

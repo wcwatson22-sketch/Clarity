@@ -8,6 +8,7 @@ import { HttpClient } from '@angular/common/http';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './services/auth.service';
+import { PushNotificationService } from './services/push-notification.service';
 import { ToastComponent } from './components/toast/toast.component';
 import { OnboardingComponent } from './components/onboarding/onboarding.component';
 import { ErrorBoundaryComponent } from './components/error-boundary/error-boundary.component';
@@ -435,6 +436,7 @@ import { environment } from '../environments/environment';
 export class AppComponent {
   private sanitizer = inject(DomSanitizer);
   private auth      = inject(AuthService);
+  private push      = inject(PushNotificationService);
   private router    = inject(Router);
   private http      = inject(HttpClient);
   private base      = environment.apiUrl;
@@ -568,5 +570,10 @@ export class AppComponent {
     // Refresh user data from server on every app load so emailVerified,
     // tier, trialEndsAt etc. are never served from a stale localStorage cache
     this.auth.refreshIfLoggedIn();
+
+    // Slide the next push notification 7 days forward on every app open.
+    // Active users (weekly openers) will never see the push because it keeps
+    // getting rescheduled. Only users who miss 7+ days will receive it.
+    this.push.rescheduleOnAppOpen();
   }
 }

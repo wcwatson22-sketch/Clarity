@@ -6,6 +6,50 @@
   gap: 20px;
 }
 
+/* ── In-app progress banner ─────────────────────────────────────────── */
+.progress-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #F0FBF7;
+  border: 1px solid #A7F3D0;
+  border-left: 4px solid #1D9E75;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  color: #065F46;
+  line-height: 1.4;
+  animation: slideDown 0.3s ease;
+
+  &.dir-down {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    border-left-color: #D97706;
+    color: #78350F;
+  }
+
+  &.dir-up {
+    background: #F0FBF7;
+    border-color: #A7F3D0;
+    border-left-color: #1D9E75;
+    color: #065F46;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.progress-banner-icon { font-size: 18px; flex-shrink: 0; }
+.progress-banner-text { flex: 1; font-weight: 500; }
+.progress-banner-close {
+  background: none; border: none; padding: 2px 6px;
+  color: currentColor; opacity: 0.5; cursor: pointer;
+  font-size: 13px; border-radius: 4px; flex-shrink: 0;
+  &:hover { opacity: 1; }
+}
+
 /* ── Get the App button (mobile only) ───────────────────────────────── */
 .get-app-btn {
   display: none; /* shown only on mobile via media query below */
