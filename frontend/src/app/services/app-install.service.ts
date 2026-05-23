@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 
 @Injectable({ providedIn: 'root' })
 export class AppInstallService {
@@ -10,6 +11,9 @@ export class AppInstallService {
 
   constructor() {
     if (typeof window === 'undefined') return;
+
+    // Running inside native Capacitor app — never show install prompts
+    if (Capacitor.isNativePlatform()) { this.isInstalled.set(true); return; }
 
     // Already running as installed PWA
     const standalone =

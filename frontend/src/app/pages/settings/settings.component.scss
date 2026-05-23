@@ -200,7 +200,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .notif-info { flex: 1; min-width: 0; }
@@ -222,38 +221,48 @@
   line-height: 1.5;
 }
 
-.btn-notif-on {
-  background: #1D9E75;
-  color: #fff;
+/* iOS-style toggle switch */
+.toggle-switch {
+  width: 51px;
+  height: 31px;
+  border-radius: 20px;
+  background: #D1D5DB;
   border: none;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
+  position: relative;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.22s ease;
+  padding: 0;
+  outline: none;
 
-  &:hover:not(:disabled) { background: #178A64; }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &.on { background: #1D9E75; }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.35);
+  }
 }
 
-.btn-notif-off {
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
   background: #fff;
-  border: 1.5px solid #D1D5DB;
-  color: #374151;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s ease;
+  display: block;
+  pointer-events: none;
+}
 
-  &:hover:not(:disabled) { border-color: #9CA3AF; }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+.toggle-switch.on .toggle-knob {
+  transform: translateX(20px);
 }
 
 /* ── Danger Zone ──────────────────────────────────────────────────────── */

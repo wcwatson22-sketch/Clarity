@@ -353,16 +353,19 @@ import { environment } from '../environments/environment';
       bottom: 0; left: 0; right: 0;
       background: #fff;
       border-top: 1px solid #E5E7EB;
-      padding: 8px 0;
+      padding: 6px 0;
+      z-index: 300;       /* always above page content */
     }
     .bottom-item {
       flex: 1; display: flex; flex-direction: column;
-      align-items: center; gap: 3px;
-      color: #9CA3AF; text-decoration: none; font-size: 11px;
+      align-items: center; gap: 2px;
+      color: #9CA3AF; text-decoration: none;
+      padding: 4px 0;
       transition: color 0.15s;
+      min-width: 0;
     }
     .bottom-active { color: #1D9E75 !important; }
-    .bottom-label { font-size: 10px; }
+    .bottom-label { font-size: 10px; font-weight: 500; }
 
     /* Email verification banner */
     .verify-banner {
@@ -406,7 +409,8 @@ import { environment } from '../environments/environment';
 
     @media (max-width: 768px) {
       .sidebar { display: none; }
-      .main-content { margin-left: 0; padding: 16px 14px 88px; }
+      /* 12px top/sides, 80px bottom clears the fixed bottom nav */
+      .main-content { margin-left: 0; padding: 12px 12px 80px; overflow-x: hidden; max-width: 100vw; }
       .main-content.full-width { padding: 0; }
       .bottom-nav { display: flex; }
     }
@@ -415,10 +419,15 @@ import { environment } from '../environments/environment';
     @supports (padding-top: env(safe-area-inset-top)) {
       @media (max-width: 768px) {
         .main-content {
-          padding-top: calc(16px + env(safe-area-inset-top));
-          padding-bottom: calc(88px + env(safe-area-inset-bottom));
+          padding-top: calc(12px + env(safe-area-inset-top));
+          padding-bottom: calc(80px + env(safe-area-inset-bottom));
         }
-        .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+        .bottom-nav {
+          padding-bottom: env(safe-area-inset-bottom);
+          /* ensure knob stays within screen height */
+          height: calc(56px + env(safe-area-inset-bottom));
+          align-items: flex-start;
+        }
       }
     }
   `]

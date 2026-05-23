@@ -262,39 +262,44 @@
   <!-- ── Notifications ──────────────────────────────────────────────── -->
   <div class="settings-card">
     <h2 class="card-title">Notifications</h2>
-    <p class="card-sub">Get alerts when your trial is ending or account activity occurs</p>
+    <p class="card-sub">Weekly reminders to review your finances and stay on track</p>
 
     @if (!push.supported()) {
       <div class="notif-row">
         <div class="notif-info">
-          <span class="notif-status off">🔕 Notifications unavailable</span>
-          <p class="notif-desc">Push notifications are not supported in this browser. Try Chrome or Edge for the best experience, or install the app on your phone.</p>
+          <span class="notif-status off">🔕 Not available</span>
+          <p class="notif-desc">Notifications are not supported in this browser.</p>
         </div>
-      </div>
-    } @else if (push.permission() === 'denied') {
-      <div class="alert alert-error">
-        Notifications are blocked in your browser. To enable them, go to your browser settings and allow notifications for this site.
-      </div>
-    } @else if (push.subscribed()) {
-      <div class="notif-row">
-        <div class="notif-info">
-          <span class="notif-status on">🔔 Notifications are on</span>
-          <p class="notif-desc">You'll be notified about trial expiry, subscription changes, and important updates.</p>
-        </div>
-        <button class="btn-notif-off" (click)="disableNotifications()" [disabled]="push.loading()">
-          {{ push.loading() ? 'Updating…' : 'Turn Off' }}
-        </button>
       </div>
     } @else {
+      <!-- Main toggle -->
       <div class="notif-row">
         <div class="notif-info">
-          <span class="notif-status off">🔕 Notifications are off</span>
-          <p class="notif-desc">Enable to get reminders when your trial is ending and other important alerts.</p>
+          <span class="notif-status" [class.on]="push.subscribed()" [class.off]="!push.subscribed()">
+            {{ push.subscribed() ? '🔔 Notifications On' : '🔕 Notifications Off' }}
+          </span>
+          <p class="notif-desc">
+            {{ push.subscribed()
+              ? 'You\'ll receive reminders every Tuesday and Friday at 7 pm.'
+              : 'Get 2 reminders per week to log changes and stay on top of your finances.' }}
+          </p>
         </div>
-        <button class="btn-notif-on" (click)="enableNotifications()" [disabled]="push.loading()">
-          {{ push.loading() ? 'Enabling…' : 'Enable' }}
+        <!-- iOS-style toggle -->
+        <button
+          class="toggle-switch"
+          [class.on]="push.subscribed()"
+          [disabled]="push.loading()"
+          (click)="toggleNotifications()"
+          aria-label="Toggle notifications">
+          <span class="toggle-knob"></span>
         </button>
       </div>
+
+      @if (push.permission() === 'denied') {
+        <div class="alert alert-error" style="margin-top:12px">
+          Notifications are blocked. Go to your phone Settings → Clarity → Notifications to allow them.
+        </div>
+      }
     }
   </div>
 

@@ -244,18 +244,26 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  async toggleNotifications() {
+    if (this.push.subscribed()) {
+      await this.disableNotifications();
+    } else {
+      await this.enableNotifications();
+    }
+  }
+
   async enableNotifications() {
     const ok = await this.push.enable();
-    if (ok) this.toast.success('Notifications enabled!');
+    if (ok) this.toast.success('Notifications enabled! You\'ll hear from us Tuesdays & Fridays 🔔');
     else if (this.push.permission() === 'denied')
-      this.toast.error('Notifications blocked in browser settings. Please enable them manually.');
+      this.toast.error('Notifications blocked. Go to Settings → Clarity → Notifications to allow them.');
     else
-      this.toast.error('Could not enable notifications. Try again.');
+      this.toast.error('Could not enable notifications. Please try again.');
   }
 
   async disableNotifications() {
     await this.push.disable();
-    this.toast.success('Notifications disabled.');
+    this.toast.success('Notifications turned off.');
   }
 
   deleteAccount() {
