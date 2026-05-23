@@ -7,11 +7,12 @@ import { ToastService } from '../../services/toast.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
+import { NumericDirective } from '../../directives/numeric.directive';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, NumericDirective],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })

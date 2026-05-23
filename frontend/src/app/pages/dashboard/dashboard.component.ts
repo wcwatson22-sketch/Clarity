@@ -10,6 +10,7 @@ import { PushNotificationService } from '../../services/push-notification.servic
 import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.models';
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
+import { NumericDirective } from '../../directives/numeric.directive';
 
 interface AccountGroup { name: string; accounts: Account[]; total: number; }
 interface MomentumItem { sentence: string; delta: number; isGood: boolean; }
@@ -26,7 +27,7 @@ interface ChartSvgData {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DatePipe, PercentPipe, RouterLink],
+  imports: [CommonModule, DatePipe, PercentPipe, RouterLink, NumericDirective],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })

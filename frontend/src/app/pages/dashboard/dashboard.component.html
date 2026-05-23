@@ -527,7 +527,7 @@
                       <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
                     }
                   </select>
-                  <input class="value-input" type="number" placeholder="0" min="0"
+                  <input class="value-input" appNumeric placeholder="0"
                     [value]="account.value || ''"
                     (change)="updateValue(account, $any($event.target).value)" />
                   <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
@@ -544,7 +544,7 @@
                     <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
                   }
                   @if (editingValueId() === account.id) {
-                    <input class="value-input" type="number" autofocus [value]="account.value" min="0"
+                    <input class="value-input" appNumeric autofocus [value]="account.value"
                       (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
                       (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
                   } @else {
@@ -615,7 +615,7 @@
                       <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
                     }
                   </select>
-                  <input class="value-input" type="number" placeholder="0" min="0"
+                  <input class="value-input" appNumeric placeholder="0"
                     [value]="account.value || ''"
                     (change)="updateValue(account, $any($event.target).value)" />
                   <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
@@ -631,7 +631,7 @@
                     <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
                   }
                   @if (editingValueId() === account.id) {
-                    <input class="value-input" type="number" autofocus [value]="account.value" min="0"
+                    <input class="value-input" appNumeric autofocus [value]="account.value"
                       (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
                       (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
                   } @else {

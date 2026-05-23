@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../services/finance.service';
 import { ToastService } from '../../services/toast.service';
 import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models';
+import { NumericDirective } from '../../directives/numeric.directive';
 
 const TARGETS_KEY = 'clarity_budget_targets';
 
 @Component({
   selector: 'app-cash-flow',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, PercentPipe],
+  imports: [CommonModule, FormsModule, CurrencyPipe, PercentPipe, NumericDirective],
   templateUrl: './cash-flow.component.html',
   styleUrl: './cash-flow.component.scss'
 })

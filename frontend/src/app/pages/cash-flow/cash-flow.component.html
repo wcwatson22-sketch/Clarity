@@ -23,7 +23,7 @@
           <label class="field-label">Gross Monthly Income</label>
           <div class="input-prefix">
             <span class="prefix">$</span>
-            <input type="number" [value]="income().grossMonthlyIncome" min="0"
+            <input appNumeric [value]="income().grossMonthlyIncome"
               (change)="updateGross($any($event.target).value)" class="dollar-input" />
           </div>
         </div>
@@ -31,7 +31,7 @@
           <label class="field-label">Net / Take-Home Pay</label>
           <div class="input-prefix">
             <span class="prefix">$</span>
-            <input type="number" [value]="income().netMonthlyIncome" min="0"
+            <input appNumeric [value]="income().netMonthlyIncome"
               (change)="updateNet($any($event.target).value)" class="dollar-input" />
           </div>
         </div>
@@ -43,7 +43,7 @@
             <label class="field-label">{{ fmtMonth(m.month) }}</label>
             <div class="input-prefix">
               <span class="prefix">$</span>
-              <input type="number" [value]="m.amount" min="0"
+              <input appNumeric [value]="m.amount"
                 (change)="updateVariableMonth(i, $any($event.target).value)" class="dollar-input" />
             </div>
           </div>
@@ -251,7 +251,7 @@
                 (blur)="updateItem(item, 'name', $any($event.target).value)" />
               <div class="input-prefix small">
                 <span class="prefix">$</span>
-                <input type="number" class="dollar-input" [value]="item.amount" min="0"
+                <input appNumeric class="dollar-input" [value]="item.amount"
                   (change)="updateItem(item, 'amount', $any($event.target).value)" />
               </div>
               <button class="delete-btn" (click)="deleteItem(item.id, item.name)">✕</button>
@@ -262,7 +262,7 @@
             <!-- Budget target setter -->
             <div class="target-setter">
               @if (editingTarget() === group.key) {
-                <input class="target-input" type="number" placeholder="Monthly budget…" min="0" autofocus
+                <input class="target-input" appNumeric placeholder="Monthly budget…" autofocus
                   (blur)="setTarget(group.key, $any($event.target).value)"
                   (keydown.enter)="setTarget(group.key, $any($event.target).value)"
                   (keydown.escape)="editingTarget.set(null)"

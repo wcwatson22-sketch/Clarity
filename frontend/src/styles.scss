@@ -55,6 +55,16 @@ app-root { display: block; max-width: 100vw; overflow-x: hidden; }
 
 input, button, select, textarea { font-family: inherit; }
 
+/* ── Prevent iOS Safari from zooming on input focus ─────────────────── */
+/* iOS zooms in when an input's font-size is below 16px.                 */
+/* This is the primary fix; the viewport maximum-scale=1 is a fallback.  */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* ── Remove number-input spinners (still used for type="number" fallback) */
 input[type="number"] {
   -moz-appearance: textfield;
   &::-webkit-inner-spin-button,

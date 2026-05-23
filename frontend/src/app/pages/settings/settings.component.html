@@ -72,7 +72,7 @@
 
       <div class="field-group field-age">
         <label class="field-label">Age</label>
-        <input class="field-input" type="number" min="18" max="120"
+        <input class="field-input" appNumeric="integer" placeholder="18"
           [value]="age()" (input)="age.set($any($event.target).value)" />
       </div>
 
