@@ -36,6 +36,11 @@ workflows:
           cd frontend
           npx cap sync ios
 
+      - name: Set build number
+        script: |
+          cd frontend/ios/App
+          xcrun agvtool new-version -all $BUILD_NUMBER
+
       - name: Set up code signing
         script: xcode-project use-profiles
 
