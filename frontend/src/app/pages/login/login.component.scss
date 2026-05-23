@@ -19,20 +19,13 @@
 
 .auth-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: center;
   margin-bottom: 28px;
 }
-.brand-dot {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: #1D9E75;
-  flex-shrink: 0;
-}
-.brand-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+.brand-logo {
+  width: 160px;
+  height: auto;
+  display: block;
 }
 
 .auth-title {

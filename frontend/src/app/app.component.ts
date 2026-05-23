@@ -1,4 +1,5 @@
-﻿import { Component, inject, computed, signal } from '@angular/core';
+﻿import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,13 +13,17 @@ import { OnboardingComponent } from './components/onboarding/onboarding.componen
 import { ErrorBoundaryComponent } from './components/error-boundary/error-boundary.component';
 import { TermsModalComponent } from './components/terms-modal/terms-modal.component';
 import { InstallBannerComponent } from './components/install-banner/install-banner.component';
+import { SplashComponent } from './components/splash/splash.component';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, FormsModule, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, FormsModule, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent, SplashComponent],
   template: `
+    @if (showSplash()) {
+      <app-splash (done)="showSplash.set(false)" />
+    }
     <div class="app-shell" [class.auth-layout]="isAuthPage()">
 
       @if (!isAuthPage()) {
@@ -514,6 +519,9 @@ export class AppComponent {
 
   onOnboardingDone() { this._onboardingDismissed.set(true); }
   logout() { this.auth.logout(); }
+
+  // Splash screen — only on native Capacitor (iOS/Android), not web
+  showSplash = signal(Capacitor.isNativePlatform());
 
   // Help & Feedback modal
   showHelpModal = signal(false);
