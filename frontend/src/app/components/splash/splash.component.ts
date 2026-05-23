@@ -92,7 +92,6 @@ import { NgClass } from '@angular/common';
     .splash-logo img {
       width: 200px;
       height: auto;
-      filter: brightness(0) invert(1);
     }
   `]
 })
@@ -103,14 +102,14 @@ export class SplashComponent implements OnInit {
   fadingOut    = false;
 
   ngOnInit() {
-    // Fog plays immediately, logo fades in after 600ms
-    setTimeout(() => { this.logoVisible = true; }, 600);
+    // Fog plays immediately, logo fades in after 700ms
+    setTimeout(() => { this.logoVisible = true; }, 700);
 
-    // Hold for 2.2s total then fade the whole splash out
+    // Hold for 3s total then fade the whole splash out
     setTimeout(() => {
       this.fadingOut = true;
       // After fade-out transition (800ms) notify parent to remove
       setTimeout(() => this.done.emit(), 800);
-    }, 2200);
+    }, 3000);
   }
 }

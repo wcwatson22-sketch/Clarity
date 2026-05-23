@@ -2,6 +2,7 @@ import { ApplicationConfig, ErrorHandler, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
+import { Capacitor } from '@capacitor/core';
 import { routes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { GlobalErrorHandler } from './components/error-boundary/error-boundary.component';
@@ -11,8 +12,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    // Disable service worker on native (Capacitor) — iOS 16+ supports SW in WKWebView
+    // but Angular's ngsw navigation handler intercepts API calls returning index.html
     provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode(),
+      enabled: !isDevMode() && !Capacitor.isNativePlatform(),
       registrationStrategy: 'registerWhenStable:30000'
     }),
   ]
