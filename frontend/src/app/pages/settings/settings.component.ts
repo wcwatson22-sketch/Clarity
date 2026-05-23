@@ -254,7 +254,7 @@ export class SettingsComponent implements OnInit {
 
   async enableNotifications() {
     const ok = await this.push.enable();
-    if (ok) this.toast.success('Notifications enabled! You\'ll hear from us Tuesdays & Fridays 🔔');
+    if (ok) this.toast.success('Notifications enabled! We\'ll check in once a week 🔔');
     else if (this.push.permission() === 'denied')
       this.toast.error('Notifications blocked. Go to Settings → Clarity → Notifications to allow them.');
     else
