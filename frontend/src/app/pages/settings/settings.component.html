@@ -339,6 +339,21 @@
     }
   </div>
 
+  <!-- ── Help & Feedback ──────────────────────────────────────────────── -->
+  <div class="settings-card help-card">
+    <h2 class="card-title">Help & Feedback</h2>
+    <p class="card-sub">Have a question, found a bug, or want to share feedback?</p>
+    <textarea
+      class="help-textarea"
+      placeholder="Describe your question or issue..."
+      [(ngModel)]="helpMessage"
+      rows="4">
+    </textarea>
+    <button class="btn-help-send" (click)="submitHelp()" [disabled]="!helpMessage.trim()">
+      ✉️ Send to Support
+    </button>
+  </div>
+
   <!-- ── Legal ───────────────────────────────────────────────────────── -->
   <div class="legal-links">
     <a routerLink="/terms">Terms of Service</a>

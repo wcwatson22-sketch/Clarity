@@ -359,4 +359,37 @@
   .btn-danger { width: 100%; }
   .delete-confirm-actions { flex-direction: column; }
   .btn-confirm-delete, .btn-keep-plan { width: 100%; text-align: center; }
+  .btn-help-send { width: 100%; }
+}
+
+/* ── Help & Feedback card ─────────────────────────────────────────────── */
+.help-card {
+  .help-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    color: #111827;
+    margin-bottom: 12px;
+    display: block;
+    &:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
+  }
+  .btn-help-send {
+    background: #1D9E75;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover:not(:disabled) { background: #158060; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
 }

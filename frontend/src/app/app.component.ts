@@ -1,6 +1,7 @@
 ﻿import { Component, inject, computed, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 import { NgClass, NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { filter, map } from 'rxjs/operators';
@@ -16,7 +17,7 @@ import { environment } from '../environments/environment';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, FormsModule, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent],
   template: `
     <div class="app-shell" [class.auth-layout]="isAuthPage()">
 
@@ -69,6 +70,13 @@ import { environment } from '../environments/environment';
                 <span class="user-id">ID #{{ currentUser()?.id }}</span>
               </div>
             </div>
+            <button class="help-btn" (click)="openHelp()" title="Help & Feedback">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </button>
             <button class="logout-btn" (click)="logout()" title="Sign out">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -78,6 +86,31 @@ import { environment } from '../environments/environment';
             </button>
           </div>
         </nav>
+      }
+
+      <!-- Help & Feedback modal -->
+      @if (showHelpModal()) {
+        <div class="help-overlay" (click)="closeHelp()">
+          <div class="help-modal" (click)="$event.stopPropagation()">
+            <div class="help-modal-header">
+              <h3>Help & Feedback</h3>
+              <button class="help-close" (click)="closeHelp()">✕</button>
+            </div>
+            <p class="help-subtitle">Have a question or found a bug? Send us a message and we'll get back to you.</p>
+            <textarea
+              class="help-textarea"
+              placeholder="Describe your question or issue..."
+              [(ngModel)]="helpMessage"
+              rows="5">
+            </textarea>
+            <div class="help-actions">
+              <button class="help-cancel" (click)="closeHelp()">Cancel</button>
+              <button class="help-send" (click)="submitHelp()" [disabled]="!helpMessage().trim()">
+                Send Email
+              </button>
+            </div>
+          </div>
+        </div>
       }
 
       <!-- Main content -->
@@ -201,6 +234,67 @@ import { environment } from '../environments/environment';
       transition: all 0.15s; flex-shrink: 0;
     }
     .logout-btn:hover { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+    .help-btn {
+      border: 1px solid #E5E7EB; background: none;
+      border-radius: 8px; padding: 6px;
+      color: #9CA3AF; cursor: pointer;
+      display: flex; align-items: center;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .help-btn:hover { background: #EFF6FF; border-color: #BFDBFE; color: #2563EB; }
+
+    /* Help modal */
+    .help-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .help-modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .help-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .help-modal-header h3 { margin: 0; font-size: 17px; font-weight: 700; color: #111827; }
+    .help-close {
+      background: none; border: none; font-size: 16px;
+      color: #9CA3AF; cursor: pointer; padding: 2px 6px;
+      border-radius: 6px;
+      &:hover { background: #F3F4F6; color: #374151; }
+    }
+    .help-subtitle { margin: 0 0 16px; font-size: 13px; color: #6B7280; line-height: 1.5; }
+    .help-textarea {
+      width: 100%; box-sizing: border-box;
+      border: 1px solid #E5E7EB; border-radius: 10px;
+      padding: 12px; font-size: 14px; font-family: inherit;
+      resize: vertical; outline: none; color: #111827;
+      &:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
+    }
+    .help-actions {
+      display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;
+    }
+    .help-cancel {
+      background: #F3F4F6; border: none; border-radius: 10px;
+      padding: 10px 18px; font-size: 14px; font-weight: 500;
+      color: #374151; cursor: pointer;
+      &:hover { background: #E5E7EB; }
+    }
+    .help-send {
+      background: #1D9E75; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 14px; font-weight: 600;
+      color: #fff; cursor: pointer;
+      transition: background 0.15s;
+      &:hover:not(:disabled) { background: #158060; }
+      &:disabled { opacity: 0.45; cursor: not-allowed; }
+    }
 
     /* Disclaimer */
     .sidebar-disclaimer {
@@ -420,6 +514,22 @@ export class AppComponent {
 
   onOnboardingDone() { this._onboardingDismissed.set(true); }
   logout() { this.auth.logout(); }
+
+  // Help & Feedback modal
+  showHelpModal = signal(false);
+  helpMessage   = signal('');
+
+  openHelp()  { this.showHelpModal.set(true); }
+  closeHelp() { this.showHelpModal.set(false); this.helpMessage.set(''); }
+
+  submitHelp() {
+    const msg  = this.helpMessage().trim();
+    const user = this.currentUser()?.username ?? 'User';
+    const subj = encodeURIComponent(`Clarity App Feedback — ${user}`);
+    const body = encodeURIComponent(msg);
+    window.open(`mailto:clarityfinancialtools@gmail.com?subject=${subj}&body=${body}`, '_blank');
+    this.closeHelp();
+  }
 
   private _rawNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>` },

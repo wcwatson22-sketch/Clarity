@@ -67,6 +67,17 @@ export class SettingsComponent implements OnInit {
   // Display preferences
   expandDefault = signal(localStorage.getItem('clarity-expand-default') === 'true');
 
+  // Help & Feedback
+  helpMessage = '';
+  submitHelp() {
+    const msg  = this.helpMessage.trim();
+    const user = this.auth.currentUser()?.username ?? 'User';
+    const subj = encodeURIComponent(`Clarity App Feedback — ${user}`);
+    const body = encodeURIComponent(msg);
+    window.open(`mailto:clarityfinancialtools@gmail.com?subject=${subj}&body=${body}`, '_blank');
+    this.helpMessage = '';
+  }
+
   toggleExpandDefault() {
     const next = !this.expandDefault();
     this.expandDefault.set(next);
