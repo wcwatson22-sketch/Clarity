@@ -29,7 +29,7 @@ workflows:
       - name: Build Angular app
         script: |
           cd frontend
-          npm run build
+          npm run build:prod
 
       - name: Capacitor sync (copy web assets into iOS project)
         script: |
