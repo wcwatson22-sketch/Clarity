@@ -6,9 +6,6 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
-    integrations:
-      app_store_connect: Developer Portal
-
     environment:
       ios_signing:
         distribution_type: app_store
@@ -56,10 +53,6 @@ workflows:
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
 
   # ── Android Play Store build (future) ─────────────────────────────────────
   android-release:
