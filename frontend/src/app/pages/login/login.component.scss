@@ -26,6 +26,8 @@
   width: 160px;
   height: auto;
   display: block;
+  /* Removes white background from the PNG on the white card background */
+  mix-blend-mode: multiply;
 }
 
 .auth-title {

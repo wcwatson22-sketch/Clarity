@@ -14,7 +14,8 @@ import { NgClass } from '@angular/common';
 
       <!-- Logo -->
       <div class="splash-logo" [class.logo-visible]="logoVisible">
-        <img src="icons/logo.png" alt="Clarity" />
+        <div class="logo-icon">◆</div>
+        <div class="logo-text">CLARITY</div>
       </div>
     </div>
   `,
@@ -84,14 +85,28 @@ import { NgClass } from '@angular/common';
       opacity: 0;
       transform: scale(0.85);
       transition: opacity 1s ease, transform 1s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
     .splash-logo.logo-visible {
       opacity: 1;
       transform: scale(1);
     }
-    .splash-logo img {
-      width: 200px;
-      height: auto;
+    .logo-icon {
+      font-size: 52px;
+      color: #1D9E75;
+      line-height: 1;
+      filter: drop-shadow(0 0 18px rgba(29, 158, 117, 0.6));
+    }
+    .logo-text {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      text-shadow: 0 0 30px rgba(29, 158, 117, 0.4);
     }
   `]
 })
