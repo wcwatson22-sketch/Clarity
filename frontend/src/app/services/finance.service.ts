@@ -37,4 +37,10 @@ export class FinanceService {
   submitSurvey(survey: { topics: string[]; freeText: string }) {
     return this.http.post(`${this.base}/education/survey`, survey);
   }
+
+  // Admin — Lesson CRUD (AdminOnly policy)
+  adminGetLessons()                        { return this.http.get<Lesson[]>(`${this.base}/admin/lessons`); }
+  adminCreateLesson(l: Lesson)             { return this.http.post<Lesson>(`${this.base}/admin/lessons`, l); }
+  adminUpdateLesson(id: string, l: Lesson) { return this.http.put<Lesson>(`${this.base}/admin/lessons/${id}`, l); }
+  adminDeleteLesson(id: string)            { return this.http.delete(`${this.base}/admin/lessons/${id}`); }
 }

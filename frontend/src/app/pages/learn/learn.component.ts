@@ -1,10 +1,13 @@
-﻿import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../services/finance.service';
+import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 import { Lesson, EducationProgress } from '../../models/finance.models';
 
 const CATEGORIES = ['All', 'Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
+const LESSON_CATEGORIES = ['Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
 
 const SURVEY_TOPICS = [
   'Taxes & Tax Planning',
@@ -36,7 +39,18 @@ export interface ConfettiPiece {
   styleUrl: './learn.component.scss'
 })
 export class LearnComponent implements OnInit {
-  private svc = inject(FinanceService);
+  private svc   = inject(FinanceService);
+  private auth  = inject(AuthService);
+  private toast = inject(ToastService);
+
+  // ── Admin ────────────────────────────────────────────────────────────────────
+  isAdmin = computed(() => this.auth.currentUser()?.isAdmin ?? false);
+  readonly lessonCategories = LESSON_CATEGORIES;
+
+  adminLesson = signal<Lesson | null>(null);   // null = modal closed
+  adminIsNew  = signal(false);
+  adminSaving = signal(false);
+  adminError  = signal('');
 
   // ── Core state ──────────────────────────────────────────────────────────────
   lessons  = signal<Lesson[]>([]);
@@ -161,6 +175,75 @@ export class LearnComponent implements OnInit {
   dismissSurvey() {
     this.showSurvey.set(false);
     localStorage.setItem('clarity_survey_seen', '1');
+  }
+
+  // ── Admin ─────────────────────────────────────────────────────────────────────
+  openAdminNew() {
+    this.adminLesson.set({ id: '', title: '', description: '', category: 'Financial Basics', readTime: 3, content: '' });
+    this.adminIsNew.set(true);
+    this.adminError.set('');
+  }
+
+  openAdminEdit(lesson: Lesson) {
+    this.adminLesson.set({ ...lesson });
+    this.adminIsNew.set(false);
+    this.adminError.set('');
+  }
+
+  closeAdminModal() {
+    this.adminLesson.set(null);
+    this.adminError.set('');
+  }
+
+  updateAdminField(field: keyof Lesson, value: string | number) {
+    const cur = this.adminLesson();
+    if (!cur) return;
+    this.adminLesson.set({ ...cur, [field]: value });
+  }
+
+  adminSaveLesson() {
+    const lesson = this.adminLesson();
+    if (!lesson) return;
+    if (!lesson.id.trim())    { this.adminError.set('Lesson ID is required.'); return; }
+    if (!lesson.title.trim()) { this.adminError.set('Title is required.'); return; }
+    if (!lesson.content.trim()) { this.adminError.set('Content is required.'); return; }
+
+    this.adminSaving.set(true);
+    this.adminError.set('');
+
+    const save$ = this.adminIsNew()
+      ? this.svc.adminCreateLesson(lesson)
+      : this.svc.adminUpdateLesson(lesson.id, lesson);
+
+    save$.subscribe({
+      next: saved => {
+        this.adminSaving.set(false);
+        if (this.adminIsNew()) {
+          this.lessons.update(list => [...list, saved]);
+          this.toast.success('Lesson created.');
+        } else {
+          this.lessons.update(list => list.map(l => l.id === saved.id ? saved : l));
+          this.toast.success('Lesson updated.');
+        }
+        this.closeAdminModal();
+      },
+      error: err => {
+        this.adminSaving.set(false);
+        this.adminError.set(err.error?.error ?? 'Save failed.');
+      }
+    });
+  }
+
+  adminDeleteLesson(id: string) {
+    if (!confirm(`Permanently delete lesson "${id}"? This cannot be undone.`)) return;
+    this.svc.adminDeleteLesson(id).subscribe({
+      next: () => {
+        this.lessons.update(list => list.filter(l => l.id !== id));
+        this.toast.success('Lesson deleted.');
+        this.closeAdminModal();
+      },
+      error: err => this.adminError.set(err.error?.error ?? 'Delete failed.')
+    });
   }
 
   // ── Milestone checks ──────────────────────────────────────────────────────────

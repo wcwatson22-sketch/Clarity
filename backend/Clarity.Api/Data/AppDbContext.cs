@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SurveyResponse> SurveyResponses => Set<SurveyResponse>();
     public DbSet<PasswordResetToken> ResetTokens => Set<PasswordResetToken>();
     public DbSet<UserPushSubscription> PushSubscriptions => Set<UserPushSubscription>();
+    public DbSet<Lesson> Lessons => Set<Lesson>();
 
     private static readonly JsonSerializerOptions _json = new();
 
@@ -94,6 +95,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasOne(p => p.User).WithMany(u => u.PushSubscriptions).HasForeignKey(p => p.UserId);
             e.HasIndex(p => p.Endpoint).IsUnique();
+        });
+
+        // ── Lesson ───────────────────────────────────────────────────────────
+        mb.Entity<Lesson>(e =>
+        {
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).ValueGeneratedNever(); // string slug IDs, not auto-generated
         });
     }
 }

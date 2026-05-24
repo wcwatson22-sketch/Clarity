@@ -1,5 +1,82 @@
 <div class="page">
 
+  <!-- ── Admin Edit Modal ───────────────────────────────────────────── -->
+  @if (adminLesson()) {
+    <div class="modal-overlay" (click)="closeAdminModal()">
+      <div class="modal-card admin-modal" (click)="$event.stopPropagation()">
+        <div class="admin-modal-header">
+          <h3 class="modal-title">{{ adminIsNew() ? '＋ New Lesson' : '✏ Edit Lesson' }}</h3>
+          <button class="modal-close-btn" (click)="closeAdminModal()">✕</button>
+        </div>
+
+        @if (adminError()) {
+          <div class="admin-error">{{ adminError() }}</div>
+        }
+
+        <div class="admin-form">
+          <div class="admin-field">
+            <label class="admin-label">Lesson ID <span class="admin-hint">(slug, e.g. "net-worth")</span></label>
+            <input class="admin-input" type="text" placeholder="lesson-id-slug"
+              [value]="adminLesson()!.id"
+              [disabled]="!adminIsNew()"
+              (input)="updateAdminField('id', $any($event.target).value)" />
+          </div>
+          <div class="admin-field">
+            <label class="admin-label">Title</label>
+            <input class="admin-input" type="text" placeholder="Lesson title"
+              [value]="adminLesson()!.title"
+              (input)="updateAdminField('title', $any($event.target).value)" />
+          </div>
+          <div class="admin-field">
+            <label class="admin-label">Description</label>
+            <input class="admin-input" type="text" placeholder="Short one-line description"
+              [value]="adminLesson()!.description"
+              (input)="updateAdminField('description', $any($event.target).value)" />
+          </div>
+          <div class="admin-row">
+            <div class="admin-field">
+              <label class="admin-label">Category</label>
+              <select class="admin-input"
+                [value]="adminLesson()!.category"
+                (change)="updateAdminField('category', $any($event.target).value)">
+                @for (cat of lessonCategories; track cat) {
+                  <option [value]="cat" [selected]="cat === adminLesson()!.category">{{ cat }}</option>
+                }
+              </select>
+            </div>
+            <div class="admin-field admin-field-sm">
+              <label class="admin-label">Read Time (min)</label>
+              <input class="admin-input" type="number" min="1" max="30"
+                [value]="adminLesson()!.readTime"
+                (input)="updateAdminField('readTime', +$any($event.target).value)" />
+            </div>
+          </div>
+          <div class="admin-field">
+            <label class="admin-label">Content</label>
+            <textarea class="admin-textarea" rows="8" placeholder="Full article content…"
+              [value]="adminLesson()!.content"
+              (input)="updateAdminField('content', $any($event.target).value)">
+            </textarea>
+          </div>
+        </div>
+
+        <div class="admin-modal-actions">
+          @if (!adminIsNew()) {
+            <button class="admin-delete-btn" (click)="adminDeleteLesson(adminLesson()!.id)" [disabled]="adminSaving()">
+              🗑 Delete
+            </button>
+          }
+          <div class="admin-modal-right">
+            <button class="modal-skip" (click)="closeAdminModal()">Cancel</button>
+            <button class="modal-submit" (click)="adminSaveLesson()" [disabled]="adminSaving()">
+              {{ adminSaving() ? 'Saving…' : (adminIsNew() ? 'Create Lesson' : 'Save Changes') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- ── Confetti Overlay ───────────────────────────────────────────── -->
   @if (confettiPieces().length) {
     <div class="confetti-overlay">
@@ -67,17 +144,22 @@
         <h2 class="progress-title">Financial Learning Center</h2>
         <p class="progress-sub">{{ completedCount() }} of {{ totalLessons() }} lessons completed</p>
       </div>
-      @if (streakPercent() === 100) {
-        <div class="graduation-badge">
-          <span class="grad-icon">🎓</span>
-          <span class="grad-label">All Complete</span>
-        </div>
-      } @else {
-        <div class="progress-badge">
-          <span class="badge-num">{{ completedCount() }}</span>
-          <span class="badge-label">done</span>
-        </div>
-      }
+      <div class="progress-header-right">
+        @if (isAdmin()) {
+          <button class="admin-new-btn" (click)="openAdminNew()">＋ New Lesson</button>
+        }
+        @if (streakPercent() === 100) {
+          <div class="graduation-badge">
+            <span class="grad-icon">🎓</span>
+            <span class="grad-label">All Complete</span>
+          </div>
+        } @else {
+          <div class="progress-badge">
+            <span class="badge-num">{{ completedCount() }}</span>
+            <span class="badge-label">done</span>
+          </div>
+        }
+      </div>
     </div>
     <div class="progress-bar-track">
       <div class="progress-bar-fill" [style.width.%]="streakPercent()"></div>
@@ -128,6 +210,14 @@
             <span class="lesson-time">{{ lesson.readTime }} min read</span>
           </div>
           <div class="lesson-actions">
+            @if (isAdmin()) {
+              <button class="action-btn admin-edit" (click)="openAdminEdit(lesson)" title="Edit lesson (admin)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            }
             <button class="action-btn bookmark" [class.active]="isBookmarked(lesson.id)"
               (click)="toggleBookmark(lesson.id)" title="Save lesson">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -135,12 +225,6 @@
                 <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
               </svg>
             </button>
-            <span class="status-dot" [class.done]="isCompleted(lesson.id)" title="{{ isCompleted(lesson.id) ? 'Completed' : 'Not yet completed' }}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                @if (isCompleted(lesson.id)) { <path d="m9 12 2 2 4-4"/> }
-              </svg>
-            </span>
           </div>
         </div>
 

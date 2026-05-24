@@ -66,6 +66,42 @@
 .variable-summary strong { color: #1D9E75; }
 .muted { color: #9CA3AF; }
 
+/* 401(k) informational row */
+.retirement-row {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+  display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;
+}
+.retirement-field {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+}
+.field-hint { font-size: 10px; color: #9CA3AF; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.input-suffix {
+  display: flex; align-items: center;
+  border: 1px solid #E5E7EB; border-radius: 10px;
+  overflow: hidden; width: 120px;
+  transition: border-color 0.15s;
+}
+.input-suffix:focus-within { border-color: #1D9E75; }
+.pct-input {
+  flex: 1; border: none; outline: none;
+  padding: 9px 10px; font-size: 14px; color: #111827;
+  font-weight: 500; background: transparent;
+  width: 0; min-width: 0;
+}
+.suffix {
+  padding: 0 10px; font-size: 14px; color: #9CA3AF;
+  background: #F9FAFB; border-left: 1px solid #E5E7EB;
+  height: 100%; display: flex; align-items: center;
+}
+.retirement-info {
+  display: flex; flex-direction: column; gap: 3px;
+  padding-top: 26px; /* align with input */
+}
+.retirement-amt { font-size: 14px; font-weight: 700; color: #1D9E75; }
+.retirement-note { font-size: 11px; color: #9CA3AF; line-height: 1.4; max-width: 320px; }
+
 /* ── Skeleton ───────────────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
@@ -132,15 +168,30 @@
 /* ── 50/30/20 Benchmark ─────────────────────────────────────────────── */
 .benchmark-card {
   background: #fff; border-radius: 16px;
-  border: 1px solid #E5E7EB; padding: 24px;
+  border: 1px solid #E5E7EB; overflow: hidden;
 }
-.benchmark-header {
-  display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+.benchmark-toggle {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 16px 24px; border: none; background: none;
+  cursor: pointer; text-align: left; transition: background 0.15s;
 }
+.benchmark-toggle:hover { background: #FAFAFA; }
+.benchmark-toggle-left { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .section-title { font-size: 14px; font-weight: 600; color: #374151; margin: 0; }
 .benchmark-hint { font-size: 12px; color: #9CA3AF; }
 
-.benchmark-rows { display: flex; flex-direction: column; gap: 16px; }
+/* Collapsed chips showing current status at a glance */
+.bm-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.bm-chip {
+  font-size: 11px; font-weight: 600; border-radius: 20px;
+  padding: 3px 10px; border: 1px solid #E5E7EB;
+  background: #F9FAFB; color: #6B7280;
+  &.good    { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+  &.caution { background: #FAEEDA; border-color: #BA7517; color: #7a4d0f; }
+  &.over    { background: #FAECE7; border-color: #D85A30; color: #9B2211; }
+}
+
+.benchmark-rows { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 20px; }
 .benchmark-row {
   display: grid; grid-template-columns: 160px 1fr 100px;
   align-items: center; gap: 16px;

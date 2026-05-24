@@ -36,6 +36,27 @@
           </div>
         </div>
       </div>
+
+      <!-- 401(k) informational row -->
+      @if (grossIncome() > 0) {
+        <div class="retirement-row">
+          <div class="retirement-field">
+            <label class="field-label">401(k) / Pre-tax Retirement <span class="field-hint">informational only</span></label>
+            <div class="input-suffix">
+              <input appNumeric="decimal" class="pct-input" placeholder="0"
+                [value]="retirement401kPct() || ''"
+                (change)="update401k($any($event.target).value)" />
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          @if (retirement401kPct() > 0) {
+            <div class="retirement-info">
+              <span class="retirement-amt">≈ {{ fmt(retirement401kAmt()) }}/mo</span>
+              <span class="retirement-note">Already deducted from your paycheck — don't add it as a budget item below.</span>
+            </div>
+          }
+        </div>
+      }
     } @else {
       <div class="variable-grid">
         @for (m of income().variableMonths; track m.month; let i = $index) {
@@ -166,36 +187,53 @@
   <!-- ── 50/30/20 Benchmark ────────────────────────────────────────── -->
   @if (grossIncome() > 0) {
     <div class="benchmark-card">
-      <div class="benchmark-header">
-        <h3 class="section-title">50 / 30 / 20 Rule</h3>
-        <span class="benchmark-hint">A popular framework: 50% needs, 30% wants, 20% savings</span>
-      </div>
-      <div class="benchmark-rows">
-        @for (row of benchmark503020(); track row.label) {
-          <div class="benchmark-row">
-            <div class="bm-meta">
-              <span class="bm-label">{{ row.label }}</span>
-              <span class="bm-detail">{{ row.detail }}</span>
+      <button class="benchmark-toggle" (click)="show503020.update(v => !v)">
+        <div class="benchmark-toggle-left">
+          <h3 class="section-title">50 / 30 / 20 Rule</h3>
+          <!-- Collapsed summary chips -->
+          @if (!show503020()) {
+            <div class="bm-chips">
+              @for (row of benchmark503020(); track row.label) {
+                <span class="bm-chip" [class.good]="row.status === 'good'" [class.caution]="row.status === 'caution'" [class.over]="row.status === 'over'">
+                  {{ row.label }} {{ (row.actual * 100).toFixed(0) }}%
+                </span>
+              }
             </div>
-            <div class="bm-bars">
-              <div class="bm-bar-track">
-                <div class="bm-bar-fill" [style.width]="benchmarkWidth(row.actual, row.target)"
-                  [class.good]="row.status === 'good'"
-                  [class.caution]="row.status === 'caution'"
-                  [class.over]="row.status === 'over'"></div>
-                <!-- target marker -->
-                <div class="bm-target-line" [style.left]="'66.7%'" title="Target"></div>
+          } @else {
+            <span class="benchmark-hint">50% needs · 30% wants · 20% savings</span>
+          }
+        </div>
+        <span class="chevron" [class.open]="show503020()">▾</span>
+      </button>
+
+      @if (show503020()) {
+        <div class="benchmark-rows">
+          @for (row of benchmark503020(); track row.label) {
+            <div class="benchmark-row">
+              <div class="bm-meta">
+                <span class="bm-label">{{ row.label }}</span>
+                <span class="bm-detail">{{ row.detail }}</span>
+              </div>
+              <div class="bm-bars">
+                <div class="bm-bar-track">
+                  <div class="bm-bar-fill" [style.width]="benchmarkWidth(row.actual, row.target)"
+                    [class.good]="row.status === 'good'"
+                    [class.caution]="row.status === 'caution'"
+                    [class.over]="row.status === 'over'"></div>
+                  <!-- target marker -->
+                  <div class="bm-target-line" [style.left]="'66.7%'" title="Target"></div>
+                </div>
+              </div>
+              <div class="bm-values">
+                <span class="bm-actual" [class.good]="row.status === 'good'" [class.caution]="row.status === 'caution'" [class.over]="row.status === 'over'">
+                  {{ (row.actual * 100).toFixed(0) }}%
+                </span>
+                <span class="bm-target">/ {{ (row.target * 100).toFixed(0) }}% target</span>
               </div>
             </div>
-            <div class="bm-values">
-              <span class="bm-actual" [class.good]="row.status === 'good'" [class.caution]="row.status === 'caution'" [class.over]="row.status === 'over'">
-                {{ (row.actual * 100).toFixed(0) }}%
-              </span>
-              <span class="bm-target">/ {{ (row.target * 100).toFixed(0) }}% target</span>
-            </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
     </div>
   }
 

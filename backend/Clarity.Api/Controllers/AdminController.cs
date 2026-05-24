@@ -115,4 +115,46 @@ public class AdminController(AppDbContext db, AnalyticsService analytics) : Cont
         var username = User.FindFirstValue(ClaimTypes.Name);
         return Ok(new { message = $"Admin access confirmed for {username}." });
     }
+
+    // ── Lesson CRUD ──────────────────────────────────────────────────────────
+
+    [HttpGet("lessons")]
+    public async Task<IActionResult> GetLessons() =>
+        Ok(await db.Lessons.OrderBy(l => l.Category).ThenBy(l => l.Title).ToListAsync());
+
+    [HttpPost("lessons")]
+    public async Task<IActionResult> CreateLesson([FromBody] Lesson lesson)
+    {
+        if (string.IsNullOrWhiteSpace(lesson.Id) || string.IsNullOrWhiteSpace(lesson.Title))
+            return BadRequest(new { error = "Id and Title are required." });
+        if (await db.Lessons.AnyAsync(l => l.Id == lesson.Id))
+            return BadRequest(new { error = $"A lesson with Id '{lesson.Id}' already exists." });
+        db.Lessons.Add(lesson);
+        await db.SaveChangesAsync();
+        return Ok(lesson);
+    }
+
+    [HttpPut("lessons/{id}")]
+    public async Task<IActionResult> UpdateLesson(string id, [FromBody] Lesson updated)
+    {
+        var lesson = await db.Lessons.FindAsync(id);
+        if (lesson is null) return NotFound(new { error = "Lesson not found." });
+        lesson.Title       = updated.Title;
+        lesson.Description = updated.Description;
+        lesson.Category    = updated.Category;
+        lesson.ReadTime    = updated.ReadTime;
+        lesson.Content     = updated.Content;
+        await db.SaveChangesAsync();
+        return Ok(lesson);
+    }
+
+    [HttpDelete("lessons/{id}")]
+    public async Task<IActionResult> DeleteLesson(string id)
+    {
+        var lesson = await db.Lessons.FindAsync(id);
+        if (lesson is null) return NotFound(new { error = "Lesson not found." });
+        db.Lessons.Remove(lesson);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
 }

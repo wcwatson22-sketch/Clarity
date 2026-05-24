@@ -16,7 +16,8 @@ public class EducationController(AppDbContext db) : ControllerBase
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("lessons")]
-    public IActionResult GetLessons() => Ok(LessonStore.All);
+    public async Task<IActionResult> GetLessons() =>
+        Ok(await db.Lessons.OrderBy(l => l.Category).ThenBy(l => l.Title).ToListAsync());
 
     [HttpGet("progress")]
     public async Task<IActionResult> GetProgress()

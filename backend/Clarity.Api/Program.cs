@@ -189,6 +189,25 @@ try
             catch { /* column already exists — safe to ignore */ }
         }
 
+        // ── Create Lessons table for existing databases ──────────────────
+        // (EnsureCreated only creates tables when the DB is brand new)
+        try
+        {
+            using var createLessons = conn.CreateCommand();
+            createLessons.CommandText = """
+                CREATE TABLE IF NOT EXISTS "Lessons" (
+                    "Id"          TEXT NOT NULL CONSTRAINT "PK_Lessons" PRIMARY KEY,
+                    "Title"       TEXT NOT NULL,
+                    "Description" TEXT NOT NULL,
+                    "Category"    TEXT NOT NULL,
+                    "ReadTime"    INTEGER NOT NULL,
+                    "Content"     TEXT NOT NULL
+                )
+                """;
+            await createLessons.ExecuteNonQueryAsync();
+        }
+        catch { /* table may already exist — safe to ignore */ }
+
         // TrialEndsAt migration: add column, then give existing users a 30-day trial
         try
         {
@@ -225,6 +244,14 @@ try
                 await ctx.SaveChangesAsync();
                 Log.Information("Admin rights granted to user: {Username}", adminUser.Username);
             }
+        }
+
+        // ── Seed lessons if table is empty ──────────────────────────────
+        if (!ctx.Lessons.Any())
+        {
+            ctx.Lessons.AddRange(LessonStore.All);
+            await ctx.SaveChangesAsync();
+            Log.Information("Seeded {Count} lessons into database.", LessonStore.All.Count);
         }
 
         await conn.CloseAsync();

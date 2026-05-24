@@ -6,7 +6,8 @@ import { ToastService } from '../../services/toast.service';
 import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models';
 import { NumericDirective } from '../../directives/numeric.directive';
 
-const TARGETS_KEY = 'clarity_budget_targets';
+const TARGETS_KEY  = 'clarity_budget_targets';
+const K401_KEY     = 'clarity_401k_pct';
 
 @Component({
   selector: 'app-cash-flow',
@@ -24,6 +25,13 @@ export class CashFlowComponent implements OnInit {
   loading     = signal(true);
   showAnnual  = signal(false);    // monthly ↔ annual toggle
   editingTarget = signal<string | null>(null);  // which group target is being edited
+
+  // 401(k) — informational only, stored in localStorage, NOT subtracted from FCF
+  retirement401kPct = signal(parseFloat(localStorage.getItem(K401_KEY) ?? '0') || 0);
+  retirement401kAmt = computed(() => this.grossIncome() * this.retirement401kPct() / 100);
+
+  // 50/30/20 — collapsed by default
+  show503020 = signal(false);
 
   // Per-group budget targets stored in localStorage
   private _savedTargets: Record<string, number> = JSON.parse(localStorage.getItem(TARGETS_KEY) ?? '{}');
@@ -238,6 +246,12 @@ export class CashFlowComponent implements OnInit {
     this.saveIncome();
   }
   saveIncome() { this.svc.updateIncome(this.income()).subscribe(); }
+
+  update401k(val: string) {
+    const pct = Math.max(0, Math.min(100, parseFloat(val) || 0));
+    this.retirement401kPct.set(pct);
+    localStorage.setItem(K401_KEY, String(pct));
+  }
 
   // ── Budget item CRUD ──────────────────────────────────────────────────────
   updateItem(item: BudgetItem, field: 'name' | 'amount', val: string) {
