@@ -57,6 +57,7 @@ export interface Lesson {
   category: string;
   readTime: number;
   content: string;
+  example: string;
 }
 
 export interface EducationProgress {

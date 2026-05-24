@@ -144,6 +144,7 @@ public class AdminController(AppDbContext db, AnalyticsService analytics) : Cont
         lesson.Category    = updated.Category;
         lesson.ReadTime    = updated.ReadTime;
         lesson.Content     = updated.Content;
+        lesson.Example     = updated.Example;
         await db.SaveChangesAsync();
         return Ok(lesson);
     }

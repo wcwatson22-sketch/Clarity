@@ -208,6 +208,27 @@ try
         }
         catch { /* table may already exist — safe to ignore */ }
 
+        // Add Example column to Lessons (introduced after initial Lessons table)
+        try
+        {
+            using var addExample = conn.CreateCommand();
+            addExample.CommandText = "ALTER TABLE \"Lessons\" ADD COLUMN \"Example\" TEXT NOT NULL DEFAULT ''";
+            await addExample.ExecuteNonQueryAsync();
+        }
+        catch { /* column already exists — safe to ignore */ }
+
+        // Backfill Example and update Content for all lessons from LessonStore
+        // (keeps existing rows in sync with any content or example changes in LessonStore.All)
+        foreach (var ls in LessonStore.All)
+        {
+            using var upd = conn.CreateCommand();
+            upd.CommandText = "UPDATE \"Lessons\" SET \"Content\" = @co, \"Example\" = @ex WHERE \"Id\" = @id";
+            var pco = upd.CreateParameter(); pco.ParameterName = "@co"; pco.Value = ls.Content; upd.Parameters.Add(pco);
+            var pex = upd.CreateParameter(); pex.ParameterName = "@ex"; pex.Value = ls.Example; upd.Parameters.Add(pex);
+            var pid = upd.CreateParameter(); pid.ParameterName = "@id"; pid.Value = ls.Id; upd.Parameters.Add(pid);
+            await upd.ExecuteNonQueryAsync();
+        }
+
         // TrialEndsAt migration: add column, then give existing users a 30-day trial
         try
         {

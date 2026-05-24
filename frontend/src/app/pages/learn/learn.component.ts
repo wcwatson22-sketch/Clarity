@@ -189,7 +189,7 @@ export class LearnComponent implements OnInit {
 
   // ── Admin ─────────────────────────────────────────────────────────────────────
   openAdminNew() {
-    this.adminLesson.set({ id: '', title: '', description: '', category: 'Financial Basics', readTime: 3, content: '' });
+    this.adminLesson.set({ id: '', title: '', description: '', category: 'Financial Basics', readTime: 3, content: '', example: '' });
     this.adminIsNew.set(true);
     this.adminError.set('');
   }

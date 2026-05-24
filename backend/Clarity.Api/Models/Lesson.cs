@@ -8,6 +8,7 @@ public class Lesson
     public string Category { get; set; } = string.Empty;
     public int ReadTime { get; set; }
     public string Content { get; set; } = string.Empty;
+    public string Example { get; set; } = string.Empty;
 }
 
 public class UserEducationProgress

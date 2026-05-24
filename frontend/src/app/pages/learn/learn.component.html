@@ -58,6 +58,13 @@
               (input)="updateAdminField('content', $any($event.target).value)">
             </textarea>
           </div>
+          <div class="admin-field">
+            <label class="admin-label">Example <span class="admin-hint">(optional — shown as a highlighted callout)</span></label>
+            <textarea class="admin-textarea" rows="3" placeholder="Concrete numbers-based example…"
+              [value]="adminLesson()!.example"
+              (input)="updateAdminField('example', $any($event.target).value)">
+            </textarea>
+          </div>
         </div>
 
         <div class="admin-modal-actions">
@@ -239,6 +246,13 @@
         @if (expandedLesson() === lesson.id) {
           <div class="lesson-content">
             <p>{{ lesson.content }}</p>
+
+            @if (lesson.example) {
+              <div class="lesson-example">
+                <span class="example-label">Example</span>
+                <p class="example-text">{{ lesson.example }}</p>
+              </div>
+            }
 
             <div class="content-footer">
               <button class="complete-inline" [class.done]="isCompleted(lesson.id)"
