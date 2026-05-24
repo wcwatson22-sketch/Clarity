@@ -24,6 +24,7 @@ public class User
     public DateTime? DeletionNoticeSentAt { get; set; }
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
+    public string? AppleOriginalTransactionId { get; set; }  // StoreKit IAP
     public bool HasAcceptedTerms { get; set; } = false;
     public DateTime? TermsAcceptedAt { get; set; }
 

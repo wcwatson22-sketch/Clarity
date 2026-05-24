@@ -5,6 +5,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { AuthService } from '../../services/auth.service';
 import { LockService } from '../../services/lock.service';
+import { IapService, IAP_PRODUCTS } from '../../services/iap.service';
 import { ToastService } from '../../services/toast.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { MeResponse } from '../../models/auth.models';
@@ -28,9 +29,11 @@ export class SettingsComponent implements OnInit {
   private base   = environment.apiUrl;
 
   readonly push = inject(PushNotificationService);
+  readonly iap  = inject(IapService);
 
   // Face ID / biometric lock
   readonly isNative     = Capacitor.isNativePlatform();
+  readonly IAP_PRODUCTS = IAP_PRODUCTS;
   readonly faceIdEnabled = this.lock.faceIdEnabled;
   biometricAvail = signal(false);
 
@@ -101,6 +104,38 @@ export class SettingsComponent implements OnInit {
     this.toast.success(this.faceIdEnabled() ? 'Face ID enabled.' : 'Face ID disabled.');
   }
 
+  async purchaseIap(productId: string) {
+    this.upgradeError.set('');
+    const result = await this.iap.purchase(productId);
+    if (result) {
+      // Refresh user data to reflect new tier
+      this.http.get<MeResponse>(`${this.base}/auth/me`).subscribe(me => {
+        this.auth.updateCachedUser(me);
+        const isP = me.tier === 'Premium';
+        this.upgradeSuccess.set(isP
+          ? 'Welcome to Premium! All features unlocked.'
+          : 'Welcome to the Base plan! Subscription active.');
+        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Base plan activated!');
+      });
+    } else if (this.iap.error()) {
+      this.upgradeError.set(this.iap.error());
+    }
+  }
+
+  async restoreIap() {
+    this.upgradeError.set('');
+    const result = await this.iap.restorePurchases();
+    if (result) {
+      this.http.get<MeResponse>(`${this.base}/auth/me`).subscribe(me => {
+        this.auth.updateCachedUser(me);
+        this.upgradeSuccess.set('Your subscription has been restored.');
+        this.toast.success('Purchase restored!');
+      });
+    } else if (this.iap.error()) {
+      this.upgradeError.set(this.iap.error());
+    }
+  }
+
   // Account deletion
   showDeleteConfirm  = signal(false);
   deleteConfirmText  = signal('');
@@ -130,6 +165,9 @@ export class SettingsComponent implements OnInit {
         const result = await BiometricAuth.checkBiometry();
         this.biometricAvail.set(result.isAvailable);
       } catch { /* biometric not available */ }
+
+      // Load App Store product info (prices)
+      await this.iap.loadProducts();
     }
 
     // Handle return from Stripe Checkout

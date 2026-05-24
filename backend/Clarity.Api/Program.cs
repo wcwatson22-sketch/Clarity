@@ -41,6 +41,7 @@ try
     builder.Services.AddScoped<AnalyticsService>();
     builder.Services.AddScoped<PushService>();
     builder.Services.AddHttpClient<EmailService>();
+    builder.Services.AddHttpClient(); // enables IHttpClientFactory for PaymentsController (Apple IAP)
     builder.Services.AddHostedService<CleanupHostedService>();
 
     builder.Services.AddControllers()
@@ -245,6 +246,15 @@ try
             await backfillTrial.ExecuteNonQueryAsync();
         }
         catch { /* column already exists — safe to ignore */ }
+
+        // Add Apple IAP transaction ID column
+        try
+        {
+            using var addApple = conn.CreateCommand();
+            addApple.CommandText = "ALTER TABLE Users ADD COLUMN AppleOriginalTransactionId TEXT NULL";
+            await addApple.ExecuteNonQueryAsync();
+        }
+        catch { /* column already exists */ }
 
         // Back-fill AnonymousId for existing users who don't have one yet
         var usersWithoutId = ctx.Users.Where(u => u.AnonymousId == "").ToList();

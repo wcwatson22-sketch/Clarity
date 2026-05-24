@@ -159,7 +159,13 @@
         <div class="plan-card">
           <div class="plan-header">
             <span class="plan-name">Base</span>
-            <span class="plan-price">$1<span class="plan-period">/mo</span></span>
+            <span class="plan-price">
+              @if (isNative && iap.getProduct(IAP_PRODUCTS.BASE_MONTHLY); as prod) {
+                {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
+              } @else {
+                $1<span class="plan-period">/mo</span>
+              }
+            </span>
           </div>
           <ul class="plan-features">
             <li>✓ Dashboard &amp; net worth tracking</li>
@@ -171,9 +177,15 @@
             <li class="muted">✗ PFS one-pager PDF</li>
             <li class="muted">✗ CSV data export</li>
           </ul>
-          <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
-            {{ upgrading() ? 'Redirecting…' : 'Start for $1/mo' }}
-          </button>
+          @if (isNative) {
+            <button class="btn-upgrade btn-base" (click)="purchaseIap(IAP_PRODUCTS.BASE_MONTHLY)" [disabled]="iap.purchasing()">
+              {{ iap.purchasing() ? 'Processing…' : 'Subscribe via App Store' }}
+            </button>
+          } @else {
+            <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
+              {{ upgrading() ? 'Redirecting…' : 'Start for $1/mo' }}
+            </button>
+          }
         </div>
       }
 
@@ -182,7 +194,13 @@
         <div class="plan-badge">Best Value</div>
         <div class="plan-header">
           <span class="plan-name">Premium</span>
-          <span class="plan-price">$5<span class="plan-period">/mo</span></span>
+          <span class="plan-price">
+            @if (isNative && iap.getProduct(IAP_PRODUCTS.PREMIUM_MONTHLY); as prod) {
+              {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
+            } @else {
+              $5<span class="plan-period">/mo</span>
+            }
+          </span>
         </div>
         <ul class="plan-features">
           <li>✓ Everything in Base</li>
@@ -193,17 +211,23 @@
           <li>✓ Priority support</li>
         </ul>
         @if (!isPremium()) {
-          <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
-            {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium' : 'Get Premium' }}
-          </button>
+          @if (isNative) {
+            <button class="btn-upgrade" (click)="purchaseIap(IAP_PRODUCTS.PREMIUM_MONTHLY)" [disabled]="iap.purchasing()">
+              {{ iap.purchasing() ? 'Processing…' : isBasePaid() ? 'Upgrade via App Store' : 'Subscribe via App Store' }}
+            </button>
+          } @else {
+            <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
+              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium' : 'Get Premium' }}
+            </button>
+          }
         } @else {
           <span class="plan-current">✓ Current Plan</span>
         }
       </div>
     </div>
 
-    @if (upgradeError()) {
-      <div class="alert alert-error" style="margin-top:12px">{{ upgradeError() }}</div>
+    @if (upgradeError() || iap.error()) {
+      <div class="alert alert-error" style="margin-top:12px">{{ upgradeError() || iap.error() }}</div>
     }
     @if (upgradeSuccess()) {
       <div class="alert alert-success" style="margin-top:12px">🎉 {{ upgradeSuccess() }}</div>
@@ -212,26 +236,43 @@
     <!-- Cancel subscription -->
     @if (isPaid()) {
       <div class="cancel-section">
-        @if (!showCancelConfirm()) {
-          <button class="btn-cancel-plan" (click)="showCancelConfirm.set(true)" [disabled]="cancelling()">
-            Cancel subscription
-          </button>
+        @if (isNative) {
+          <p class="plan-note" style="margin-bottom:0">
+            To cancel your App Store subscription, go to <strong>iPhone Settings → Apple ID → Subscriptions</strong>.
+          </p>
         } @else {
-          <div class="cancel-confirm">
-            <p class="cancel-confirm-text">Are you sure? You'll lose access to paid features at the end of your billing period.</p>
-            <div class="cancel-confirm-actions">
-              <button class="btn-confirm-cancel" (click)="cancelSubscription()" [disabled]="cancelling()">
-                {{ cancelling() ? 'Cancelling…' : 'Yes, cancel my subscription' }}
-              </button>
-              <button class="btn-keep-plan" (click)="showCancelConfirm.set(false)">Keep my plan</button>
+          @if (!showCancelConfirm()) {
+            <button class="btn-cancel-plan" (click)="showCancelConfirm.set(true)" [disabled]="cancelling()">
+              Cancel subscription
+            </button>
+          } @else {
+            <div class="cancel-confirm">
+              <p class="cancel-confirm-text">Are you sure? You'll lose access to paid features at the end of your billing period.</p>
+              <div class="cancel-confirm-actions">
+                <button class="btn-confirm-cancel" (click)="cancelSubscription()" [disabled]="cancelling()">
+                  {{ cancelling() ? 'Cancelling…' : 'Yes, cancel my subscription' }}
+                </button>
+                <button class="btn-keep-plan" (click)="showCancelConfirm.set(false)">Keep my plan</button>
+              </div>
             </div>
-          </div>
+          }
         }
       </div>
     }
 
+    <!-- Restore purchases (native only) -->
+    @if (isNative && !isPaid()) {
+      <button class="restore-btn" (click)="restoreIap()" [disabled]="iap.purchasing()">
+        {{ iap.purchasing() ? 'Restoring…' : 'Restore Purchases' }}
+      </button>
+    }
+
     <p class="plan-note">
-      Payments processed securely via Stripe.
+      @if (isNative) {
+        Payments processed securely via Apple App Store.
+      } @else {
+        Payments processed securely via Stripe.
+      }
     </p>
   </div>
 

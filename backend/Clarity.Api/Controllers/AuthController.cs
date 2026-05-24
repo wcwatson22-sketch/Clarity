@@ -282,7 +282,7 @@ public class AuthController(
     private static MeResponse ToMe(User u) =>
         new(u.Id, u.Username, u.FirstName, u.Email, u.State, u.City, u.Age, u.Tier.ToString(),
             u.EmailVerified, u.HasSeenOnboarding, u.IsAdmin, u.AnonymousId, u.TrialEndsAt,
-            IsPaid: u.StripeSubscriptionId != null,
+            IsPaid: u.StripeSubscriptionId != null || u.AppleOriginalTransactionId != null,
             HasAcceptedTerms: u.HasAcceptedTerms);
 
     private static string GenerateToken(int bytes) =>
