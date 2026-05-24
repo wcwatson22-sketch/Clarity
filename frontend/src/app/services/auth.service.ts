@@ -24,13 +24,14 @@ export class AuthService {
   readonly token       = computed(() => this._token());
   readonly isPremium   = computed(() => this._user()?.tier === 'Premium');
 
-  /** Called once on app init — silently refreshes cached user from the server
-   *  so fields like emailVerified, tier, trialEndsAt are never stale. */
+  /** Called once on app init — issues a fresh JWT + refreshes user data.
+   *  Ensures the token always carries the correct claims (isAdmin, tier, etc.)
+   *  so that admin endpoints and feature gates work without requiring a re-login. */
   refreshIfLoggedIn() {
     if (!this._token()) return;
-    this.http.get<MeResponse>(`${this.base}/me`).subscribe({
-      next: me => this.updateCachedUser(me),
-      error: () => {} // non-fatal — stale cache is fine as fallback
+    this.http.post<AuthResponse>(`${this.base}/refresh`, {}).subscribe({
+      next: res => this.store(res),
+      error: () => {} // non-fatal — stale token is fine as fallback
     });
   }
 

@@ -43,7 +43,7 @@ export class CashFlowComponent implements OnInit {
     { key: 'Debt',     label: 'Debt Service',          color: '#D85A30', bg: '#FEF2F2', sub: 'Mortgage, cards, loans'     },
     { key: 'Fixed',    label: 'Fixed Expenses',        color: '#378ADD', bg: '#F0FBF7', sub: 'Insurance, phone, internet' },
     { key: 'Variable', label: 'Variable Expenses',     color: '#7F77DD', bg: '#F5F3FF', sub: 'Groceries, utilities, dining'},
-    { key: 'Savings',  label: 'Savings & Investments', color: '#1D9E75', bg: '#F0FDF9', sub: '401(k), emergency fund'     },
+    { key: 'Savings',  label: 'Savings & Investments', color: '#1D9E75', bg: '#F0FDF9', sub: 'IRA, brokerage, emergency fund' },
   ];
 
   // ── Income ────────────────────────────────────────────────────────────────
@@ -76,9 +76,23 @@ export class CashFlowComponent implements OnInit {
   dispVariable = computed(() => this.totalVariable() * this.mult());
   dispDebt     = computed(() => this.totalDebt() * this.mult());
 
+  // Annual savings total — always annualized, includes 401k estimate when entered
+  annualSavingsTotal = computed(() => (this.totalSavings() + this.retirement401kAmt()) * 12);
+
+  // Insights collapse toggle — show first item by default
+  showAllInsights = signal(false);
+
   // ── Ratios ────────────────────────────────────────────────────────────────
-  dti         = computed(() => this.grossIncome() > 0 ? this.totalDebt() / this.grossIncome() : 0);
-  savingsRate = computed(() => this.netIncome() > 0 ? this.totalSavings() / this.netIncome() : 0);
+  dti = computed(() => this.grossIncome() > 0 ? this.totalDebt() / this.grossIncome() : 0);
+  // When 401k is entered: include it and compare against gross (pre-tax basis).
+  // When no 401k entered: compare budget savings against net income (take-home basis).
+  savingsRate = computed(() => {
+    const k401 = this.retirement401kAmt();
+    if (k401 > 0 && this.grossIncome() > 0) {
+      return (this.totalSavings() + k401) / this.grossIncome();
+    }
+    return this.netIncome() > 0 ? this.totalSavings() / this.netIncome() : 0;
+  });
   housingCost = computed(() => {
     const keywords = ['mortgage', 'rent'];
     const item = this.budgetItems().find(b => keywords.some(k => b.name.toLowerCase().includes(k)));

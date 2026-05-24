@@ -119,7 +119,7 @@
   <!-- ── Spending Bar ──────────────────────────────────────────────── -->
   @if (netIncome() > 0 && barSegments().length) {
     <div class="bar-card">
-      <h3 class="bar-title">Where take-home pay goes</h3>
+      <h3 class="bar-title">Where Take-Home Pay Goes</h3>
       <div class="bar-track">
         @for (seg of barSegments(); track seg.label) {
           <div class="bar-seg" [style.width]="barWidth(seg.pct)" [style.background]="seg.color"
@@ -175,11 +175,11 @@
         <span class="metric-sub">Target: ≤ 28–30% of gross</span>
       </div>
       <div class="metric-card">
-        <span class="metric-label">Annual Savings</span>
-        <span class="metric-val" [class.green]="totalSavings() > 0">
-          {{ fmt(dispSavings()) }}
+        <span class="metric-label">Annual Savings &amp; Investments</span>
+        <span class="metric-val" [class.green]="annualSavingsTotal() > 0">
+          {{ fmt(annualSavingsTotal()) }}
         </span>
-        <span class="metric-sub">{{ showAnnual() ? 'this year' : 'per month to savings' }}</span>
+        <span class="metric-sub">per year{{ retirement401kPct() > 0 ? ' (incl. 401k)' : '' }}</span>
       </div>
     </div>
   }
@@ -240,10 +240,20 @@
   <!-- ── Insights ──────────────────────────────────────────────────── -->
   @if (insights().length) {
     <div class="insight-card">
-      <h3 class="insight-title">Your cash flow in plain English</h3>
+      <div class="insight-header">
+        <h3 class="insight-title">Your Cash Flow in Plain English</h3>
+        @if (insights().length > 1) {
+          <button class="insight-toggle" (click)="showAllInsights.set(!showAllInsights())">
+            {{ showAllInsights() ? 'Show less' : insights().length - 1 + ' more' }}
+          </button>
+        }
+      </div>
       <ul class="insight-list">
-        @for (insight of insights(); track insight.text) {
-          <li class="insight-item" [class]="insight.tone">{{ insight.text }}</li>
+        <li class="insight-item" [class]="insights()[0].tone">{{ insights()[0].text }}</li>
+        @if (showAllInsights()) {
+          @for (insight of insights().slice(1); track insight.text) {
+            <li class="insight-item" [class]="insight.tone">{{ insight.text }}</li>
+          }
         }
       </ul>
     </div>

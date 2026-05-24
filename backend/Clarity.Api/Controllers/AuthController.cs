@@ -107,6 +107,18 @@ public class AuthController(
         return user is null ? Unauthorized() : Ok(ToMe(user));
     }
 
+    // ── Refresh Token ─────────────────────────────────────────────────────────
+    // Issues a fresh JWT so the token always reflects the current user state
+    // (e.g. isAdmin flag set after initial signup, tier changes, etc.)
+    [Authorize]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        var user = await GetUser();
+        if (user is null) return Unauthorized();
+        return Ok(new AuthResponse(BuildToken(user), ToMe(user)));
+    }
+
     // ── Verify Email ──────────────────────────────────────────────────────────
     [HttpGet("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string token)

@@ -86,7 +86,17 @@ export class LearnComponent implements OnInit {
     const tab = this.activeTab();
     if (tab === 'saved')     list = list.filter(l => this.isBookmarked(l.id));
     if (tab === 'completed') list = list.filter(l => this.isCompleted(l.id));
-    return list;
+
+    // Sort priority:
+    // 0 = bookmarked + unread   (most important — easy to find)
+    // 1 = bookmarked + completed (still pinned, but done)
+    // 2 = unread / in progress  (next to tackle)
+    // 3 = completed              (move to bottom)
+    return [...list].sort((a, b) => {
+      const ra = (this.isBookmarked(a.id) ? 0 : 2) + (this.isCompleted(a.id) ? 1 : 0);
+      const rb = (this.isBookmarked(b.id) ? 0 : 2) + (this.isCompleted(b.id) ? 1 : 0);
+      return ra - rb;
+    });
   });
 
   completedCount = computed(() => this.progress().filter(p => p.completed).length);
