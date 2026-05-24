@@ -49,5 +49,7 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Clarity uses Face ID to unlock the app and protect your financial data.</string>
 </dict>
 </plist>

@@ -52,6 +52,9 @@ export class AuthService {
     this._user.set(user);
   }
 
+  /** Store a fresh AuthResponse (token + user) — used by the lock screen after password verify. */
+  storeAuth(res: AuthResponse) { this.store(res); }
+
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

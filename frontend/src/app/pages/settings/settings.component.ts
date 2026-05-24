@@ -2,7 +2,9 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { AuthService } from '../../services/auth.service';
+import { LockService } from '../../services/lock.service';
 import { ToastService } from '../../services/toast.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { MeResponse } from '../../models/auth.models';
@@ -18,6 +20,7 @@ import { NumericDirective } from '../../directives/numeric.directive';
 })
 export class SettingsComponent implements OnInit {
   private auth   = inject(AuthService);
+  private lock   = inject(LockService);
   private http   = inject(HttpClient);
   private toast  = inject(ToastService);
   private route  = inject(ActivatedRoute);
@@ -25,6 +28,11 @@ export class SettingsComponent implements OnInit {
   private base   = environment.apiUrl;
 
   readonly push = inject(PushNotificationService);
+
+  // Face ID / biometric lock
+  readonly isNative     = Capacitor.isNativePlatform();
+  readonly faceIdEnabled = this.lock.faceIdEnabled;
+  biometricAvail = signal(false);
 
   user = computed(() => this.auth.currentUser());
 
@@ -88,6 +96,11 @@ export class SettingsComponent implements OnInit {
     localStorage.removeItem('clarity-cat-cf');
   }
 
+  toggleFaceId() {
+    this.lock.setFaceId(!this.faceIdEnabled());
+    this.toast.success(this.faceIdEnabled() ? 'Face ID enabled.' : 'Face ID disabled.');
+  }
+
   // Account deletion
   showDeleteConfirm  = signal(false);
   deleteConfirmText  = signal('');
@@ -106,9 +119,18 @@ export class SettingsComponent implements OnInit {
     'Wisconsin','Wyoming','District of Columbia'
   ];
 
-  ngOnInit() {
+  async ngOnInit() {
     // Sync push notification status
     this.push.syncStatus();
+
+    // Check if biometric is available on this device
+    if (this.isNative) {
+      try {
+        const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+        const result = await BiometricAuth.checkBiometry();
+        this.biometricAvail.set(result.isAvailable);
+      } catch { /* biometric not available */ }
+    }
 
     // Handle return from Stripe Checkout
     this.route.queryParams.subscribe(params => {

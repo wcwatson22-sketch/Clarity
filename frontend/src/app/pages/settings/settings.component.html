@@ -259,6 +259,37 @@
     </div>
   </div>
 
+  <!-- ── Security (Face ID) — native only ─────────────────────────── -->
+  @if (isNative) {
+    <div class="settings-card">
+      <h2 class="card-title">Security</h2>
+      <p class="card-sub">Require authentication every time you open the app</p>
+
+      <div class="notif-row">
+        <div class="notif-info">
+          <span class="notif-status" [class.on]="faceIdEnabled()" [class.off]="!faceIdEnabled()">
+            {{ faceIdEnabled() ? 'Face ID / Touch ID enabled' : 'Face ID / Touch ID disabled' }}
+          </span>
+          <p class="notif-desc">
+            @if (biometricAvail()) {
+              When enabled, the app will ask for Face ID (or Touch ID) every time it opens. You can always fall back to your password.
+            } @else {
+              Face ID / Touch ID is not available on this device. The app locks on every launch and requires your password.
+            }
+          </p>
+        </div>
+        @if (biometricAvail()) {
+          <button
+            [class.btn-notif-on]="!faceIdEnabled()"
+            [class.btn-notif-off]="faceIdEnabled()"
+            (click)="toggleFaceId()">
+            {{ faceIdEnabled() ? 'Disable' : 'Enable' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
   <!-- ── Notifications ──────────────────────────────────────────────── -->
   <div class="settings-card">
     <h2 class="card-title">Notifications</h2>

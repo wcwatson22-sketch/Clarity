@@ -1,0 +1,162 @@
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: #F9FAFB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  padding-top: max(32px, env(safe-area-inset-top));
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+}
+
+.lock-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 340px;
+}
+
+/* Brand */
+.lock-brand { margin-bottom: 4px; }
+.lock-logo  { width: 140px; height: auto; display: block; }
+
+/* Lock icon */
+.lock-icon-wrap {
+  width: 64px; height: 64px;
+  background: #E1F5EE;
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lock-icon {
+  width: 28px; height: 28px;
+  color: #1D9E75;
+}
+
+/* Text */
+.lock-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+.lock-sub {
+  margin: 0;
+  font-size: 14px;
+  color: #6B7280;
+  text-align: center;
+}
+
+/* Error */
+.lock-error {
+  background: #FAECE7;
+  border: 1px solid #D85A30;
+  color: #D85A30;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Biometric button */
+.biometric-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1D9E75;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  transition: background 0.15s;
+  margin-top: 8px;
+}
+.biometric-btn:hover { background: #158060; }
+.biometric-btn:active { background: #0d5c47; }
+
+/* Password form */
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+.pw-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-align: center;
+}
+.pw-input {
+  border: 1.5px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  color: #111827;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  letter-spacing: 2px;
+  background: #fff;
+  transition: border-color 0.15s;
+  -webkit-text-security: disc;
+  &:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+  &:disabled { background: #F9FAFB; color: #9CA3AF; }
+}
+.unlock-btn {
+  background: #1D9E75;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #158060; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+/* Fallback link */
+.use-pw-link {
+  background: none;
+  border: none;
+  color: #6B7280;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 4px;
+  &:hover { color: #374151; }
+}
+
+/* Loading spinner */
+.lock-loading {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #E5E7EB;
+  border-top-color: #1D9E75;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

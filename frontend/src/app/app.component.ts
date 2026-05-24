@@ -1,5 +1,6 @@
 ﻿import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +9,7 @@ import { HttpClient } from '@angular/common/http';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './services/auth.service';
+import { LockService } from './services/lock.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { ToastComponent } from './components/toast/toast.component';
 import { OnboardingComponent } from './components/onboarding/onboarding.component';
@@ -15,16 +17,23 @@ import { ErrorBoundaryComponent } from './components/error-boundary/error-bounda
 import { TermsModalComponent } from './components/terms-modal/terms-modal.component';
 import { InstallBannerComponent } from './components/install-banner/install-banner.component';
 import { SplashComponent } from './components/splash/splash.component';
+import { LockScreenComponent } from './components/lock-screen/lock-screen.component';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, FormsModule, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent, SplashComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, NgFor, NgIf, FormsModule, ToastComponent, OnboardingComponent, ErrorBoundaryComponent, TermsModalComponent, InstallBannerComponent, SplashComponent, LockScreenComponent],
   template: `
     @if (showSplash()) {
       <app-splash (done)="showSplash.set(false)" />
     }
+
+    <!-- Lock screen — shown on every native app launch / foreground; never on web -->
+    @if (lockSvc.locked() && auth.isLoggedIn() && !isAuthPage()) {
+      <app-lock-screen />
+    }
+
     <div class="app-shell" [class.auth-layout]="isAuthPage()">
 
       @if (!isAuthPage()) {
@@ -435,13 +444,17 @@ import { environment } from '../environments/environment';
 })
 export class AppComponent {
   private sanitizer = inject(DomSanitizer);
-  private auth      = inject(AuthService);
+  readonly auth     = inject(AuthService);
+  readonly lockSvc  = inject(LockService);
   private push      = inject(PushNotificationService);
   private router    = inject(Router);
   private http      = inject(HttpClient);
   private base      = environment.apiUrl;
 
   readonly currentUser = this.auth.currentUser;
+
+  // Expose auth.isLoggedIn for template
+  readonly isLoggedIn = this.auth.isLoggedIn;
 
   readonly userInitial = computed(() => {
     const u = this.currentUser()?.username;
@@ -575,5 +588,13 @@ export class AppComponent {
     // Active users (weekly openers) will never see the push because it keeps
     // getting rescheduled. Only users who miss 7+ days will receive it.
     this.push.rescheduleOnAppOpen();
+
+    // On native: re-lock when the app goes to background so the lock screen
+    // appears again every time the user returns to the foreground.
+    if (Capacitor.isNativePlatform()) {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) this.lockSvc.lock();
+      });
+    }
   }
 }
