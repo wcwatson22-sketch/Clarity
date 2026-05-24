@@ -187,7 +187,7 @@
   <!-- ── 50/30/20 Benchmark ────────────────────────────────────────── -->
   @if (grossIncome() > 0) {
     <div class="benchmark-card">
-      <button class="benchmark-toggle" (click)="show503020.update(v => !v)">
+      <button class="benchmark-toggle" (click)="show503020.set(!show503020())">
         <div class="benchmark-toggle-left">
           <h3 class="section-title">50 / 30 / 20 Rule</h3>
           <!-- Collapsed summary chips -->
