@@ -5,20 +5,33 @@ import { FinanceService } from '../../services/finance.service';
 import { ToastService } from '../../services/toast.service';
 import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models';
 import { NumericDirective } from '../../directives/numeric.directive';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 
-const TARGETS_KEY  = 'clarity_budget_targets';
-const K401_KEY     = 'clarity_401k_pct';
+const TARGETS_KEY        = 'clarity_budget_targets';
+const K401_KEY           = 'clarity_401k_pct';
+const SECOND_INC_KEY     = 'clarity_second_income';
+const SECOND_INC_EN_KEY  = 'clarity_second_income_enabled';
+const K401_2_KEY         = 'clarity_401k_pct_2';
 
 @Component({
   selector: 'app-cash-flow',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, PercentPipe, NumericDirective],
+  imports: [CommonModule, FormsModule, CurrencyPipe, PercentPipe, NumericDirective, TabTutorialComponent],
   templateUrl: './cash-flow.component.html',
   styleUrl: './cash-flow.component.scss'
 })
 export class CashFlowComponent implements OnInit {
   private svc   = inject(FinanceService);
   private toast = inject(ToastService);
+
+  // ── Tab tutorial ─────────────────────────────────────────────────────────
+  readonly TUTORIAL_KEY = 'clarity_tutorial_cashflow';
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly tutorialSteps: TutorialStep[] = [
+    { icon: '💸', title: 'Cash Flow at a Glance', body: 'Enter your income and expenses to see your free cash flow, DTI ratio, savings rate, and a personalized budget breakdown.' },
+    { icon: '📋', title: 'Budget by Category', body: 'Expenses are grouped into Debt, Fixed, Variable, and Savings. Expand each to add line items and set monthly budget targets.' },
+    { icon: '📊', title: '50/30/20 Benchmark', body: 'See how your spending compares to the 50/30/20 rule and get plain-English insights on your cash flow health.' },
+  ];
 
   income      = signal<IncomeData>({ type: 'stable', grossMonthlyIncome: 0, netMonthlyIncome: 0, variableMonths: [] });
   budgetItems = signal<BudgetItem[]>([]);
@@ -28,7 +41,15 @@ export class CashFlowComponent implements OnInit {
 
   // 401(k) — informational only, stored in localStorage, NOT subtracted from FCF
   retirement401kPct = signal(parseFloat(localStorage.getItem(K401_KEY) ?? '0') || 0);
-  retirement401kAmt = computed(() => this.grossIncome() * this.retirement401kPct() / 100);
+  retirement401kAmt = computed(() => this.primaryGrossIncome() * this.retirement401kPct() / 100);
+
+  // ── Second Income (spousal / partner) ─────────────────────────────────────
+  secondIncomeEnabled = signal<boolean>(localStorage.getItem(SECOND_INC_EN_KEY) === '1');
+  secondIncome        = signal<{ gross: number; net: number }>(
+    JSON.parse(localStorage.getItem(SECOND_INC_KEY) ?? '{"gross":0,"net":0}')
+  );
+  retirement401kPct2 = signal(parseFloat(localStorage.getItem(K401_2_KEY) ?? '0') || 0);
+  retirement401kAmt2 = computed(() => this.secondIncome().gross * this.retirement401kPct2() / 100);
 
   // 50/30/20 — collapsed by default
   show503020 = signal(false);
@@ -40,21 +61,38 @@ export class CashFlowComponent implements OnInit {
   expandedGroups = signal<Set<string>>(this._loadGroupState());
 
   groups: { key: BudgetGroup; label: string; color: string; bg: string; sub: string }[] = [
-    { key: 'Debt',     label: 'Debt Service',          color: '#D85A30', bg: '#FEF2F2', sub: 'Mortgage, cards, loans'     },
+    { key: 'Debt',     label: 'Debt Service',          color: '#EF4444', bg: '#FEF2F2', sub: 'Mortgage, cards, loans'     },
     { key: 'Fixed',    label: 'Fixed Expenses',        color: '#378ADD', bg: '#F0FBF7', sub: 'Insurance, phone, internet' },
     { key: 'Variable', label: 'Variable Expenses',     color: '#7F77DD', bg: '#F5F3FF', sub: 'Groceries, utilities, dining'},
     { key: 'Savings',  label: 'Savings & Investments', color: '#1D9E75', bg: '#F0FDF9', sub: 'IRA, brokerage, emergency fund' },
   ];
 
   // ── Income ────────────────────────────────────────────────────────────────
-  grossIncome = computed(() => {
+  // Primary income only (used for 401k calculation basis)
+  primaryGrossIncome = computed(() => {
     if (this.income().type === 'stable') return this.income().grossMonthlyIncome;
     const months = this.income().variableMonths;
     return months.length ? months.reduce((s, m) => s + m.amount, 0) / months.length : 0;
   });
-  netIncome = computed(() => {
+
+  // Combined gross (primary + second if enabled)
+  grossIncome = computed(() => {
+    const primary = this.primaryGrossIncome();
+    if (!this.secondIncomeEnabled()) return primary;
+    return primary + this.secondIncome().gross;
+  });
+
+  // Primary net only
+  primaryNetIncome = computed(() => {
     if (this.income().type === 'stable') return this.income().netMonthlyIncome;
-    return this.grossIncome() * 0.75;
+    return this.primaryGrossIncome() * 0.75;
+  });
+
+  // Combined net (primary + second if enabled)
+  netIncome = computed(() => {
+    const primary = this.primaryNetIncome();
+    if (!this.secondIncomeEnabled()) return primary;
+    return primary + this.secondIncome().net;
   });
 
   // ── Totals ────────────────────────────────────────────────────────────────
@@ -76,8 +114,11 @@ export class CashFlowComponent implements OnInit {
   dispVariable = computed(() => this.totalVariable() * this.mult());
   dispDebt     = computed(() => this.totalDebt() * this.mult());
 
-  // Annual savings total — always annualized, includes 401k estimate when entered
-  annualSavingsTotal = computed(() => (this.totalSavings() + this.retirement401kAmt()) * 12);
+  // Annual savings total — always annualized, includes 401k estimate(s) when entered
+  annualSavingsTotal = computed(() => {
+    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
+    return (this.totalSavings() + k401Total) * 12;
+  });
 
   // Insights collapse toggle — show first item by default
   showAllInsights = signal(false);
@@ -87,9 +128,9 @@ export class CashFlowComponent implements OnInit {
   // When 401k is entered: include it and compare against gross (pre-tax basis).
   // When no 401k entered: compare budget savings against net income (take-home basis).
   savingsRate = computed(() => {
-    const k401 = this.retirement401kAmt();
-    if (k401 > 0 && this.grossIncome() > 0) {
-      return (this.totalSavings() + k401) / this.grossIncome();
+    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
+    if (k401Total > 0 && this.grossIncome() > 0) {
+      return (this.totalSavings() + k401Total) / this.grossIncome();
     }
     return this.netIncome() > 0 ? this.totalSavings() / this.netIncome() : 0;
   });
@@ -134,7 +175,7 @@ export class CashFlowComponent implements OnInit {
     const net = this.netIncome();
     if (!net) return [];
     return [
-      { label: 'Debt Service',         value: this.totalDebt(),     pct: Math.min(this.totalDebt() / net, 1),     color: '#D85A30' },
+      { label: 'Debt Service',         value: this.totalDebt(),     pct: Math.min(this.totalDebt() / net, 1),     color: '#EF4444' },
       { label: 'Fixed Expenses',       value: this.totalFixed(),    pct: Math.min(this.totalFixed() / net, 1),    color: '#378ADD' },
       { label: 'Variable Expenses',    value: this.totalVariable(), pct: Math.min(this.totalVariable() / net, 1), color: '#7F77DD' },
       { label: 'Savings & Investments',value: this.totalSavings(),  pct: Math.min(this.totalSavings() / net, 1),  color: '#1D9E75' },
@@ -265,6 +306,28 @@ export class CashFlowComponent implements OnInit {
     const pct = Math.max(0, Math.min(100, parseFloat(val) || 0));
     this.retirement401kPct.set(pct);
     localStorage.setItem(K401_KEY, String(pct));
+  }
+
+  // ── Second Income ────────────────────────────────────────────────────────
+  toggleSecondIncome() {
+    const enabled = !this.secondIncomeEnabled();
+    this.secondIncomeEnabled.set(enabled);
+    localStorage.setItem(SECOND_INC_EN_KEY, enabled ? '1' : '0');
+  }
+  updateSecondGross(val: string) {
+    const gross = parseFloat(val) || 0;
+    this.secondIncome.update(i => ({ ...i, gross }));
+    localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
+  }
+  updateSecondNet(val: string) {
+    const net = parseFloat(val) || 0;
+    this.secondIncome.update(i => ({ ...i, net }));
+    localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
+  }
+  update401k2(val: string) {
+    const pct = Math.max(0, Math.min(100, parseFloat(val) || 0));
+    this.retirement401kPct2.set(pct);
+    localStorage.setItem(K401_2_KEY, String(pct));
   }
 
   // ── Budget item CRUD ──────────────────────────────────────────────────────

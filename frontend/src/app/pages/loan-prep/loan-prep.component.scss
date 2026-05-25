@@ -54,6 +54,31 @@
   transition: background 0.15s;
   &:hover { background: #085041; }
 }
+.btn-back-gate {
+  display: block;
+  margin-top: 16px;
+  background: none; border: none;
+  color: #9CA3AF; font-size: 13px;
+  cursor: pointer;
+  &:hover { color: #374151; }
+}
+
+// ── Inline gate notice (shown under grid for non-premium) ────────────────────
+.gate-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #78350F;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.gate-inline-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.gate-inline-link { color: #1D9E75; font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
 
 // ── Loan Type Grid ────────────────────────────────────────────────────────────
 .loan-grid {
@@ -374,10 +399,10 @@
   padding: 20px;
 }
 .do-card   { border-top: 3px solid #1D9E75; }
-.dont-card { border-top: 3px solid #D85A30; }
+.dont-card { border-top: 3px solid #EF4444; }
 
 .dos-title  { font-size: 14px; font-weight: 700; color: #1D9E75; margin: 0 0 14px; }
-.donts-title { font-size: 14px; font-weight: 700; color: #D85A30; margin: 0 0 14px; }
+.donts-title { font-size: 14px; font-weight: 700; color: #EF4444; margin: 0 0 14px; }
 
 .dos-list, .donts-list {
   margin: 0; padding: 0;
@@ -394,7 +419,7 @@
   position: relative;
 }
 .dos-list li::before   { content: '✓'; position: absolute; left: 0; color: #1D9E75; font-weight: 700; }
-.donts-list li::before { content: '✗'; position: absolute; left: 0; color: #D85A30; font-weight: 700; }
+.donts-list li::before { content: '✗'; position: absolute; left: 0; color: #EF4444; font-weight: 700; }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 640px) {

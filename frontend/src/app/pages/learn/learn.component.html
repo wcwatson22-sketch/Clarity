@@ -1,5 +1,13 @@
 <div class="page">
 
+  <!-- ── First-time tutorial overlay ──────────────────────────────────── -->
+  @if (showTutorial()) {
+    <app-tab-tutorial
+      [steps]="tutorialSteps"
+      [storageKey]="TUTORIAL_KEY"
+      (dismissed)="showTutorial.set(false)" />
+  }
+
   <!-- ── Admin Edit Modal ───────────────────────────────────────────── -->
   @if (adminLesson()) {
     <div class="modal-overlay" (click)="closeAdminModal()">

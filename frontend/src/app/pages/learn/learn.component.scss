@@ -330,7 +330,7 @@
 }
 .thumb-btn:hover { border-color: #9CA3AF; color: #6B7280; background: #F9FAFB; }
 .thumb-btn.up.active  { background: #E1F5EE; border-color: #1D9E75; color: #1D9E75; }
-.thumb-btn.down.active { background: #FAECE7; border-color: #D85A30; color: #D85A30; }
+.thumb-btn.down.active { background: #FAECE7; border-color: #EF4444; color: #EF4444; }
 
 /* ── No results ───────────────────────────────────────────────────────────── */
 .no-results {
@@ -371,8 +371,8 @@
 .modal-close-btn:hover { background: #F3F4F6; color: #374151; }
 
 .admin-error {
-  background: #FAECE7; border: 1px solid #D85A30;
-  color: #D85A30; border-radius: 8px;
+  background: #FAECE7; border: 1px solid #EF4444;
+  color: #EF4444; border-radius: 8px;
   padding: 10px 14px; font-size: 13px;
   margin-bottom: 16px;
 }
@@ -411,12 +411,12 @@
 }
 .admin-modal-right { display: flex; gap: 10px; }
 .admin-delete-btn {
-  background: #FAECE7; border: 1px solid #D85A30;
-  color: #D85A30; border-radius: 10px;
+  background: #FAECE7; border: 1px solid #EF4444;
+  color: #EF4444; border-radius: 10px;
   padding: 9px 16px; font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.15s;
 }
-.admin-delete-btn:hover:not(:disabled) { background: #D85A30; color: #fff; }
+.admin-delete-btn:hover:not(:disabled) { background: #EF4444; color: #fff; }
 .admin-delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */

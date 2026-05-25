@@ -1,5 +1,13 @@
 <div class="page">
 
+  <!-- ── First-time tutorial overlay ──────────────────────────────────── -->
+  @if (showTutorial()) {
+    <app-tab-tutorial
+      [steps]="tutorialSteps"
+      [storageKey]="TUTORIAL_KEY"
+      (dismissed)="showTutorial.set(false)" />
+  }
+
   <!-- ── Upgrade Modal (429 snapshot limit) ────────────────────────────── -->
   @if (showUpgradeModal()) {
     <div class="modal-backdrop" (click)="dismissUpgradeModal()">
@@ -433,6 +441,21 @@
     <div class="section-card empty-state">
       <p class="empty-title">{{ currentMonthLabel() }} so far</p>
       <p class="empty-sub">Save a snapshot before the month ends to start seeing month-over-month progress here.</p>
+    </div>
+  }
+
+  <!-- ── Year-Over-Year Insight (12+ months of data) ─────────────────── -->
+  @if (yearOverYear(); as yoy) {
+    <div class="section-card">
+      <h3 class="section-title">Year-Over-Year Progress</h3>
+      <div class="momentum-item">
+        <span class="momentum-sentence" [class.green]="yoy.delta >= 0" [class.coral]="yoy.delta < 0">
+          {{ yoy.delta >= 0 ? '↑' : '↓' }}&nbsp;Net worth {{ yoy.delta >= 0 ? 'up' : 'down' }} {{ formatCurrency(yoy.delta >= 0 ? yoy.delta : -yoy.delta) }} over the past 12 months ({{ fmtPct(yoy.pct) }})
+        </span>
+        <span class="momentum-amount" [class.green]="yoy.delta >= 0" [class.coral]="yoy.delta < 0">
+          {{ yoy.delta >= 0 ? '+' : '' }}{{ formatCurrency(yoy.delta) }}
+        </span>
+      </div>
     </div>
   }
 

@@ -1,5 +1,13 @@
 <div class="page">
 
+  <!-- ── First-time tutorial overlay ──────────────────────────────────── -->
+  @if (showTutorial()) {
+    <app-tab-tutorial
+      [steps]="tutorialSteps"
+      [storageKey]="TUTORIAL_KEY"
+      (dismissed)="showTutorial.set(false)" />
+  }
+
   <div class="page-header print-hide">
     <h1 class="page-title">Loan Preparation</h1>
     <p class="page-sub">Guidance on what to gather and how to organize before applying — so your lender can move quickly and confidently.</p>
@@ -10,32 +18,43 @@
     <span>This is organizational guidance, not financial advice. Every lender and situation is different — always confirm specific requirements directly with your lender.</span>
   </div>
 
-  <!-- ── Premium Gate ──────────────────────────────────────────────────── -->
-  @if (!hasAccess()) {
-    <div class="gate-card">
-      <div class="gate-icon">🔒</div>
-      <h2 class="gate-title">Premium Feature</h2>
-      <p class="gate-desc">
-        The Loan Preparation guide is included with your Premium plan.
-        Get step-by-step document checklists, key qualification numbers, and
-        do's &amp; don'ts for every major loan type.
-      </p>
-      <a routerLink="/settings" class="btn-upgrade-gate">Upgrade to Premium — $5/mo</a>
-    </div>
-  }
-
-  <!-- ── Loan Type Grid ─────────────────────────────────────────────────── -->
-  @else if (!selected()) {
+  <!-- ── Loan Type Grid (visible to all) ──────────────────────────────── -->
+  @if (!selected()) {
     <div class="loan-grid">
       @for (guide of guides; track guide.id) {
         <button class="loan-card" (click)="select(guide)">
           <span class="loan-emoji">{{ guide.emoji }}</span>
           <span class="loan-label">{{ guide.label }}</span>
-          <span class="loan-arrow">→</span>
+          <span class="loan-arrow">{{ hasAccess() ? '→' : '🔒' }}</span>
         </button>
       }
     </div>
     <p class="grid-note">Select a loan type to see exactly what you need to prepare.</p>
+    @if (!hasAccess()) {
+      <div class="gate-inline">
+        <span class="gate-inline-icon">🔒</span>
+        <span class="gate-inline-text">
+          Full checklists, key stats, and do's &amp; don'ts are available with
+          <strong>Premium ($5/mo)</strong>. <a routerLink="/settings" class="gate-inline-link">Upgrade</a>
+        </span>
+      </div>
+    }
+  }
+
+  <!-- ── Premium Gate (detail view, non-premium users) ────────────────── -->
+  @else if (!hasAccess()) {
+    <button class="btn-back print-hide" (click)="back()">← All Loan Types</button>
+    <div class="gate-card">
+      <div class="gate-icon">🔒</div>
+      <h2 class="gate-title">Premium Feature</h2>
+      <p class="gate-desc">
+        The full <strong>{{ selected()!.label }}</strong> preparation guide — including
+        document checklists, key qualification numbers, and do's &amp; don'ts —
+        is included with <strong>Premium</strong>.
+      </p>
+      <a routerLink="/settings" class="btn-upgrade-gate">Upgrade to Premium — $5/mo</a>
+      <button class="btn-back-gate" (click)="back()">← Back to Loan Types</button>
+    </div>
   }
 
   <!-- ── Loan Detail ────────────────────────────────────────────────────── -->

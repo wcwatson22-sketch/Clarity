@@ -174,6 +174,23 @@ import { environment } from '../environments/environment';
       @if (showOnboarding()) {
         <app-onboarding (done)="onOnboardingDone()" />
       }
+
+      <!-- Face ID / Touch ID opt-in prompt (native only, shown once after first login) -->
+      @if (showFaceIdPrompt()) {
+        <div class="faceid-backdrop" (click)="dismissFaceIdPrompt()">
+          <div class="faceid-sheet" (click)="$event.stopPropagation()">
+            <div class="faceid-icon">🔐</div>
+            <h3 class="faceid-title">Want Faster Access?</h3>
+            <p class="faceid-body">
+              You can enable Face ID or Touch ID in <strong>Settings</strong> to unlock Clarity instantly — no password needed.
+            </p>
+            <div class="faceid-actions">
+              <a routerLink="/settings" class="faceid-btn-settings" (click)="dismissFaceIdPrompt()">Open Settings</a>
+              <button class="faceid-btn-dismiss" (click)="dismissFaceIdPrompt()">Maybe Later</button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -417,6 +434,41 @@ import { environment } from '../environments/environment';
       &:hover { opacity: 1; }
     }
 
+    /* Face ID opt-in prompt (bottom sheet style) */
+    .faceid-backdrop {
+      position: fixed; inset: 0; z-index: 2500;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .faceid-sheet {
+      background: #fff; border-radius: 24px 24px 0 0;
+      padding: 32px 28px 40px; width: 100%; max-width: 480px;
+      text-align: center;
+      animation: sheetUp 0.3s cubic-bezier(0.32,0.72,0,1);
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .faceid-icon  { font-size: 48px; display: block; margin-bottom: 12px; }
+    .faceid-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 10px; }
+    .faceid-body  { font-size: 14px; color: #6B7280; line-height: 1.6; margin: 0 0 24px; }
+    .faceid-body strong { color: #111827; }
+    .faceid-actions { display: flex; flex-direction: column; gap: 10px; }
+    .faceid-btn-settings {
+      background: #1D9E75; color: #fff;
+      border: none; border-radius: 12px;
+      padding: 14px; font-size: 15px; font-weight: 600;
+      text-decoration: none; display: block;
+      transition: background 0.15s;
+      &:hover { background: #085041; }
+    }
+    .faceid-btn-dismiss {
+      background: none; border: none;
+      color: #9CA3AF; font-size: 14px; cursor: pointer;
+      &:hover { color: #6B7280; }
+    }
+
     @media (max-width: 768px) {
       .sidebar { display: none; }
       /* 12px top/sides, 80px bottom clears the fixed bottom nav */
@@ -541,7 +593,22 @@ export class AppComponent {
     });
   }
 
-  onOnboardingDone() { this._onboardingDismissed.set(true); }
+  onOnboardingDone() {
+    this._onboardingDismissed.set(true);
+    // After onboarding, show Face ID prompt on native if not already prompted
+    if (Capacitor.isNativePlatform() && !this.lockSvc.faceIdEnabled() &&
+        !localStorage.getItem('clarity_faceid_prompted')) {
+      setTimeout(() => this.showFaceIdPrompt.set(true), 600);
+    }
+  }
+
+  // ── Face ID prompt ────────────────────────────────────────────────────────
+  showFaceIdPrompt = signal(false);
+  dismissFaceIdPrompt() {
+    this.showFaceIdPrompt.set(false);
+    localStorage.setItem('clarity_faceid_prompted', '1');
+  }
+
   logout() { this.auth.logout(); }
 
   // Splash screen — only on native Capacitor (iOS/Android), not web

@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface DocItem { text: string; sub?: string[]; }
 interface ChecklistItem { text: string; detail?: string; }
@@ -413,12 +414,22 @@ export const LOAN_GUIDES: LoanGuide[] = [
 @Component({
   selector: 'app-loan-prep',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TabTutorialComponent],
   templateUrl: './loan-prep.component.html',
   styleUrl: './loan-prep.component.scss'
 })
 export class LoanPrepComponent {
   private auth = inject(AuthService);
+
+  // ── Tab tutorial ─────────────────────────────────────────────────────────
+  readonly TUTORIAL_KEY = 'clarity_tutorial_loanprep';
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly tutorialSteps: TutorialStep[] = [
+    { icon: '🏦', title: 'Loan Preparation Guide', body: 'Select a loan type to see a complete checklist of documents to gather, what lenders look for, and do\'s & don\'ts.' },
+    { icon: '📋', title: 'Check Off Documents', body: 'Use the interactive checklist to track which documents you\'ve gathered. Your progress is saved automatically.' },
+    { icon: '🔓', title: 'Premium Content', body: 'The full guides — including key stats, checklists, and do\'s & don\'ts — are available with Premium ($5/mo). The overview is free for everyone.' },
+  ];
+
 
   readonly isPremium  = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Premium');
   readonly trialActive = computed(() => {

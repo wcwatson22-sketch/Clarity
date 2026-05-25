@@ -1,5 +1,13 @@
 <div class="page">
 
+  <!-- ── First-time tutorial overlay ──────────────────────────────────── -->
+  @if (showTutorial()) {
+    <app-tab-tutorial
+      [steps]="tutorialSteps"
+      [storageKey]="TUTORIAL_KEY"
+      (dismissed)="showTutorial.set(false)" />
+  }
+
   <!-- ── Income Card ───────────────────────────────────────────────── -->
   <div class="income-card">
     <div class="income-header">
@@ -15,6 +23,18 @@
           <button class="toggle-btn" [class.active]="income().type === 'variable'" (click)="setIncomeType('variable')">Variable</button>
         </div>
       </div>
+    </div>
+
+    <!-- Second income toggle -->
+    <div class="second-income-row">
+      <div class="second-income-label">
+        <span class="second-income-title">Second Income</span>
+        <span class="second-income-sub">Spousal / partner income</span>
+      </div>
+      <button class="toggle-switch" [class.on]="secondIncomeEnabled()"
+        (click)="toggleSecondIncome()" aria-label="Toggle second income">
+        <span class="toggle-knob"></span>
+      </button>
     </div>
 
     @if (income().type === 'stable') {
@@ -38,7 +58,7 @@
       </div>
 
       <!-- 401(k) informational row -->
-      @if (grossIncome() > 0) {
+      @if (primaryGrossIncome() > 0) {
         <div class="retirement-row">
           <div class="retirement-field">
             <label class="field-label">401(k) / Pre-tax Retirement <span class="field-hint">informational only</span></label>
@@ -70,12 +90,66 @@
           </div>
         }
       </div>
-      @if (grossIncome() > 0) {
+      @if (primaryGrossIncome() > 0) {
         <div class="variable-summary">
-          <span>6-month average: <strong>{{ fmt(grossIncome()) }}/mo gross</strong></span>
-          <span class="muted">Est. take-home: {{ fmt(netIncome()) }}/mo</span>
+          <span>6-month average: <strong>{{ fmt(primaryGrossIncome()) }}/mo gross</strong></span>
+          <span class="muted">Est. take-home: {{ fmt(primaryNetIncome()) }}/mo</span>
         </div>
       }
+    }
+
+    <!-- ── Second Income Fields ─────────────────────────────────────── -->
+    @if (secondIncomeEnabled()) {
+      <div class="second-income-fields">
+        <div class="second-income-divider">
+          <span class="second-income-divider-label">Second Income</span>
+        </div>
+        <div class="income-fields">
+          <div class="field-group">
+            <label class="field-label">Gross Monthly Income</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input appNumeric [value]="secondIncome().gross"
+                (change)="updateSecondGross($any($event.target).value)" class="dollar-input" />
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Net / Take-Home Pay</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input appNumeric [value]="secondIncome().net"
+                (change)="updateSecondNet($any($event.target).value)" class="dollar-input" />
+            </div>
+          </div>
+        </div>
+        @if (secondIncome().gross > 0) {
+          <div class="retirement-row">
+            <div class="retirement-field">
+              <label class="field-label">401(k) / Pre-tax Retirement <span class="field-hint">informational only</span></label>
+              <div class="input-suffix">
+                <input appNumeric="decimal" class="pct-input" placeholder="0"
+                  [value]="retirement401kPct2() || ''"
+                  (change)="update401k2($any($event.target).value)" />
+                <span class="suffix">%</span>
+              </div>
+            </div>
+            @if (retirement401kPct2() > 0) {
+              <div class="retirement-info">
+                <span class="retirement-amt">≈ {{ fmt(retirement401kAmt2()) }}/mo</span>
+                <span class="retirement-note">Already deducted — don't add as a budget item below.</span>
+              </div>
+            }
+          </div>
+        }
+        @if (secondIncome().gross > 0 && secondIncome().net > 0) {
+          <div class="combined-summary">
+            <span class="combined-label">Combined Household</span>
+            <span class="combined-vals">
+              {{ fmt(grossIncome()) }} gross · {{ fmt(netIncome()) }} take-home
+            </span>
+          </div>
+        }
+      </div>
     }
   </div>
 
@@ -179,7 +253,7 @@
         <span class="metric-val" [class.green]="annualSavingsTotal() > 0">
           {{ fmt(annualSavingsTotal()) }}
         </span>
-        <span class="metric-sub">per year{{ retirement401kPct() > 0 ? ' (incl. 401k)' : '' }}</span>
+        <span class="metric-sub">per year{{ (retirement401kPct() > 0 || retirement401kPct2() > 0) ? ' (incl. 401k)' : '' }}</span>
       </div>
     </div>
   }

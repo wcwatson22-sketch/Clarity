@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -23,7 +24,7 @@ interface CompareResponse {
 @Component({
   selector: 'app-compare',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TabTutorialComponent],
   templateUrl: './compare.component.html',
   styleUrl: './compare.component.scss'
 })
@@ -31,6 +32,15 @@ export class CompareComponent implements OnInit {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private base = environment.apiUrl;
+
+  // ── Tab tutorial ─────────────────────────────────────────────────────────
+  readonly TUTORIAL_KEY = 'clarity_tutorial_compare';
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly tutorialSteps: TutorialStep[] = [
+    { icon: '📊', title: 'See How You Compare', body: 'Compare your net worth, savings, and debt against others in your age bracket — completely anonymously.' },
+    { icon: '🔒', title: 'Private by Design', body: 'Clarity requires at least 30 users in your age bracket before showing any comparison data, so no individual can ever be identified.' },
+    { icon: '✅', title: 'What To Do First', body: 'Make sure your Dashboard accounts are up to date, then check back here to see where you stand. Comparisons update automatically.' },
+  ];
 
   loading     = signal(true);
   error       = signal('');

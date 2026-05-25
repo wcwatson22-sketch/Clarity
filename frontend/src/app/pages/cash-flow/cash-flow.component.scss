@@ -128,12 +128,12 @@
 }
 .sum-card.blue   { border-left: 3px solid #378ADD; }
 .sum-card.green  { border-left: 3px solid #1D9E75; background: #E1F5EE; border-color: #1D9E75; }
-.sum-card.coral  { border-left: 3px solid #D85A30; }
+.sum-card.coral  { border-left: 3px solid #EF4444; }
 .sum-label  { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9CA3AF; font-weight: 600; }
 .sum-val    { font-size: 22px; font-weight: 700; color: #111827; }
 .sum-period { font-size: 11px; color: #9CA3AF; }
 .sum-card.green .sum-val { color: #085041; }
-.sum-card.coral .sum-val { color: #D85A30; }
+.sum-card.coral .sum-val { color: #EF4444; }
 
 /* ── Spending Bar ───────────────────────────────────────────────────── */
 .bar-card {
@@ -161,7 +161,7 @@
 .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9CA3AF; font-weight: 600; }
 .metric-val   { font-size: 20px; font-weight: 700; color: #111827; }
 .metric-val.green { color: #1D9E75; }
-.metric-val.coral { color: #D85A30; }
+.metric-val.coral { color: #EF4444; }
 .metric-val.amber { color: #BA7517; }
 .metric-sub   { font-size: 11px; color: #9CA3AF; }
 
@@ -188,7 +188,7 @@
   background: #F9FAFB; color: #6B7280;
   &.good    { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
   &.caution { background: #FAEEDA; border-color: #BA7517; color: #7a4d0f; }
-  &.over    { background: #FAECE7; border-color: #D85A30; color: #9B2211; }
+  &.over    { background: #FAECE7; border-color: #EF4444; color: #9B2211; }
 }
 
 .benchmark-rows { display: flex; flex-direction: column; gap: 16px; padding: 0 24px 20px; }
@@ -209,7 +209,7 @@
   transition: width 0.4s ease;
   &.good    { background: #1D9E75; }
   &.caution { background: #BA7517; }
-  &.over    { background: #D85A30; }
+  &.over    { background: #EF4444; }
 }
 .bm-target-line {
   position: absolute; top: -3px; bottom: -3px;
@@ -220,7 +220,7 @@
 .bm-actual { font-size: 14px; font-weight: 700;
   &.good    { color: #1D9E75; }
   &.caution { color: #BA7517; }
-  &.over    { color: #D85A30; }
+  &.over    { color: #EF4444; }
 }
 .bm-target { font-size: 11px; color: #9CA3AF; display: block; }
 
@@ -267,9 +267,9 @@
 .group-sub   { font-size: 11px; color: #9CA3AF; }
 .group-right { display: flex; align-items: baseline; gap: 6px; margin-right: 8px; }
 .group-total { font-size: 14px; font-weight: 700; color: #111827; }
-.group-total.over-budget { color: #D85A30; }
+.group-total.over-budget { color: #EF4444; }
 .group-budget-label { font-size: 11px; color: #9CA3AF; white-space: nowrap; }
-.group-budget-label.over { color: #D85A30; }
+.group-budget-label.over { color: #EF4444; }
 .chevron { color: #9CA3AF; font-size: 14px; transition: transform 0.2s; flex-shrink: 0; }
 .chevron.open { transform: rotate(180deg); }
 
@@ -280,7 +280,7 @@
 .budget-bar-fill {
   height: 100%; background: #1D9E75;
   transition: width 0.35s ease;
-  &.over { background: #D85A30; }
+  &.over { background: #EF4444; }
 }
 
 .group-rows { border-top: 1px solid #F3F4F6; padding: 8px 0; }
@@ -301,7 +301,7 @@
   cursor: pointer; font-size: 12px; padding: 4px 6px;
   border-radius: 6px; transition: color 0.15s, background 0.15s;
 }
-.delete-btn:hover { color: #D85A30; background: #FAECE7; }
+.delete-btn:hover { color: #EF4444; background: #FAECE7; }
 
 .group-footer {
   display: flex; align-items: center; gap: 12px;
@@ -329,6 +329,56 @@
   padding: 5px 10px; font-size: 13px; color: #374151;
   outline: none; width: 150px;
 }
+
+/* ── Second Income ──────────────────────────────────────────────────── */
+.second-income-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 0; margin-top: 14px;
+  border-top: 1px solid #F3F4F6;
+}
+.second-income-label { display: flex; flex-direction: column; gap: 2px; }
+.second-income-title { font-size: 14px; font-weight: 600; color: #374151; }
+.second-income-sub   { font-size: 12px; color: #9CA3AF; }
+
+/* iOS-style toggle — matches settings component pattern */
+.toggle-switch {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: #D1D5DB; border: none; cursor: pointer;
+  padding: 0; position: relative; transition: background 0.2s;
+  flex-shrink: 0;
+  &.on { background: #1D9E75; }
+}
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  .toggle-switch.on & { transform: translateX(18px); }
+}
+
+.second-income-fields {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+}
+.second-income-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: #E5E7EB; }
+}
+.second-income-divider-label {
+  font-size: 11px; font-weight: 600; color: #9CA3AF;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.combined-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; padding: 12px 16px;
+  background: #F0FBF7; border-radius: 10px;
+  border: 1px solid #A7F3D0;
+}
+.combined-label { font-size: 12px; font-weight: 700; color: #065F46; text-transform: uppercase; letter-spacing: 0.04em; }
+.combined-vals  { font-size: 14px; font-weight: 600; color: #1D9E75; }
 
 /* ── Empty State ────────────────────────────────────────────────────── */
 .empty-state {

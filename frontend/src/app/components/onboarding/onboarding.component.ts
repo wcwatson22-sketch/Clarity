@@ -24,12 +24,11 @@ import { environment } from '../../../environments/environment';
             <div class="step-icon">👋</div>
             <h2 class="step-title">Welcome to Clarity</h2>
             <p class="step-body">
-              Clarity is your personal financial dashboard. Track your <strong>net worth</strong>,
-              monitor <strong>assets and debts</strong>, analyze your <strong>cash flow</strong>,
-              and build a clearer picture of your finances over time — all in one place.
+              Clarity is your all-in-one personal finance dashboard. Everything is
+              <strong>private to your account</strong> and saved automatically.
             </p>
             <p class="step-body">
-              Everything is private to your account and saved automatically.
+              Here's a quick look at what's waiting for you across all five tabs.
             </p>
           </div>
         }
@@ -37,34 +36,61 @@ import { environment } from '../../../environments/environment';
         @if (step() === 1) {
           <div class="step-content">
             <div class="step-icon">📊</div>
-            <h2 class="step-title">Track what you own and owe</h2>
+            <h2 class="step-title">Dashboard — Net Worth</h2>
             <p class="step-body">
-              Use the <strong>Dashboard</strong> to add your assets (savings, investments,
-              property) and liabilities (loans, credit cards, mortgage).
+              Add your <strong>assets</strong> (savings, investments, property) and
+              <strong>liabilities</strong> (loans, credit cards, mortgage) to see your
+              real-time net worth.
             </p>
             <p class="step-body">
-              Hit <strong>Save Snapshot</strong> whenever your balances change — over time,
-              your net worth chart fills in and you can see your financial trajectory
-              across 2 weeks, 30 days, 3 months, 6 months, or a full year.
-            </p>
-            <p class="step-body">
-              The <strong>Cash Flow</strong> tab lets you track income and monthly expenses
-              to understand exactly where your money is going.
+              Hit <strong>Save Snapshot</strong> when balances change — your net worth
+              chart and month-over-month progress fill in automatically.
             </p>
           </div>
         }
 
         @if (step() === 2) {
           <div class="step-content">
-            <div class="step-icon">📚</div>
-            <h2 class="step-title">Build your financial knowledge</h2>
+            <div class="step-icon">💸</div>
+            <h2 class="step-title">Cash Flow — Budget & Income</h2>
             <p class="step-body">
-              Head to the <strong>Learn</strong> tab to explore lessons on budgeting,
-              debt management, investing, and more — written to help you understand
-              the numbers you're entering, not just track them.
+              Enter your income and monthly expenses on the <strong>Cash Flow</strong> tab
+              to see your free cash flow, debt-to-income ratio, savings rate, and a
+              personalized 50/30/20 budget breakdown.
             </p>
             <p class="step-body">
-              You're all set. Start by adding your first asset or liability on the Dashboard.
+              Supports both stable W-2 income and variable / self-employed income.
+            </p>
+          </div>
+        }
+
+        @if (step() === 3) {
+          <div class="step-content">
+            <div class="step-icon">📚</div>
+            <h2 class="step-title">Learn & Compare</h2>
+            <p class="step-body">
+              <strong>Learn</strong> offers bite-sized lessons on budgeting, debt,
+              credit, investing, and mortgages — written to help you understand the
+              numbers you're tracking, not just log them.
+            </p>
+            <p class="step-body">
+              <strong>Compare</strong> shows how your finances stack up against others
+              in your age bracket, anonymously.
+            </p>
+          </div>
+        }
+
+        @if (step() === 4) {
+          <div class="step-content">
+            <div class="step-icon">🏦</div>
+            <h2 class="step-title">Get a Loan — Prep Guide</h2>
+            <p class="step-body">
+              The <strong>Loan Prep</strong> tab gives you step-by-step checklists for
+              every major loan type — mortgage, auto, personal, business, and more.
+            </p>
+            <p class="step-body">
+              <strong>Start on the Dashboard.</strong> Add your first asset or liability
+              and hit Save Snapshot. You're all set!
             </p>
           </div>
         }
@@ -73,10 +99,10 @@ import { environment } from '../../../environments/environment';
         <div class="step-actions">
           @if (step() < steps.length - 1) {
             <button class="btn-next" (click)="next()">Next →</button>
-            <button class="btn-skip" (click)="finish()">Skip</button>
+            <button class="btn-skip" (click)="finish()">Skip Tour</button>
           } @else {
             <button class="btn-next" (click)="finish()" [disabled]="saving()">
-              {{ saving() ? 'Loading…' : 'Get Started' }}
+              {{ saving() ? 'Loading…' : 'Get Started →' }}
             </button>
           }
         </div>
@@ -154,7 +180,7 @@ export class OnboardingComponent {
 
   step   = signal(0);
   saving = signal(false);
-  readonly steps = [0, 1, 2];
+  readonly steps = [0, 1, 2, 3, 4];
 
   next() { this.step.update(s => s + 1); }
 

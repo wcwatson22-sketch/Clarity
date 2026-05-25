@@ -11,6 +11,7 @@ import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
 import { NumericDirective } from '../../directives/numeric.directive';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface AccountGroup { name: string; accounts: Account[]; total: number; }
 interface MomentumItem { sentence: string; delta: number; isGood: boolean; }
@@ -27,7 +28,7 @@ interface ChartSvgData {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DatePipe, PercentPipe, RouterLink, NumericDirective],
+  imports: [CommonModule, DatePipe, PercentPipe, RouterLink, NumericDirective, TabTutorialComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -40,6 +41,15 @@ export class DashboardComponent implements OnInit {
   private base  = environment.apiUrl;
   readonly install$ = inject(AppInstallService);
   readonly showInstallModal = signal(false);
+
+  // ── Tab tutorial ─────────────────────────────────────────────────────────
+  readonly TUTORIAL_KEY = 'clarity_tutorial_dashboard';
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly tutorialSteps: TutorialStep[] = [
+    { icon: '📊', title: 'Your Financial Dashboard', body: 'Add assets (savings, investments, property) and liabilities (loans, credit cards) to see your net worth in real time.' },
+    { icon: '📸', title: 'Save Snapshots', body: 'Hit "Save Snapshot" whenever your balances change. Over time, snapshots build your net worth chart and show month-over-month progress.' },
+    { icon: '📈', title: 'Track Your Trajectory', body: 'View your net worth trend by 2 weeks, 30 days, 3 months, 6 months, or 1 year — and project where you\'ll be in the future.' },
+  ];
 
   // ── In-app progress banner ───────────────────────────────────────────────
   progressMsg    = signal<string | null>(null);
@@ -56,7 +66,7 @@ export class DashboardComponent implements OnInit {
 
   readonly greeting = computed(() => {
     const h = new Date().getHours();
-    const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+    const period = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
     const user = this.auth.currentUser();
     const name = user?.firstName || user?.username || '';
     return `Good ${period}, ${name}`;
@@ -135,7 +145,7 @@ export class DashboardComponent implements OnInit {
     'Personal Property':'#F97316',
     'Other Assets':     '#6B7280',
     'Credit Cards':     '#EF4444',
-    'Loans':            '#D85A30',
+    'Loans':            '#EF4444',
     'Mortgages':        '#DC2626',
     'Other Debts':      '#991B1B',
   };
@@ -288,11 +298,17 @@ export class DashboardComponent implements OnInit {
   // ── Computed: momentum ───────────────────────────────────────────────────
   lastSnapshot = computed(() => this.snapshots()[0] ?? null);
 
-  // Most recent snapshot taken before this month began — used as month-start baseline
+  // Most recent snapshot taken before this month began — used as month-start baseline.
+  // Falls back to the oldest in-month snapshot so "May So Far" always shows data
+  // even when the user's first snapshot was created this month.
   monthStartSnapshot = computed(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    return this.snapshots().find(s => new Date(s.createdAt as string).getTime() < monthStart) ?? null;
+    const all = this.snapshots(); // sorted newest-first
+    const beforeMonth = all.find(s => new Date(s.createdAt as string).getTime() < monthStart);
+    if (beforeMonth) return beforeMonth;
+    // All snapshots are within the current month — use the oldest one as baseline
+    return all.length > 0 ? all[all.length - 1] : null;
   });
 
   readonly currentMonthLabel = computed(() => {
@@ -439,6 +455,25 @@ export class DashboardComponent implements OnInit {
       nwDots: dots('netWorth'), assetDots: dots('totalAssets'), liabDots: dots('totalLiabilities'),
       projPath, projEndLabel, projEndX, projEndY,
     };
+  });
+
+  // ── Computed: year-over-year insight (when ≥ 12 months of snapshots) ───
+  yearOverYear = computed<{ label: string; delta: number; pct: number } | null>(() => {
+    const all = this.snapshots(); // newest-first
+    if (all.length < 2) return null;
+    const now = new Date();
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).getTime();
+    // Need a snapshot from ~12 months ago (within 45-day window)
+    const window = 45 * 86400000;
+    const yearAgoSnap = all.find(s => {
+      const t = new Date(s.createdAt as string).getTime();
+      return Math.abs(t - oneYearAgo) <= window;
+    });
+    if (!yearAgoSnap) return null;
+    const current = this.netWorth();
+    const delta = current - yearAgoSnap.netWorth;
+    const pct = yearAgoSnap.netWorth !== 0 ? delta / Math.abs(yearAgoSnap.netWorth) : 0;
+    return { label: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), delta, pct };
   });
 
   // ── Computed: projection ─────────────────────────────────────────────────
@@ -699,8 +734,11 @@ export class DashboardComponent implements OnInit {
   fmtDate(iso: string) {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
+  fmtPct(pct: number): string {
+    return `${(Math.abs(pct) * 100).toFixed(1)}%`;
+  }
   netWorthColor() {
     const nw = this.netWorth();
-    return nw > 0 ? '#1D9E75' : nw < 0 ? '#D85A30' : '#6B7280';
+    return nw > 0 ? '#1D9E75' : nw < 0 ? '#EF4444' : '#6B7280';
   }
 }
