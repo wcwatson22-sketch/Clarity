@@ -1,11 +1,47 @@
 ﻿import { Component, ErrorHandler, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
-/** Global Angular error handler — catches unhandled component errors */
+/** Global Angular error handler — catches unhandled component errors.
+ *
+ *  We deliberately ignore HttpErrorResponse: every HTTP call should have
+ *  its own error: callback, and routing a 4xx/5xx to the full-screen
+ *  overlay is user-hostile.  Only genuine render/component crashes (null
+ *  dereferences, template errors, etc.) ever reach the overlay.
+ */
 export class GlobalErrorHandler implements ErrorHandler {
   private boundary = inject(ErrorBoundaryService, { optional: true });
 
   handleError(error: unknown): void {
+    // ── HTTP errors ── handled per-request; never show the overlay
+    if (error instanceof HttpErrorResponse) {
+      if (!['prod', 'production'].includes((window as any).__env?.mode ?? '')) {
+        console.warn('[Clarity] HTTP error:', error.status, error.url);
+      }
+      return;
+    }
+
+    // ── Chunk-load errors ── transient network issue; just log, don't alarm user
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('ChunkLoadError') || msg.includes('Loading chunk')) {
+      console.warn('[Clarity] Chunk load error (retrying may help):', msg);
+      return;
+    }
+
+    // ── Navigation errors ── router handles these itself
+    if (msg.includes('NavigationError') || msg.includes('Redirect')) return;
+
+    // ── Biometric/plugin errors from async ngOnInit ── non-fatal
+    if (
+      msg.includes('BiometricAuth') ||
+      msg.includes('plugin is not implemented') ||
+      msg.includes('not available')
+    ) {
+      console.warn('[Clarity] Native plugin error (non-fatal):', msg);
+      return;
+    }
+
+    // Genuine unhandled component/template error — show the overlay
     console.error('[Clarity] Unhandled error:', error);
     this.boundary?.recordError(error);
   }

@@ -32,10 +32,14 @@ export class SettingsComponent implements OnInit {
   readonly iap  = inject(IapService);
 
   // Face ID / biometric lock
-  readonly isNative     = Capacitor.isNativePlatform();
-  readonly IAP_PRODUCTS = IAP_PRODUCTS;
+  readonly isNative      = Capacitor.isNativePlatform();
+  readonly IAP_PRODUCTS  = IAP_PRODUCTS;
   readonly faceIdEnabled = this.lock.faceIdEnabled;
-  biometricAvail = signal(false);
+  biometricAvail   = signal(false);
+  faceIdToggling   = signal(false);
+
+  // Logout confirmation
+  showLogoutConfirm = signal(false);
 
   user = computed(() => this.auth.currentUser());
 
@@ -99,9 +103,41 @@ export class SettingsComponent implements OnInit {
     localStorage.removeItem('clarity-cat-cf');
   }
 
-  toggleFaceId() {
-    this.lock.setFaceId(!this.faceIdEnabled());
-    this.toast.success(this.faceIdEnabled() ? 'Face ID enabled.' : 'Face ID disabled.');
+  /** Actual biometric verification before enabling Face ID.
+   *  Disabling requires no re-verification. */
+  async toggleFaceId() {
+    if (this.faceIdToggling()) return;
+
+    if (this.faceIdEnabled()) {
+      // ── Turning OFF ──────────────────────────────────────────────────────
+      this.lock.setFaceId(false);
+      this.toast.success('Face ID disabled. You\'ll use your password to unlock the app.');
+      return;
+    }
+
+    // ── Turning ON — verify biometric works first ─────────────────────────
+    this.faceIdToggling.set(true);
+    try {
+      const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+      await BiometricAuth.authenticate({
+        reason: 'Verify your identity to enable Face ID for Clarity.',
+        cancelTitle: 'Cancel',
+        iosFallbackTitle: 'Use Password',
+      });
+      // Authentication succeeded — save preference
+      this.lock.setFaceId(true);
+      this.toast.success('Face ID enabled. The app will unlock with Face ID on next open.');
+    } catch {
+      // Cancelled or failed — do NOT save the preference
+      this.toast.error('Face ID was cancelled or failed. It has not been enabled.');
+    } finally {
+      this.faceIdToggling.set(false);
+    }
+  }
+
+  logout() {
+    this.showLogoutConfirm.set(false);
+    this.auth.logout();
   }
 
   async purchaseIap(productId: string) {

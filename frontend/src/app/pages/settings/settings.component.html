@@ -320,11 +320,14 @@
           </p>
         </div>
         @if (biometricAvail()) {
+          <!-- iOS-style toggle — same pattern as Notifications -->
           <button
-            [class.btn-notif-on]="!faceIdEnabled()"
-            [class.btn-notif-off]="faceIdEnabled()"
-            (click)="toggleFaceId()">
-            {{ faceIdEnabled() ? 'Disable' : 'Enable' }}
+            class="toggle-switch"
+            [class.on]="faceIdEnabled()"
+            [disabled]="faceIdToggling()"
+            (click)="toggleFaceId()"
+            aria-label="Toggle Face ID">
+            <span class="toggle-knob"></span>
           </button>
         }
       </div>
@@ -429,6 +432,33 @@
     <button class="btn-help-send" (click)="submitHelp()" [disabled]="!helpMessage.trim()">
       ✉️ Send to Support
     </button>
+  </div>
+
+  <!-- ── Sign Out ─────────────────────────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">Sign Out</h2>
+    <p class="card-sub">Sign out of Clarity on this device. Your saved data stays intact.</p>
+
+    @if (!showLogoutConfirm()) {
+      <button class="btn-logout" (click)="showLogoutConfirm.set(true)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Log Out
+      </button>
+    } @else {
+      <div class="logout-confirm">
+        <p class="logout-confirm-text">
+          You'll be returned to the login screen. Your financial data stays saved to your account.
+        </p>
+        <div class="logout-confirm-actions">
+          <button class="btn-confirm-logout" (click)="logout()">Log Out</button>
+          <button class="btn-keep-plan" (click)="showLogoutConfirm.set(false)">Stay Logged In</button>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- ── Legal ───────────────────────────────────────────────────────── -->
