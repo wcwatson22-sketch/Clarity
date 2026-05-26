@@ -163,7 +163,7 @@
               @if (isNative && iap.getProduct(IAP_PRODUCTS.BASE_MONTHLY); as prod) {
                 {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
               } @else {
-                $1<span class="plan-period">/mo</span>
+                $0.99<span class="plan-period">/mo</span>
               }
             </span>
           </div>
@@ -183,7 +183,7 @@
             </button>
           } @else {
             <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : 'Start for $1/mo' }}
+              {{ upgrading() ? 'Redirecting…' : 'Start for $0.99/mo' }}
             </button>
           }
         </div>
@@ -198,7 +198,7 @@
             @if (isNative && iap.getProduct(IAP_PRODUCTS.PREMIUM_MONTHLY); as prod) {
               {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
             } @else {
-              $5<span class="plan-period">/mo</span>
+              $4.99<span class="plan-period">/mo</span>
             }
           </span>
         </div>

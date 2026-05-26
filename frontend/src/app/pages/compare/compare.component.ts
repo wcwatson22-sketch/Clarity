@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
@@ -24,7 +25,7 @@ interface CompareResponse {
 @Component({
   selector: 'app-compare',
   standalone: true,
-  imports: [CommonModule, TabTutorialComponent],
+  imports: [CommonModule, RouterLink, TabTutorialComponent],
   templateUrl: './compare.component.html',
   styleUrl: './compare.component.scss'
 })
@@ -41,6 +42,16 @@ export class CompareComponent implements OnInit {
     { icon: '🔒', title: 'Private by Design', body: 'Clarity requires at least 30 users in your age bracket before showing any comparison data, so no individual can ever be identified.' },
     { icon: '✅', title: 'What To Do First', body: 'Make sure your Dashboard accounts are up to date, then check back here to see where you stand. Comparisons update automatically.' },
   ];
+
+  // ── Plan access ──────────────────────────────────────────────────────────
+  // Compare requires any paid plan ($0.99+ Base or $4.99 Premium) or an active trial.
+  private readonly _isPaid = computed(() => this.auth.currentUser()?.isPaid ?? false);
+  private readonly _trialActive = computed(() => {
+    if (this._isPaid()) return false;
+    const t = this.auth.currentUser()?.trialEndsAt;
+    return t ? new Date(t) > new Date() : false;
+  });
+  readonly hasAccess = computed(() => this._isPaid() || this._trialActive());
 
   loading     = signal(true);
   error       = signal('');

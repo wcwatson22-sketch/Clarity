@@ -35,20 +35,35 @@ export class PfsComponent implements OnInit {
   assetGroups = computed(() => this.groupBy(this.assets()));
   liabGroups  = computed(() => this.groupBy(this.liabilities()));
 
-  // Cash Flow
-  netIncome = computed(() => {
-    const i = this.income();
-    if (!i) return 0;
-    if (i.type === 'stable') return i.netMonthlyIncome;
-    const months = i.variableMonths;
-    return months.length ? months.reduce((s, m) => s + m.amount, 0) / months.length * 0.75 : 0;
-  });
+  // Cash Flow — mirrors Cash Flow component formulas exactly (same localStorage keys)
+  // so DTI shown here always matches the DTI shown on the Cash Flow page.
+  private static readonly SECOND_INC_KEY    = 'clarity_second_income';
+  private static readonly SECOND_INC_EN_KEY = 'clarity_second_income_enabled';
+
+  private _secondEnabled = () => localStorage.getItem(PfsComponent.SECOND_INC_EN_KEY) === '1';
+  private _secondData    = () => {
+    try { return JSON.parse(localStorage.getItem(PfsComponent.SECOND_INC_KEY) ?? '{"gross":0,"net":0}'); }
+    catch { return { gross: 0, net: 0 }; }
+  };
+
   grossIncome = computed(() => {
     const i = this.income();
     if (!i) return 0;
-    if (i.type === 'stable') return i.grossMonthlyIncome;
-    const months = i.variableMonths;
-    return months.length ? months.reduce((s, m) => s + m.amount, 0) / months.length : 0;
+    let primary = i.type === 'stable'
+      ? i.grossMonthlyIncome
+      : (i.variableMonths?.length ? i.variableMonths.reduce((s, m) => s + m.amount, 0) / i.variableMonths.length : 0);
+    if (this._secondEnabled()) primary += (this._secondData().gross ?? 0);
+    return primary;
+  });
+
+  netIncome = computed(() => {
+    const i = this.income();
+    if (!i) return 0;
+    let primary = i.type === 'stable'
+      ? i.netMonthlyIncome
+      : (i.variableMonths?.length ? i.variableMonths.reduce((s, m) => s + m.amount, 0) / i.variableMonths.length * 0.75 : 0);
+    if (this._secondEnabled()) primary += (this._secondData().net ?? 0);
+    return primary;
   });
 
   totalDebt     = computed(() => this.sumGroup('Debt'));

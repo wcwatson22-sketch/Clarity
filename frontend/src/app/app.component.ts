@@ -595,10 +595,23 @@ export class AppComponent {
 
   onOnboardingDone() {
     this._onboardingDismissed.set(true);
-    // After onboarding, show Face ID prompt on native if not already prompted
+    // After onboarding completes, show Face ID prompt on native if not already prompted
     if (Capacitor.isNativePlatform() && !this.lockSvc.faceIdEnabled() &&
         !localStorage.getItem('clarity_faceid_prompted')) {
       setTimeout(() => this.showFaceIdPrompt.set(true), 600);
+    }
+  }
+
+  /** Show Face ID prompt to returning native users who haven't seen it yet.
+   *  Called after data loads so we don't interrupt the auth flow. */
+  maybeShowFaceIdPrompt() {
+    if (Capacitor.isNativePlatform() &&
+        !this.lockSvc.faceIdEnabled() &&
+        !localStorage.getItem('clarity_faceid_prompted') &&
+        this.auth.isLoggedIn() &&
+        !this.isAuthPage() &&
+        this.currentUser()?.hasSeenOnboarding === true) {
+      setTimeout(() => this.showFaceIdPrompt.set(true), 1200);
     }
   }
 
@@ -650,6 +663,9 @@ export class AppComponent {
     // Refresh user data from server on every app load so emailVerified,
     // tier, trialEndsAt etc. are never served from a stale localStorage cache
     this.auth.refreshIfLoggedIn();
+
+    // Show Face ID opt-in prompt to returning native users who have never seen it
+    this.maybeShowFaceIdPrompt();
 
     // Slide the next push notification 7 days forward on every app open.
     // Active users (weekly openers) will never see the push because it keeps
