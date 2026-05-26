@@ -147,28 +147,35 @@ export class CashFlowComponent implements OnInit {
   needsTotal  = computed(() => this.totalDebt() + this.totalFixed());
   needsRatio  = computed(() => this.grossIncome() > 0 ? this.needsTotal() / this.grossIncome() : 0);
   wantsRatio  = computed(() => this.grossIncome() > 0 ? this.totalVariable() / this.grossIncome() : 0);
-  savingsPct  = computed(() => this.grossIncome() > 0 ? this.totalSavings() / this.grossIncome() : 0);
+  savingsPct = computed(() => {
+    if (this.grossIncome() === 0) return 0;
+    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
+    return (this.totalSavings() + k401Total) / this.grossIncome();
+  });
 
-  benchmark503020 = computed(() => [
-    {
-      label: 'Needs', actual: this.needsRatio(), target: 0.50,
-      value: this.needsTotal(), color: '#378ADD',
-      status: this.needsRatio() <= 0.50 ? 'good' : this.needsRatio() <= 0.60 ? 'caution' : 'over',
-      detail: 'Debt + fixed expenses'
-    },
-    {
-      label: 'Wants', actual: this.wantsRatio(), target: 0.30,
-      value: this.totalVariable(), color: '#7F77DD',
-      status: this.wantsRatio() <= 0.30 ? 'good' : this.wantsRatio() <= 0.40 ? 'caution' : 'over',
-      detail: 'Variable / discretionary'
-    },
-    {
-      label: 'Savings', actual: this.savingsPct(), target: 0.20,
-      value: this.totalSavings(), color: '#1D9E75',
-      status: this.savingsPct() >= 0.20 ? 'good' : this.savingsPct() >= 0.10 ? 'caution' : 'over',
-      detail: 'Savings & investments'
-    },
-  ]);
+  benchmark503020 = computed(() => {
+    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
+    return [
+      {
+        label: 'Needs', actual: this.needsRatio(), target: 0.50,
+        value: this.needsTotal(), color: '#378ADD',
+        status: this.needsRatio() <= 0.50 ? 'good' : this.needsRatio() <= 0.60 ? 'caution' : 'over',
+        detail: 'Debt + fixed expenses'
+      },
+      {
+        label: 'Wants', actual: this.wantsRatio(), target: 0.30,
+        value: this.totalVariable(), color: '#7F77DD',
+        status: this.wantsRatio() <= 0.30 ? 'good' : this.wantsRatio() <= 0.40 ? 'caution' : 'over',
+        detail: 'Variable / discretionary'
+      },
+      {
+        label: 'Savings', actual: this.savingsPct(), target: 0.20,
+        value: this.totalSavings(), color: '#1D9E75',
+        status: this.savingsPct() >= 0.20 ? 'good' : this.savingsPct() >= 0.10 ? 'caution' : 'over',
+        detail: k401Total > 0 ? 'Savings + 401(k) contributions' : 'Savings & investments'
+      },
+    ];
+  });
 
   // ── Spending bar ──────────────────────────────────────────────────────────
   barSegments = computed(() => {

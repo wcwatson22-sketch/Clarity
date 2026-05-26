@@ -330,7 +330,7 @@
   outline: none; width: 150px;
 }
 
-/* ── Second Income ──────────────────────────────────────────────────── */
+/* ── Second Income toggle row ───────────────────────────────────────── */
 .second-income-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 0 0; margin-top: 14px;
@@ -356,29 +356,45 @@
   .toggle-switch.on & { transform: translateX(18px); }
 }
 
-.second-income-fields {
+/* ── Single-income 401k compact row ─────────────────────────────────── */
+.k401-inline-row {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid #F3F4F6;
+}
+.k401-field-wrap { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.k401-input-suffix { width: 110px; }
+.k401-hint { font-size: 12px; color: #9CA3AF; flex: 1; }
+
+/* ── Dual-income compact grid ───────────────────────────────────────── */
+.dual-income-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   margin-top: 16px; padding-top: 16px;
   border-top: 1px solid #F3F4F6;
 }
-.second-income-divider {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 16px;
-  &::before, &::after { content: ''; flex: 1; height: 1px; background: #E5E7EB; }
+.income-block {
+  background: #F9FAFB; border: 1px solid #E5E7EB;
+  border-radius: 12px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
 }
-.second-income-divider-label {
-  font-size: 11px; font-weight: 600; color: #9CA3AF;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  white-space: nowrap;
+.income-block-label {
+  font-size: 11px; font-weight: 700; color: #6B7280;
+  text-transform: uppercase; letter-spacing: 0.05em;
 }
+.income-block-fields {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: start;
+}
+.k401-sub { font-size: 10px; color: #9CA3AF; margin-top: 3px; white-space: nowrap; }
 
+/* Combined household summary */
 .combined-summary {
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 14px; padding: 12px 16px;
+  margin-top: 12px; padding: 10px 14px;
   background: #F0FBF7; border-radius: 10px;
   border: 1px solid #A7F3D0;
 }
-.combined-label { font-size: 12px; font-weight: 700; color: #065F46; text-transform: uppercase; letter-spacing: 0.04em; }
-.combined-vals  { font-size: 14px; font-weight: 600; color: #1D9E75; }
+.combined-label { font-size: 11px; font-weight: 700; color: #065F46; text-transform: uppercase; letter-spacing: 0.04em; }
+.combined-vals  { font-size: 13px; font-weight: 600; color: #1D9E75; }
 
 /* ── Empty State ────────────────────────────────────────────────────── */
 .empty-state {
@@ -406,6 +422,14 @@
   .income-card { padding: 18px 14px; }
   .card-title  { font-size: 15px; }
   .toggle-group { flex-wrap: wrap; }
+
+  /* Dual-income grid: stack vertically on mobile */
+  .dual-income-grid { grid-template-columns: 1fr; }
+  /* Income block fields: 2-col on mobile (Gross + Take-Home), 401k% wraps */
+  .income-block-fields { grid-template-columns: 1fr 1fr; }
+
+  /* Single-income 401k row: stack label + hint vertically */
+  .k401-inline-row { flex-direction: column; align-items: flex-start; gap: 8px; }
 
   /* Group headers */
   .group-header { padding: 12px 14px; }

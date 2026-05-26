@@ -260,11 +260,22 @@ export class DashboardComponent implements OnInit {
   );
   debtToIncome = computed(() => {
     const inc = this.income();
-    if (!inc || inc.grossMonthlyIncome === 0) return null;
+    if (!inc) return null;
+    let combinedGross = inc.type === 'stable'
+      ? inc.grossMonthlyIncome
+      : (inc.variableMonths?.length ? inc.variableMonths.reduce((s, m) => s + m.amount, 0) / inc.variableMonths.length : 0);
+    const secondEnabled = localStorage.getItem('clarity_second_income_enabled') === '1';
+    if (secondEnabled) {
+      try {
+        const secondData = JSON.parse(localStorage.getItem('clarity_second_income') ?? '{"gross":0,"net":0}');
+        combinedGross += secondData.gross ?? 0;
+      } catch {}
+    }
+    if (combinedGross === 0) return null;
     const monthlyDebt = this.budgetItems()
       .filter(b => b.group === 'Debt')
       .reduce((s, b) => s + b.amount, 0);
-    return monthlyDebt / inc.grossMonthlyIncome;
+    return monthlyDebt / combinedGross;
   });
   itemsTracked = computed(() => this.accounts().length);
 
