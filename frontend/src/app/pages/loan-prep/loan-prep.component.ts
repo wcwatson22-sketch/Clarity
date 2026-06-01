@@ -1,6 +1,6 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { PlanAccessService } from '../../services/plan-access.service';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface DocItem { text: string; sub?: string[]; }
@@ -419,7 +419,7 @@ export const LOAN_GUIDES: LoanGuide[] = [
   styleUrl: './loan-prep.component.scss'
 })
 export class LoanPrepComponent {
-  private auth = inject(AuthService);
+  private plans = inject(PlanAccessService);
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_loanprep';
@@ -430,11 +430,9 @@ export class LoanPrepComponent {
     { icon: '🔓', title: 'Premium Content', body: 'The full guides — including key stats, checklists, and do\'s & don\'ts — are available with Premium ($4.99/mo). The overview is free for everyone.' },
   ];
 
-
-  readonly isPremium  = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Premium');
   // Loan Prep detail requires the Premium plan ($4.99/mo). Trial and Base plan users
   // can see the loan type grid but cannot open individual guides.
-  readonly hasAccess = computed(() => this.isPremium());
+  readonly hasAccess = this.plans.canLoanPrep;
 
   readonly guides = LOAN_GUIDES;
   readonly selected = signal<LoanGuide | null>(null);

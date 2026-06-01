@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../../services/auth.service';
+import { PlanAccessService } from '../../services/plan-access.service';
 import { environment } from '../../../environments/environment';
 
 interface ComparisonItem {
@@ -30,9 +30,9 @@ interface CompareResponse {
   styleUrl: './compare.component.scss'
 })
 export class CompareComponent implements OnInit {
-  private http = inject(HttpClient);
-  private auth = inject(AuthService);
-  private base = environment.apiUrl;
+  private http    = inject(HttpClient);
+  private plans   = inject(PlanAccessService);
+  private base    = environment.apiUrl;
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_compare';
@@ -44,14 +44,8 @@ export class CompareComponent implements OnInit {
   ];
 
   // ── Plan access ──────────────────────────────────────────────────────────
-  // Compare requires any paid plan ($0.99+ Base or $4.99 Premium) or an active trial.
-  private readonly _isPaid = computed(() => this.auth.currentUser()?.isPaid ?? false);
-  private readonly _trialActive = computed(() => {
-    if (this._isPaid()) return false;
-    const t = this.auth.currentUser()?.trialEndsAt;
-    return t ? new Date(t) > new Date() : false;
-  });
-  readonly hasAccess = computed(() => this._isPaid() || this._trialActive());
+  /** Compare requires Base Plan ($0.99), Premium ($4.99), or an active trial. */
+  readonly hasAccess = this.plans.canCompare;
 
   loading     = signal(true);
   error       = signal('');

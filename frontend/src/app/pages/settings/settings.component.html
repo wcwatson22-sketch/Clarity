@@ -171,11 +171,13 @@
             <li>✓ Dashboard &amp; net worth tracking</li>
             <li>✓ Cash flow budget</li>
             <li>✓ Financial learning center</li>
+            <li>✓ Compare tab — see how you stack up</li>
             <li>✓ 10 snapshots per month</li>
             <li>✓ 90-day snapshot history</li>
             <li class="muted">✗ Unlimited snapshots</li>
             <li class="muted">✗ PFS one-pager PDF</li>
             <li class="muted">✗ CSV data export</li>
+            <li class="muted">✗ Loan Prep guides</li>
           </ul>
           @if (isNative) {
             <button class="btn-upgrade btn-base" (click)="purchaseIap(IAP_PRODUCTS.BASE_MONTHLY)" [disabled]="iap.purchasing()">
@@ -203,11 +205,12 @@
           </span>
         </div>
         <ul class="plan-features">
-          <li>✓ Everything in Base</li>
+          <li>✓ Everything in Base (incl. Compare)</li>
           <li>✓ Unlimited snapshots</li>
           <li>✓ Full snapshot history</li>
           <li>✓ PFS one-pager PDF (unlimited)</li>
           <li>✓ CSV data export</li>
+          <li>✓ Loan Prep guides — all loan types</li>
           <li>✓ Priority support</li>
         </ul>
         @if (!isPremium()) {

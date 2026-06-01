@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { AuthService } from '../../services/auth.service';
 import { LockService } from '../../services/lock.service';
@@ -66,7 +67,21 @@ export class LockScreenComponent implements OnInit {
         cancelTitle: 'Use Password',
         iosFallbackTitle: 'Use Password',
       });
-      this.lock.unlock();
+      // Biometric passed — refresh JWT before unlocking so API calls don't 401
+      // if the token expired while the app was locked/backgrounded.
+      try {
+        const res = await firstValueFrom(
+          this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {})
+        );
+        this.auth.storeAuth(res);
+        this.lock.unlock();
+      } catch {
+        // JWT is expired and cannot be refreshed — require one password login
+        // to restore the session cleanly.
+        this.loading.set(false);
+        this.showPassword.set(true);
+        this.error.set('Your session has expired. Enter your password once to restore access.');
+      }
     } catch {
       this.loading.set(false);
       this.showPassword.set(true);
