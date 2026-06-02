@@ -15,12 +15,12 @@
         <div class="modal-icon">📈</div>
         <h2 class="modal-title">Snapshot limit reached</h2>
         <p class="modal-body">
-          The <strong>Base plan</strong> includes 10 snapshots per month.
+          The <strong>Compare plan</strong> includes 10 snapshots per month.
           Upgrade to <strong>Premium</strong> for unlimited snapshots and advanced insights.
         </p>
         <div class="modal-plans">
           <div class="plan-chip base">
-            <span class="plan-name">Base</span>
+            <span class="plan-name">Compare</span>
             <span class="plan-price">$0.99<span>/mo</span></span>
             <span class="plan-detail">10 snapshots/month</span>
           </div>
@@ -75,7 +75,7 @@
         </p>
         <div class="upgrade-plans">
           <div class="plan-option">
-            <div class="plan-name">Base</div>
+            <div class="plan-name">Compare</div>
             <div class="plan-price">$0.99<span>/mo</span></div>
             <ul class="plan-features">
               <li>✓ Full dashboard</li>
@@ -83,14 +83,14 @@
               <li>✓ 10 snapshots/month</li>
               <li>✓ Compare tab</li>
             </ul>
-            <a class="plan-btn base-btn" routerLink="/settings">Get Base</a>
+            <a class="plan-btn base-btn" routerLink="/settings">Get Compare</a>
           </div>
           <div class="plan-option featured">
             <div class="plan-badge">Most popular</div>
             <div class="plan-name">Premium ✦</div>
             <div class="plan-price">$4.99<span>/mo</span></div>
             <ul class="plan-features">
-              <li>✓ Everything in Base</li>
+              <li>✓ Everything in Compare</li>
               <li>✓ Unlimited snapshots</li>
               <li>✓ Loan Prep guides</li>
               <li>✓ Priority support</li>
@@ -166,7 +166,6 @@
         </div>
 
         @if (install$.isIos()) {
-          <!-- iOS Instructions -->
           <p class="install-steps-title">Follow these 3 steps on your iPhone or iPad:</p>
           <div class="install-steps">
             <div class="install-step">
@@ -194,7 +193,6 @@
           <p class="install-note">⚠️ This only works in <strong>Safari</strong> — not Chrome or Firefox on iPhone.</p>
 
         } @else {
-          <!-- Android / Chrome Instructions -->
           <p class="install-steps-title">One tap to install:</p>
           @if (install$.canInstall()) {
             <button class="install-now-btn" (click)="triggerInstall()">
@@ -329,135 +327,110 @@
     </div>
   </div>
 
-  <!-- ── Net Worth Chart ───────────────────────────────────────────── -->
-  <div class="section-card chart-card">
-    <div class="chart-header">
-      <h3 class="section-title">Net Worth Trend</h3>
-      <div class="chart-controls">
-        <div class="period-tabs">
-          @for (p of periods; track p) {
-            <button class="period-btn" [class.active]="chartPeriod() === p" (click)="chartPeriod.set(p)">{{ p }}</button>
-          }
-        </div>
-        <button class="projection-btn" [class.active]="showProjection()" (click)="showProjection.set(!showProjection())">
-          📈 Projection
-        </button>
+  <!-- ── Movement Cards (replaces chart) ─────────────────────────────── -->
+  <div class="movement-section">
+    <h3 class="movement-title">Financial Movement</h3>
+    <div class="movement-grid">
+
+      <!-- Net Worth · This Month -->
+      <div class="mv-card">
+        <span class="mv-label">Net Worth · This Month</span>
+        @if (momDeltas(); as m) {
+          <span class="mv-value" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
+            {{ m.nw >= 0 ? '+' : '' }}{{ formatCurrency(m.nw) }}
+          </span>
+          <span class="mv-trend" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
+            {{ m.nw >= 0 ? '↑ Improving' : '↓ Declined' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Save a snapshot each month to track progress</span>
+        }
       </div>
+
+      <!-- Net Worth · YTD -->
+      <div class="mv-card">
+        <span class="mv-label">Net Worth · YTD</span>
+        @if (ytdDeltas(); as y) {
+          <span class="mv-value" [class.green]="y.nw >= 0" [class.coral]="y.nw < 0">
+            {{ y.nw >= 0 ? '+' : '' }}{{ formatCurrency(y.nw) }}
+          </span>
+          <span class="mv-trend" [class.green]="y.nw >= 0" [class.coral]="y.nw < 0">
+            {{ y.nw >= 0 ? '↑ Up this year' : '↓ Down this year' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+        }
+      </div>
+
+      <!-- Assets · This Month -->
+      <div class="mv-card">
+        <span class="mv-label">Assets · This Month</span>
+        @if (momDeltas(); as m) {
+          <span class="mv-value" [class.green]="m.assets >= 0" [class.coral]="m.assets < 0">
+            {{ m.assets >= 0 ? '+' : '' }}{{ formatCurrency(m.assets) }}
+          </span>
+          <span class="mv-trend" [class.green]="m.assets >= 0" [class.coral]="m.assets < 0">
+            {{ m.assets >= 0 ? '↑ Growing' : '↓ Decreased' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Save a snapshot each month to track progress</span>
+        }
+      </div>
+
+      <!-- Assets · YTD -->
+      <div class="mv-card">
+        <span class="mv-label">Assets · YTD</span>
+        @if (ytdDeltas(); as y) {
+          <span class="mv-value" [class.green]="y.assets >= 0" [class.coral]="y.assets < 0">
+            {{ y.assets >= 0 ? '+' : '' }}{{ formatCurrency(y.assets) }}
+          </span>
+          <span class="mv-trend" [class.green]="y.assets >= 0" [class.coral]="y.assets < 0">
+            {{ y.assets >= 0 ? '↑ Up this year' : '↓ Down this year' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+        }
+      </div>
+
+      <!-- Liabilities · This Month -->
+      <div class="mv-card">
+        <span class="mv-label">Liabilities · This Month</span>
+        @if (momDeltas(); as m) {
+          <!-- Liability decrease = good (green), increase = bad (coral) -->
+          <span class="mv-value" [class.green]="m.liabs <= 0" [class.coral]="m.liabs > 0">
+            {{ m.liabs >= 0 ? '+' : '' }}{{ formatCurrency(m.liabs) }}
+          </span>
+          <span class="mv-trend" [class.green]="m.liabs <= 0" [class.coral]="m.liabs > 0">
+            {{ m.liabs <= 0 ? '↓ Debt reducing' : '↑ Debt increased' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Save a snapshot each month to track progress</span>
+        }
+      </div>
+
+      <!-- Liabilities · YTD -->
+      <div class="mv-card">
+        <span class="mv-label">Liabilities · YTD</span>
+        @if (ytdDeltas(); as y) {
+          <span class="mv-value" [class.green]="y.liabs <= 0" [class.coral]="y.liabs > 0">
+            {{ y.liabs >= 0 ? '+' : '' }}{{ formatCurrency(y.liabs) }}
+          </span>
+          <span class="mv-trend" [class.green]="y.liabs <= 0" [class.coral]="y.liabs > 0">
+            {{ y.liabs <= 0 ? '↓ Less debt this year' : '↑ More debt this year' }}
+          </span>
+        } @else {
+          <span class="mv-value mv-na">—</span>
+          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+        }
+      </div>
+
     </div>
-
-    @if (showProjection()) {
-      <div class="projection-controls">
-        <span class="proj-label">Project</span>
-        @for (y of [1, 3, 5, 10]; track y) {
-          <button class="proj-yr-btn" [class.active]="projectionYears() === y" (click)="projectionYears.set(y)">{{ y }}yr</button>
-        }
-        <span class="proj-note">6% growth + {{ formatCurrency(monthlyDelta()) }}/mo savings</span>
-      </div>
-    }
-
-    <div class="series-legend">
-      <span class="legend-btn nw-color">
-        <span class="legend-dot nw-dot"></span>Net Worth
-      </span>
-      @if (showProjection() && monthlyDelta() > 0) {
-        <span class="legend-btn" style="color:#085041;opacity:0.7;cursor:default">
-          <span class="legend-dot" style="background:#1D9E75;opacity:0.4"></span>Projected NW
-        </span>
-      }
-    </div>
-
-    @if (chartSvg(); as svg) {
-      <svg viewBox="0 0 760 200" style="width:100%;height:auto;display:block;overflow:visible">
-        <defs>
-          <!-- Clip data lines/dots to the chart plot area (padL=60, padT=12, padR=16, padB=30) -->
-          <clipPath id="chart-clip">
-            <rect x="60" y="0" width="684" height="172"/>
-          </clipPath>
-        </defs>
-
-        @for (gl of svg.gridLines; track gl) {
-          <path [attr.d]="gl" stroke="#F3F4F6" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
-        }
-        @for (lbl of svg.yLabels; track lbl.label) {
-          <text x="54" [attr.y]="lbl.textY" text-anchor="end" font-size="10" fill="#9CA3AF">{{ lbl.label }}</text>
-        }
-        @for (lbl of svg.xLabels; track lbl.label) {
-          <text [attr.x]="lbl.x" y="196" [attr.text-anchor]="lbl.anchor" font-size="10" fill="#9CA3AF">{{ lbl.label }}</text>
-        }
-
-        <!-- Clipped data group -->
-        <g clip-path="url(#chart-clip)">
-          <!-- Projection dashed line -->
-          @if (showProjection() && svg.projPath) {
-            <path [attr.d]="svg.projPath" fill="none" stroke="#1D9E75"
-              stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round" opacity="0.55"/>
-            @if (svg.projEndLabel) {
-              <circle [attr.cx]="svg.projEndX" [attr.cy]="svg.projEndY" r="4" fill="#1D9E75" opacity="0.5"/>
-            }
-          }
-          <!-- Net worth line only -->
-          <path [attr.d]="svg.nwPath" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-          @for (d of svg.nwDots; track d.cx + d.cy) {
-            <circle [attr.cx]="d.cx" [attr.cy]="d.cy" r="4" fill="#1D9E75"/>
-          }
-        </g>
-
-        <!-- Projection end label (outside clip so it's readable at the edge) -->
-        @if (showProjection() && svg.projPath && svg.projEndLabel) {
-          <text [attr.x]="svg.projEndX" [attr.y]="+svg.projEndY - 8" text-anchor="end"
-            font-size="10" fill="#085041" font-weight="600">{{ svg.projEndLabel }}</text>
-        }
-      </svg>
-    } @else {
-      <div class="chart-empty">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <p>Hit <strong>Save Snapshot</strong> as your balances change to build your trend chart here.</p>
-      </div>
-    }
   </div>
-
-  <!-- ── Momentum ──────────────────────────────────────────────────── -->
-  @if (monthStartSnapshot()) {
-    <div class="section-card">
-      <h3 class="section-title">{{ currentMonthLabel() }} so far</h3>
-      <div class="momentum-list">
-        @for (item of momentumItems(); track item.sentence; let last = $last) {
-          <div class="momentum-item" [class.momentum-divider]="!last">
-            <span class="momentum-sentence"
-              [class.green]="item.isGood"
-              [class.coral]="!item.isGood">
-              {{ item.delta >= 0 ? '↑' : '↓' }}&nbsp;{{ item.sentence }}
-            </span>
-            <span class="momentum-amount" [class.green]="item.isGood" [class.coral]="!item.isGood">
-              {{ item.delta >= 0 ? '+' : '' }}{{ formatCurrency(item.delta) }}
-            </span>
-          </div>
-        }
-      </div>
-    </div>
-  } @else {
-    <div class="section-card empty-state">
-      <p class="empty-title">{{ currentMonthLabel() }} so far</p>
-      <p class="empty-sub">Save a snapshot before the month ends to start seeing month-over-month progress here.</p>
-    </div>
-  }
-
-  <!-- ── Year-Over-Year Insight (12+ months of data) ─────────────────── -->
-  @if (yearOverYear(); as yoy) {
-    <div class="section-card">
-      <h3 class="section-title">Year-Over-Year Progress</h3>
-      <div class="momentum-item">
-        <span class="momentum-sentence" [class.green]="yoy.delta >= 0" [class.coral]="yoy.delta < 0">
-          {{ yoy.delta >= 0 ? '↑' : '↓' }}&nbsp;Net worth {{ yoy.delta >= 0 ? 'up' : 'down' }} {{ formatCurrency(yoy.delta >= 0 ? yoy.delta : -yoy.delta) }} over the past 12 months ({{ fmtPct(yoy.pct) }})
-        </span>
-        <span class="momentum-amount" [class.green]="yoy.delta >= 0" [class.coral]="yoy.delta < 0">
-          {{ yoy.delta >= 0 ? '+' : '' }}{{ formatCurrency(yoy.delta) }}
-        </span>
-      </div>
-    </div>
-  }
 
   <!-- ── Real Estate / LTV ──────────────────────────────────────────── -->
   @if (showLtv()) {
@@ -536,7 +509,6 @@
           <div class="group-rows">
             @for (account of group.accounts; track account.id) {
 
-              <!-- New row: shows category dropdown + name input side by side -->
               @if (newRowId() === account.id) {
                 <div class="account-row is-new">
                   <input class="name-input name-input-new" autofocus
@@ -556,7 +528,6 @@
                   <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
                 </div>
 
-              <!-- Existing row: name (click to edit) + value input -->
               } @else {
                 <div class="account-row" [class.is-anchor-zero]="account.isAnchor && account.value === 0">
                   @if (editingId() === account.id) {

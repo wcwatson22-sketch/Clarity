@@ -13,7 +13,7 @@
       <p class="info-meta">User ID #{{ user()?.id }} &nbsp;·&nbsp;
         <span class="tier-chip" [class.premium]="isPremium()" [class.paid]="isBasePaid()">
           @if (isPremium()) { Premium Plan }
-          @else if (isBasePaid()) { Base Plan }
+          @else if (isBasePaid()) { Compare Plan }
           @else { Free Trial }
         </span>
       </p>
@@ -132,7 +132,7 @@
       <div class="trial-banner active-plan-banner">
         <span class="trial-icon">✅</span>
         <div>
-          <strong>Base plan active</strong> — your subscription is current.
+          <strong>Compare plan active</strong> — your subscription is current.
           Upgrade to Premium below to unlock unlimited snapshots and more.
         </div>
       </div>
@@ -154,11 +154,11 @@
 
     <div class="plan-grid">
 
-      <!-- Base plan — only show when NOT already on Base or higher -->
+      <!-- Compare plan — only show when NOT already on Compare or higher -->
       @if (!isBasePaid() && !isPremium()) {
         <div class="plan-card">
           <div class="plan-header">
-            <span class="plan-name">Base</span>
+            <span class="plan-name">Compare</span>
             <span class="plan-price">
               @if (isNative && iap.getProduct(IAP_PRODUCTS.BASE_MONTHLY); as prod) {
                 {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
@@ -169,7 +169,7 @@
           </div>
           <ul class="plan-features">
             <li>✓ Dashboard &amp; net worth tracking</li>
-            <li>✓ Cash flow budget</li>
+            <li>✓ Cash flow &amp; DTI</li>
             <li>✓ Financial learning center</li>
             <li>✓ Compare tab — see how you stack up</li>
             <li>✓ 10 snapshots per month</li>
@@ -185,7 +185,7 @@
             </button>
           } @else {
             <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : 'Start for $0.99/mo' }}
+              {{ upgrading() ? 'Redirecting…' : 'Get Compare — $0.99/mo' }}
             </button>
           }
         </div>
@@ -195,7 +195,7 @@
       <div class="plan-card premium" [class.active]="isPremium()">
         <div class="plan-badge">Best Value</div>
         <div class="plan-header">
-          <span class="plan-name">Premium</span>
+          <span class="plan-name">Premium ✦</span>
           <span class="plan-price">
             @if (isNative && iap.getProduct(IAP_PRODUCTS.PREMIUM_MONTHLY); as prod) {
               {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
@@ -220,7 +220,7 @@
             </button>
           } @else {
             <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium' : 'Get Premium' }}
+              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium — $4.99/mo' : 'Get Premium — $4.99/mo' }}
             </button>
           }
         } @else {

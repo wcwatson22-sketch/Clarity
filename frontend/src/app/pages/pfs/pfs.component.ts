@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, PercentPipe, DatePipe } from '@angular/comm
 import { RouterLink } from '@angular/router';
 import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
+import { PlanAccessService } from '../../services/plan-access.service';
 import { Account, BudgetItem, IncomeData } from '../../models/finance.models';
 
 @Component({
@@ -13,8 +14,12 @@ import { Account, BudgetItem, IncomeData } from '../../models/finance.models';
   styleUrl: './pfs.component.scss'
 })
 export class PfsComponent implements OnInit {
-  private svc  = inject(FinanceService);
-  private auth = inject(AuthService);
+  private svc   = inject(FinanceService);
+  private auth  = inject(AuthService);
+  private plans = inject(PlanAccessService);
+
+  /** PFS requires Premium ($4.99/mo). Trial users can access during trial period. */
+  readonly hasAccess = computed(() => this.plans.isPremium() || this.plans.trialActive());
 
   accounts    = signal<Account[]>([]);
   budgetItems = signal<BudgetItem[]>([]);

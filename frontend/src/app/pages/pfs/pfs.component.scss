@@ -1,4 +1,33 @@
-﻿/* ── Screen toolbar ─────────────────────────────────────────────────────── */
+﻿/* ── Premium Gate ────────────────────────────────────────────────────────── */
+.pfs-gate-card {
+  max-width: 480px;
+  margin: 48px auto;
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 20px;
+  padding: 40px 36px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+.gate-icon { font-size: 42px; margin-bottom: 14px; }
+.gate-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 12px; }
+.gate-desc {
+  font-size: 14px; color: #6B7280; line-height: 1.65; margin: 0 0 24px;
+  strong { color: #374151; }
+}
+.btn-upgrade-gate {
+  display: inline-block;
+  background: #1D9E75; color: #fff;
+  border: none; border-radius: 12px;
+  padding: 13px 28px;
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+  cursor: pointer;
+  &:hover { background: #085041; }
+}
+
+/* ── Screen toolbar ─────────────────────────────────────────────────────── */
 .pfs-toolbar {
   display: flex;
   justify-content: space-between;

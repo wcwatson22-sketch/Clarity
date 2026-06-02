@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, DatePipe, PercentPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -14,15 +14,11 @@ import { NumericDirective } from '../../directives/numeric.directive';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface AccountGroup { name: string; accounts: Account[]; total: number; }
-interface MomentumItem { sentence: string; delta: number; isGood: boolean; }
-interface SvgDot { cx: string; cy: string; }
-interface ChartSvgData {
-  nwPath: string; assetPath: string; liabPath: string;
-  gridLines: string[];
-  yLabels: { y: string; textY: string; label: string }[];
-  xLabels: { x: string; label: string; anchor: string }[];
-  nwDots: SvgDot[]; assetDots: SvgDot[]; liabDots: SvgDot[];
-  projPath: string; projEndLabel: string; projEndX: string; projEndY: string;
+
+interface MovementDeltas {
+  nw: number;
+  assets: number;
+  liabs: number;
 }
 
 @Component({
@@ -47,8 +43,8 @@ export class DashboardComponent implements OnInit {
   showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '📊', title: 'Your Financial Dashboard', body: 'Add assets (savings, investments, property) and liabilities (loans, credit cards) to see your net worth in real time.' },
-    { icon: '📸', title: 'Save Snapshots', body: 'Hit "Save Snapshot" whenever your balances change. Over time, snapshots build your net worth chart and show month-over-month progress.' },
-    { icon: '📈', title: 'Track Your Trajectory', body: 'View your net worth trend by 2 weeks, 30 days, 3 months, 6 months, or 1 year — and project where you\'ll be in the future.' },
+    { icon: '📸', title: 'Save Snapshots', body: 'Hit "Save Snapshot" whenever your balances change. Snapshots power your month-over-month and year-to-date movement cards below.' },
+    { icon: '📈', title: 'Track Your Progress', body: 'Your movement cards show net worth, asset, and liability changes since last month and since the start of the year. More snapshots = better tracking.' },
   ];
 
   // ── In-app progress banner ───────────────────────────────────────────────
@@ -78,7 +74,7 @@ export class DashboardComponent implements OnInit {
     return t ? new Date(t) : null;
   });
   readonly trialActive = computed(() => {
-    if (this.auth.currentUser()?.isPaid) return false; // paid subscriber — not on trial
+    if (this.auth.currentUser()?.isPaid) return false;
     const t = this.trialEndsAt();
     return t ? t > new Date() : false;
   });
@@ -104,7 +100,7 @@ export class DashboardComponent implements OnInit {
     }).length;
   });
 
-  // null = unlimited (Premium or trial); number = remaining for Base plan
+  // null = unlimited (Premium or trial); number = remaining for Base/Compare plan
   readonly snapshotsRemaining = computed(() => {
     if (!this.isBasePaid()) return null;
     return Math.max(0, this.BASE_SNAPSHOT_LIMIT - this.snapshotsThisMonth());
@@ -123,18 +119,12 @@ export class DashboardComponent implements OnInit {
   income        = signal<IncomeData | null>(null);
   loading       = signal(true);
   expandedGroups = signal<Set<string>>(this._loadGroupState('clarity-cat-dash'));
-  editingId       = signal<string | null>(null);  // which row's name is being edited
-  editingValueId  = signal<string | null>(null); // which row's value is being edited
-  newRowId        = signal<string | null>(null);  // which row just got added (shows cat dropdown)
+  editingId       = signal<string | null>(null);
+  editingValueId  = signal<string | null>(null);
+  newRowId        = signal<string | null>(null);
   snapshotSaved = signal(false);
   errorMsg      = signal<string | null>(null);
   showUpgradeModal = signal(false);
-
-  // Chart
-  readonly periods = ['2W', '30D', '3M', '6M', '1Y'];
-  chartPeriod  = signal('3M');
-  showProjection = signal(false);
-  projectionYears = signal(5);  // 1, 3, 5, 10
 
   // Group color map
   readonly groupColors: Record<string, string> = {
@@ -302,221 +292,62 @@ export class DashboardComponent implements OnInit {
   showLtv = computed(() => this.homeValue() > 0 && this.mortgageBalance() > 0);
   ltv     = computed(() => this.homeValue() > 0 ? this.mortgageBalance() / this.homeValue() : 0);
   equity  = computed(() => this.homeValue() - this.mortgageBalance());
-  // PMI required when LTV > 80%; HELOC typically available up to 89.9% CLTV
   pmiRequired    = computed(() => this.homeValue() > 0 && this.ltv() > 0.80);
   helocAvailable = computed(() => Math.max(0, this.homeValue() * 0.899 - this.mortgageBalance()));
 
-  // ── Computed: momentum ───────────────────────────────────────────────────
+  // ── Computed: snapshot helpers ────────────────────────────────────────────
   lastSnapshot = computed(() => this.snapshots()[0] ?? null);
 
-  // Most recent snapshot taken before this month began — used as month-start baseline.
-  // Falls back to the oldest in-month snapshot so "May So Far" always shows data
-  // even when the user's first snapshot was created this month.
-  monthStartSnapshot = computed(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const all = this.snapshots(); // sorted newest-first
-    const beforeMonth = all.find(s => new Date(s.createdAt as string).getTime() < monthStart);
-    if (beforeMonth) return beforeMonth;
-    // All snapshots are within the current month — use the oldest one as baseline
-    return all.length > 0 ? all[all.length - 1] : null;
+  // ── Computed: movement cards ──────────────────────────────────────────────
+  /**
+   * Most recent snapshot taken before the current calendar month began.
+   * Used as the month-over-month baseline. Null if all snapshots are from the current month.
+   */
+  priorMonthSnapshot = computed(() => {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    return this.snapshots().find(s => new Date(s.createdAt).getTime() < monthStart) ?? null;
   });
 
-  readonly currentMonthLabel = computed(() => {
-    return new Date().toLocaleDateString('en-US', { month: 'long' });
+  /**
+   * Earliest snapshot in the current calendar year, provided there are at least 2 snapshots
+   * this year. Returns null if there are fewer than 2 this-year snapshots (can't compute YTD).
+   */
+  ytdBaseSnapshot = computed(() => {
+    const yr = new Date().getFullYear();
+    const thisYear = this.snapshots().filter(s => new Date(s.createdAt).getFullYear() === yr);
+    return thisYear.length >= 2 ? thisYear[thisYear.length - 1] : null; // oldest (sorted newest-first)
   });
 
-  momentumItems = computed<MomentumItem[]>(() => {
-    const ref = this.monthStartSnapshot();
-    if (!ref) return [];
-
-    const month = this.currentMonthLabel();
-    const items: MomentumItem[] = [];
-
-    // 1. Net worth — always first
-    const nwDelta = this.netWorth() - ref.netWorth;
-    const nwPct   = ref.netWorth !== 0 ? nwDelta / Math.abs(ref.netWorth) : 0;
-    const nwPctStr = Math.abs(nwPct * 100) >= 0.1 ? ` (${(nwPct * 100).toFixed(1)}%)` : '';
-    items.push({
-      sentence: `Net worth ${nwDelta >= 0 ? 'up' : 'down'} ${this.formatCurrency(Math.abs(nwDelta))}${nwPctStr} in ${month}`,
-      delta: nwDelta,
-      isGood: nwDelta >= 0,
-    });
-
-    // 2 & 3. Top account-level changes (requires lineItems in snapshot)
-    const lineItems = ref.lineItems ?? [];
-    if (lineItems.length > 0) {
-      const changes = this.accounts()
-        .map(a => {
-          const prev = lineItems.find(li => li.accountId === a.id);
-          if (!prev) return null;
-          const delta  = a.value - prev.value;
-          const absAmt = Math.abs(delta);
-          if (absAmt < 100) return null;                        // skip trivial
-          const pct    = prev.value !== 0 ? delta / prev.value : 0;
-          const isLiab = a.type === 'Liability';
-          const isGood = isLiab ? delta <= 0 : delta >= 0;
-          const dir    = delta > 0 ? 'up' : 'down';
-          const pctStr = Math.abs(pct * 100) >= 0.5 ? ` (${Math.abs(pct * 100).toFixed(1)}%)` : '';
-          return {
-            sentence: `${a.name} ${dir} ${this.formatCurrency(absAmt)}${pctStr} this month`,
-            delta, isGood, absAmt,
-          };
-        })
-        .filter((c): c is NonNullable<typeof c> => c !== null)
-        .sort((a, b) => b.absAmt - a.absAmt);
-
-      for (const c of changes.slice(0, 2)) {
-        items.push({ sentence: c.sentence, delta: c.delta, isGood: c.isGood });
-      }
-    }
-
-    return items.slice(0, 3);
-  });
-
-  // ── Computed: chart ──────────────────────────────────────────────────────
-  chartPoints = computed(() => {
-    const days: Record<string, number> = { '2W': 14, '30D': 30, '3M': 90, '6M': 180, '1Y': 365 };
-    const cutoff = new Date(Date.now() - (days[this.chartPeriod()] ?? 90) * 86400000);
-    const snaps = this.snapshots()
-      .filter(s => new Date(s.createdAt as string) >= cutoff)
-      .map(s => ({ createdAt: s.createdAt as string, netWorth: s.netWorth, totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities }))
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    return [...snaps, { createdAt: new Date().toISOString(), netWorth: this.netWorth(), totalAssets: this.totalAssets(), totalLiabilities: this.totalLiabilities() }];
-  });
-
-  chartSvg = computed<(ChartSvgData & { projPath: string; projEndLabel: string; projEndX: string; projEndY: string }) | null>(() => {
-    const pts  = this.chartPoints();
-    if (pts.length < 2) return null;
-
-    const proj   = this.showProjection() ? this.projectionRawPoints() : [];
-    const W = 760, H = 200, padL = 60, padR = 16, padT = 12, padB = 30;
-    const chartW = W - padL - padR, chartH = H - padT - padB;
-
-    // Build unified time range (history + projection)
-    const allIsos = [...pts.map(p => p.createdAt), ...proj.map(p => p.iso)];
-    const times   = allIsos.map(iso => new Date(iso).getTime());
-    const tMin = times[0], tMax = times[times.length - 1], tRange = tMax - tMin || 1;
-
-    // Build unified value range — Y-axis scales to next $100K milestone above current NW
-    const nwVals    = pts.map(p => p.netWorth);
-    const projVals  = proj.map(p => p.nw);
-    const allNwVals = [...nwVals, ...projVals];
-    const dataMin   = Math.min(...allNwVals);
-    const dataMax   = Math.max(...allNwVals);
-
-    // Motivational ceiling: next $100K milestone above current net worth
-    // e.g. $90K → $100K, $100K → $200K, $250K → $300K
-    const currentNW     = this.netWorth();
-    const rawMilestone  = Math.ceil((Math.max(currentNW, 0) + 1) / 100_000) * 100_000;
-    const nextMilestone = Math.max(rawMilestone, 100_000); // floor at $100K ceiling
-
-    // Extend if projection or historical data exceeds the milestone
-    const vHigh = Math.max(nextMilestone, dataMax * 1.02);
-
-    // Floor: 0 for all-positive values; drop below 0 for negative NW users
-    const vLow  = dataMin >= 0
-      ? 0
-      : Math.floor(dataMin * 1.1 / 10_000) * 10_000;
-
-    const vRange = vHigh - vLow || 1;
-
-    const toX = (iso: string) => padL + ((new Date(iso).getTime() - tMin) / tRange) * chartW;
-    const toY = (v: number)   => padT + (1 - (v - vLow) / vRange) * chartH;
-    const line = (k: 'netWorth' | 'totalAssets' | 'totalLiabilities') =>
-      pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.createdAt).toFixed(1)},${toY(p[k]).toFixed(1)}`).join(' ');
-    const dots = (k: 'netWorth' | 'totalAssets' | 'totalLiabilities'): SvgDot[] =>
-      pts.map(p => ({ cx: toX(p.createdAt).toFixed(1), cy: toY(p[k]).toFixed(1) }));
-
-    // Snap Y labels to clean round intervals (25% steps of the range, rounded to nice numbers)
-    const rawStep  = vRange / 4;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const niceStep  = Math.ceil(rawStep / magnitude) * magnitude;
-    const yLabelVals = Array.from({ length: 5 }, (_, i) => vLow + niceStep * i)
-      .filter(v => v <= vHigh * 1.01); // drop any that overshoot
-    const yLabels = yLabelVals.map(v => ({
-      y: toY(v).toFixed(1), textY: (toY(v) + 4).toFixed(1), label: this.formatCurrencyShort(v)
-    }));
-
-    // Projection path: starts from current NW → future
-    const todayPt = pts[pts.length - 1];
-    const projPath = proj.length
-      ? `M${toX(todayPt.createdAt).toFixed(1)},${toY(todayPt.netWorth).toFixed(1)} ` +
-        proj.map(p => `L${toX(p.iso).toFixed(1)},${toY(p.nw).toFixed(1)}`).join(' ')
-      : '';
-    const lastProj   = proj[proj.length - 1];
-    const projEndX   = lastProj ? toX(lastProj.iso).toFixed(1) : '0';
-    const projEndY   = lastProj ? toY(lastProj.nw).toFixed(1) : '0';
-    const projEndLabel = lastProj ? this.formatCurrencyShort(lastProj.nw) : '';
-
-    // x-labels: always show start + today; if projection, also show end year
-    const xLabels: { x: string; label: string; anchor: string }[] = [
-      { x: toX(pts[0].createdAt).toFixed(1), label: this.fmtDate(pts[0].createdAt), anchor: 'start' },
-      { x: toX(todayPt.createdAt).toFixed(1), label: 'Today', anchor: proj.length ? 'middle' : 'end' },
-    ];
-    if (proj.length) {
-      const endYear = new Date(lastProj.iso).getFullYear();
-      xLabels.push({ x: projEndX, label: String(endYear), anchor: 'end' });
-    }
-
+  /**
+   * Month-over-month deltas for net worth, assets, and liabilities.
+   * Null if no prior-month snapshot exists (user hasn't saved snapshots across months yet).
+   */
+  momDeltas = computed<MovementDeltas | null>(() => {
+    const prior = this.priorMonthSnapshot();
+    if (!prior) return null;
     return {
-      nwPath: line('netWorth'), assetPath: line('totalAssets'), liabPath: line('totalLiabilities'),
-      gridLines: yLabels.map(l => `M${padL},${l.y} H${W - padR}`),
-      yLabels, xLabels,
-      nwDots: dots('netWorth'), assetDots: dots('totalAssets'), liabDots: dots('totalLiabilities'),
-      projPath, projEndLabel, projEndX, projEndY,
+      nw:     this.netWorth()          - prior.netWorth,
+      assets: this.totalAssets()       - prior.totalAssets,
+      liabs:  this.totalLiabilities()  - prior.totalLiabilities,
     };
   });
 
-  // ── Computed: year-over-year insight (when ≥ 12 months of snapshots) ───
-  yearOverYear = computed<{ label: string; delta: number; pct: number } | null>(() => {
-    const all = this.snapshots(); // newest-first
-    if (all.length < 2) return null;
-    const now = new Date();
-    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).getTime();
-    // Need a snapshot from ~12 months ago (within 45-day window)
-    const window = 45 * 86400000;
-    const yearAgoSnap = all.find(s => {
-      const t = new Date(s.createdAt as string).getTime();
-      return Math.abs(t - oneYearAgo) <= window;
-    });
-    if (!yearAgoSnap) return null;
-    const current = this.netWorth();
-    const delta = current - yearAgoSnap.netWorth;
-    const pct = yearAgoSnap.netWorth !== 0 ? delta / Math.abs(yearAgoSnap.netWorth) : 0;
-    return { label: now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), delta, pct };
-  });
-
-  // ── Computed: projection ─────────────────────────────────────────────────
-  monthlyDelta = computed(() => {
-    const inc = this.income();
-    if (!inc) return 0;
-    const net = inc.type === 'stable' ? inc.netMonthlyIncome
-      : inc.variableMonths.length ? inc.variableMonths.reduce((s, m) => s + m.amount, 0) / inc.variableMonths.length * 0.75 : 0;
-    const savings  = this.budgetItems().filter(b => b.group === 'Savings').reduce((s, b) => s + b.amount, 0);
-    const outflow  = this.budgetItems().reduce((s, b) => s + b.amount, 0);
-    const fcf      = net - outflow;
-    return savings + Math.max(0, fcf);
-  });
-
-  projectionRawPoints = computed(() => {
-    const delta  = this.monthlyDelta();
-    const years  = this.projectionYears();
-    const months = years * 12;
-    const now    = Date.now();
-    const base   = this.netWorth();
-    const r      = 0.06 / 12;  // 6% annual growth / month
-    const pts: { iso: string; nw: number }[] = [];
-    for (let m = 1; m <= months; m++) {
-      const nw = base * Math.pow(1 + r, m) + (r > 0 ? delta * ((Math.pow(1 + r, m) - 1) / r) : delta * m);
-      pts.push({ iso: new Date(now + m * 30.44 * 86400000).toISOString(), nw });
-    }
-    return pts;
+  /**
+   * Year-to-date deltas for net worth, assets, and liabilities.
+   * Null if fewer than 2 snapshots exist in the current calendar year.
+   */
+  ytdDeltas = computed<MovementDeltas | null>(() => {
+    const base = this.ytdBaseSnapshot();
+    if (!base) return null;
+    return {
+      nw:     this.netWorth()          - base.netWorth,
+      assets: this.totalAssets()       - base.totalAssets,
+      liabs:  this.totalLiabilities()  - base.totalLiabilities,
+    };
   });
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
   ngOnInit() {
-    // Prompt existing users who have no first name yet
     if (!this.auth.currentUser()?.firstName) {
       this.showFirstNameModal.set(true);
     }
@@ -542,7 +373,6 @@ export class DashboardComponent implements OnInit {
 
     this.progressMsg.set(msg);
 
-    // Determine direction for icon/colour
     if (snaps.length >= 2) {
       const [latest, prev] = snaps;
       const improved = [
@@ -594,7 +424,6 @@ export class DashboardComponent implements OnInit {
   private _loadGroupState(key: string): Set<string> {
     const saved = localStorage.getItem(key);
     if (saved !== null) return new Set(JSON.parse(saved));
-    // No saved state — fall back to user's default preference
     return localStorage.getItem('clarity-expand-default') === 'true'
       ? new Set(['Cash & Bank','Investments','Retirement','Real Estate','Personal Property','Credit Cards','Loans','Mortgages','Other Debts'])
       : new Set();
@@ -615,7 +444,6 @@ export class DashboardComponent implements OnInit {
 
   // ── Account CRUD ─────────────────────────────────────────────────────────
   updateValue(account: Account, raw: string) {
-    // Clamp negatives to 0; read latest from signal to avoid stale-name race condition
     const val = Math.max(0, parseFloat(raw.replace(/[^0-9.-]/g, '')) || 0);
     const latest = this.accounts().find(a => a.id === account.id) ?? account;
     this.svc.updateAccount(latest.id, { ...latest, value: val }).subscribe(updated => {
@@ -633,7 +461,6 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  /** Change category — also moves the account into the right group */
   updateCategory(account: Account, catValue: string) {
     const cats = account.type === 'Asset' ? this.assetCategories : this.liabilityCategories;
     const cat = cats.find(c => c.value === catValue);
@@ -656,12 +483,10 @@ export class DashboardComponent implements OnInit {
 
   private showError(msg: string) {
     this.toast.error(msg);
-    // Keep backward-compat signal for any inline error display still in template
     this.errorMsg.set(msg);
     setTimeout(() => this.errorMsg.set(null), 5500);
   }
 
-  /** Top-level "Add Asset / Liability" — creates in the first group for that type */
   addNewAccount(type: 'Asset' | 'Liability') {
     const cat = type === 'Asset' ? this.assetCategories[0] : this.liabilityCategories[0];
     this.svc.createAccount({ group: cat.group, category: cat.value, name: 'New Account', value: 0, type })
@@ -676,7 +501,6 @@ export class DashboardComponent implements OnInit {
       });
   }
 
-  /** Per-group "+ Add account" — creates in that specific group */
   addToGroup(group: string, type: 'Asset' | 'Liability', category: string) {
     this.svc.createAccount({ group, category, name: 'New Account', value: 0, type }).subscribe({
       next: a => {
@@ -688,7 +512,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  /** Flat category list for the inline select */
   getCategories(type: string) {
     return type === 'Asset' ? this.assetCategories : this.liabilityCategories;
   }
@@ -735,15 +558,6 @@ export class DashboardComponent implements OnInit {
   }
   formatCurrencyExact(v: number) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-  }
-  formatCurrencyShort(v: number): string {
-    const abs = Math.abs(v), sign = v < 0 ? '-' : '';
-    if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000)     return `${sign}$${(abs / 1_000).toFixed(0)}K`;
-    return `${sign}$${abs.toFixed(0)}`;
-  }
-  fmtDate(iso: string) {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
   fmtPct(pct: number): string {
     return `${(Math.abs(pct) * 100).toFixed(1)}%`;

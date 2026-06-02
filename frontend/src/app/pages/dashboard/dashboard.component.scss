@@ -657,73 +657,72 @@
 }
 .add-row-btn:hover { border-color: #1D9E75; color: #1D9E75; }
 
-/* Chart */
-.chart-card { padding: 20px 24px 16px; }
-
-.chart-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px; flex-wrap: wrap; gap: 10px;
-}
-.chart-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-.period-tabs { display: flex; gap: 4px; }
-.period-btn {
-  border: 1px solid #E5E7EB; background: none;
-  border-radius: 8px; padding: 5px 10px;
-  font-size: 12px; font-weight: 500; color: #6B7280;
-  cursor: pointer; transition: all 0.15s;
-}
-.period-btn:hover { border-color: #1D9E75; color: #1D9E75; }
-.period-btn.active { background: #1D9E75; border-color: #1D9E75; color: #fff; }
-
-.projection-btn {
-  border: 1px solid #E5E7EB; background: none;
-  border-radius: 8px; padding: 5px 10px;
-  font-size: 12px; font-weight: 500; color: #6B7280;
-  cursor: pointer; transition: all 0.15s;
-  &:hover { border-color: #1D9E75; color: #1D9E75; }
-  &.active { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+/* ── Movement Cards ─────────────────────────────────────────────────── */
+.movement-section {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
+  padding: 20px 24px;
 }
 
-.projection-controls {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 12px; background: #F0FBF7;
-  border: 1px solid #6EE7C0; border-radius: 10px;
-  margin-bottom: 10px; flex-wrap: wrap;
+.movement-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 14px;
 }
-.proj-label { font-size: 12px; font-weight: 600; color: #1D9E75; }
-.proj-yr-btn {
-  border: 1px solid #6EE7C0; background: none;
-  border-radius: 6px; padding: 3px 8px;
-  font-size: 12px; font-weight: 500; color: #1D9E75;
-  cursor: pointer; transition: all 0.15s;
-  &:hover { background: #1D9E75; color: #fff; border-color: #1D9E75; }
-  &.active { background: #1D9E75; color: #fff; border-color: #1D9E75; }
-}
-.proj-note { font-size: 11px; color: #6B7280; margin-left: 4px; }
 
-.series-legend { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-.legend-btn {
-  display: flex; align-items: center; gap: 6px;
-  border: none; background: none; padding: 0;
-  font-size: 12px; font-weight: 500; cursor: pointer;
-  transition: opacity 0.15s;
+.movement-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
-.legend-btn.dim { opacity: 0.35; }
-.legend-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-}
-.nw-dot { background: #1D9E75; }
-.asset-dot { background: #3B82F6; }
-.liab-dot { background: #EF4444; }
-.nw-color { color: #085041; }
-.asset-color { color: #178A64; }
-.liab-color { color: #EF4444; }
 
-.chart-empty {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 10px; padding: 32px 16px; color: #9CA3AF;
-  font-size: 13px; text-align: center;
+.mv-card {
+  background: #F9FAFB;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mv-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9CA3AF;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.mv-value {
+  font-size: 19px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+
+  &.green { color: #1D9E75; }
+  &.coral { color: #EF4444; }
+  &.mv-na { color: #D1D5DB; font-size: 22px; }
+}
+
+.mv-trend {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6B7280;
+
+  &.green { color: #1D9E75; }
+  &.coral { color: #EF4444; }
+}
+
+.mv-empty {
+  font-size: 11px;
+  color: #9CA3AF;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 /* Group heading row */
@@ -816,7 +815,7 @@
 .sk-meta   { height: 36px; flex: 1; border-radius: 8px; }
 .sk-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
 .sk-metric  { height: 80px; border-radius: 14px; }
-.sk-chart   { height: 160px; border-radius: 10px; }
+.sk-chart   { height: 120px; border-radius: 10px; }
 
 /* Error toast (legacy inline — toasts now handle this) */
 .error-toast {
@@ -895,17 +894,14 @@
   .metric-card { padding: 14px 12px; }
   .metric-value { font-size: 17px; }
 
-  /* Chart */
-  .chart-card { padding: 16px 14px 12px; }
-  .chart-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .chart-controls { width: 100%; justify-content: space-between; }
-  .period-tabs { flex-wrap: wrap; gap: 3px; }
-  .projection-controls { font-size: 11px; gap: 4px; }
-  .proj-note { display: none; } /* hide verbose note on mobile */
+  /* Movement cards */
+  .movement-section { padding: 16px 14px; }
+  .movement-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .mv-card { padding: 12px 12px; }
+  .mv-value { font-size: 16px; }
 
-  /* Momentum / section cards */
+  /* Section cards */
   .section-card { padding: 16px 14px; }
-  .momentum-sentence { font-size: 13px; }
 
   /* LTV */
   .ltv-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }

@@ -150,8 +150,8 @@ export class SettingsComponent implements OnInit {
         const isP = me.tier === 'Premium';
         this.upgradeSuccess.set(isP
           ? 'Welcome to Premium! All features unlocked.'
-          : 'Welcome to the Base plan! Subscription active.');
-        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Base plan activated!');
+          : 'Welcome to the Compare plan! Subscription active.');
+        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Compare plan activated!');
       });
     } else if (this.iap.error()) {
       this.upgradeError.set(this.iap.error());
@@ -217,8 +217,8 @@ export class SettingsComponent implements OnInit {
               this.upgradeSuccess.set('Welcome to Premium! Unlimited snapshots and more are now unlocked.');
               this.toast.success('🎉 Upgraded to Premium!');
             } else if (user.isPaid) {
-              this.upgradeSuccess.set('Welcome to the Base plan! Your subscription is now active.');
-              this.toast.success('🎉 Subscribed to Base plan!');
+              this.upgradeSuccess.set('Welcome to the Compare plan! Your subscription is now active.');
+              this.toast.success('🎉 Subscribed to Compare plan!');
             }
           }
         });
@@ -272,7 +272,7 @@ export class SettingsComponent implements OnInit {
         this.http.get<MeResponse>(`${this.base}/auth/me`).subscribe(me => {
           this.auth.updateCachedUser(me);
         });
-        this.toast.success('Subscription cancelled. You\'ve been moved to the Base plan.');
+        this.toast.success('Subscription cancelled. Access ends at period end.');
         this.upgradeSuccess.set('');
         this.upgradeError.set('Your subscription has been cancelled. A confirmation email has been sent.');
       },

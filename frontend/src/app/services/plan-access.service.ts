@@ -6,10 +6,10 @@ import { AuthService } from './auth.service';
  * Inject this instead of duplicating isPremium / trialActive logic in components.
  *
  * Plan rules:
- *  - Free (trial expired)  : Dashboard, Cash Flow, Learn only
- *  - Trial (active)        : Full access — same as Premium
- *  - Base  ($0.99/mo)      : Adds Compare tab
- *  - Premium ($4.99/mo)    : Adds Loan Prep guides, PFS, unlimited snapshots, CSV export
+ *  - Free (trial expired)   : Dashboard, Cash Flow, Learn only
+ *  - Trial (active)         : Full access — same as Premium during trial
+ *  - Compare ($0.99/mo)     : Adds Compare tab (backend tier = "Base")
+ *  - Premium ($4.99/mo)     : Adds PFS, Loan Prep guides, unlimited snapshots, CSV export
  */
 @Injectable({ providedIn: 'root' })
 export class PlanAccessService {
@@ -36,14 +36,14 @@ export class PlanAccessService {
   });
 
   /**
-   * Compare tab — requires Base Plan ($0.99), Premium ($4.99), or an active trial.
+   * Compare tab — requires Compare Plan ($0.99), Premium ($4.99), or an active trial.
    * Free users with an expired trial are gated.
    */
   readonly canCompare = computed(() => this.isPaid() || this.trialActive());
 
   /**
-   * Loan Prep guides — requires the Premium Plan ($4.99) only.
-   * Base plan and trial users see the loan type grid but cannot open guides.
+   * Loan Prep guides — requires Premium Plan ($4.99) only.
+   * Compare plan and trial users see the loan type grid but cannot open individual guides.
    */
   readonly canLoanPrep = computed(() => this.isPremium());
 }

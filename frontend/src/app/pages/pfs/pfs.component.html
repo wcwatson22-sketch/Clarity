@@ -1,16 +1,33 @@
 <!-- Screen-only print button -->
 <div class="pfs-toolbar no-print">
   <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
-  <button class="print-btn" (click)="print()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-      <rect x="6" y="14" width="12" height="8"/>
-    </svg>
-    Print / Save as PDF
-  </button>
+  @if (hasAccess()) {
+    <button class="print-btn" (click)="print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Print / Save as PDF
+    </button>
+  }
 </div>
 
+<!-- ── Premium Gate ──────────────────────────────────────────────────────── -->
+@if (!hasAccess()) {
+  <div class="pfs-gate-card">
+    <div class="gate-icon">🔒</div>
+    <h2 class="gate-title">Premium Feature</h2>
+    <p class="gate-desc">
+      Your <strong>Personal Financial Statement</strong> is a banker-clean summary of your
+      assets, liabilities, income, and DTI — exactly what lenders ask for.
+      Available with the <strong>Premium Plan ($4.99/mo)</strong>.
+    </p>
+    <a routerLink="/settings" class="btn-upgrade-gate">Upgrade to Premium — $4.99/mo</a>
+  </div>
+}
+
 <!-- ── PFS Document ─────────────────────────────────────────────────────── -->
+@if (hasAccess()) {
 <div class="pfs-doc">
 
   <!-- Header -->
@@ -189,5 +206,6 @@
       </div>
     </div>
   </div>
+} <!-- end @if (hasAccess()) -->
 
 </div>
