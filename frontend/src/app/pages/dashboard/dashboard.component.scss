@@ -662,55 +662,57 @@
   background: #fff;
   border-radius: 16px;
   border: 1px solid #E5E7EB;
-  padding: 20px 24px;
+  padding: 16px 20px;
 }
 
 .movement-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 14px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .movement-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 .mv-card {
   background: #F9FAFB;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #E5E7EB;
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .mv-label {
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: #9CA3AF;
   font-weight: 700;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .mv-value {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   color: #111827;
-  line-height: 1.2;
+  line-height: 1.15;
 
   &.green { color: #1D9E75; }
   &.coral { color: #EF4444; }
-  &.mv-na { color: #D1D5DB; font-size: 22px; }
+  &.mv-na { color: #D1D5DB; font-size: 20px; }
 }
 
 .mv-trend {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: #6B7280;
 
   &.green { color: #1D9E75; }
@@ -718,11 +720,11 @@
 }
 
 .mv-empty {
-  font-size: 11px;
+  font-size: 10px;
   color: #9CA3AF;
   font-style: italic;
   line-height: 1.4;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* Group heading row */
@@ -894,11 +896,15 @@
   .metric-card { padding: 14px 12px; }
   .metric-value { font-size: 17px; }
 
-  /* Movement cards */
-  .movement-section { padding: 16px 14px; }
-  .movement-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .mv-card { padding: 12px 12px; }
-  .mv-value { font-size: 16px; }
+  /* Movement cards — 2-col on mobile, tighter */
+  .movement-section { padding: 12px 14px; }
+  .movement-title { font-size: 11px; margin-bottom: 10px; }
+  .movement-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .mv-card { padding: 9px 10px; }
+  .mv-value { font-size: 15px; }
+  .mv-label { font-size: 9px; }
+  .mv-trend { font-size: 10px; }
+  .mv-empty { font-size: 10px; }
 
   /* Section cards */
   .section-card { padding: 16px 14px; }

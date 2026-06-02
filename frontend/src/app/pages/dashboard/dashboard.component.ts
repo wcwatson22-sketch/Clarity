@@ -296,53 +296,72 @@ export class DashboardComponent implements OnInit {
   helocAvailable = computed(() => Math.max(0, this.homeValue() * 0.899 - this.mortgageBalance()));
 
   // ── Computed: snapshot helpers ────────────────────────────────────────────
+  /** The most recent saved snapshot. Used for the "Last snapshot" date label. */
   lastSnapshot = computed(() => this.snapshots()[0] ?? null);
 
   // ── Computed: movement cards ──────────────────────────────────────────────
+  // All movement is calculated snapshot-to-snapshot, NEVER against live account values.
+  // This ensures only committed (saved) data drives the movement cards.
+
   /**
    * Most recent snapshot taken before the current calendar month began.
-   * Used as the month-over-month baseline. Null if all snapshots are from the current month.
+   * MoM baseline. Null if all snapshots are from the current month.
    */
-  priorMonthSnapshot = computed(() => {
+  private readonly _priorMonthSnapshot = computed(() => {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
     return this.snapshots().find(s => new Date(s.createdAt).getTime() < monthStart) ?? null;
   });
 
   /**
-   * Earliest snapshot in the current calendar year, provided there are at least 2 snapshots
-   * this year. Returns null if there are fewer than 2 this-year snapshots (can't compute YTD).
+   * Earliest snapshot in the current calendar year (the YTD starting point).
+   * Null if fewer than 2 this-year snapshots exist — first snapshot is the baseline, not movement.
    */
-  ytdBaseSnapshot = computed(() => {
+  private readonly _ytdBaseSnapshot = computed(() => {
     const yr = new Date().getFullYear();
     const thisYear = this.snapshots().filter(s => new Date(s.createdAt).getFullYear() === yr);
-    return thisYear.length >= 2 ? thisYear[thisYear.length - 1] : null; // oldest (sorted newest-first)
+    // Need at least 2: one to be the baseline, one to measure against it.
+    return thisYear.length >= 2 ? thisYear[thisYear.length - 1] : null; // oldest = last in newest-first list
   });
 
   /**
-   * Month-over-month deltas for net worth, assets, and liabilities.
-   * Null if no prior-month snapshot exists (user hasn't saved snapshots across months yet).
+   * Most recent snapshot in the current calendar year (the YTD endpoint).
+   * Null if fewer than 2 this-year snapshots exist.
+   */
+  private readonly _ytdEndSnapshot = computed(() => {
+    const yr = new Date().getFullYear();
+    const thisYear = this.snapshots().filter(s => new Date(s.createdAt).getFullYear() === yr);
+    return thisYear.length >= 2 ? thisYear[0] : null; // newest = first in newest-first list
+  });
+
+  /**
+   * Month-over-month deltas: latest snapshot vs the most recent pre-current-month snapshot.
+   * Both sides are snapshot values — live account edits are not reflected until a snapshot is saved.
+   * Null when no prior-month snapshot exists.
    */
   momDeltas = computed<MovementDeltas | null>(() => {
-    const prior = this.priorMonthSnapshot();
-    if (!prior) return null;
+    const current = this.lastSnapshot();
+    const prior   = this._priorMonthSnapshot();
+    if (!current || !prior) return null;
     return {
-      nw:     this.netWorth()          - prior.netWorth,
-      assets: this.totalAssets()       - prior.totalAssets,
-      liabs:  this.totalLiabilities()  - prior.totalLiabilities,
+      nw:     current.netWorth          - prior.netWorth,
+      assets: current.totalAssets       - prior.totalAssets,
+      liabs:  current.totalLiabilities  - prior.totalLiabilities,
     };
   });
 
   /**
-   * Year-to-date deltas for net worth, assets, and liabilities.
-   * Null if fewer than 2 snapshots exist in the current calendar year.
+   * Year-to-date deltas: most recent this-year snapshot vs earliest this-year snapshot.
+   * Both sides are snapshot values. Null when fewer than 2 snapshots exist this year —
+   * the first snapshot of the year is always the baseline, never counted as movement.
    */
   ytdDeltas = computed<MovementDeltas | null>(() => {
-    const base = this.ytdBaseSnapshot();
-    if (!base) return null;
+    const base = this._ytdBaseSnapshot();
+    const end  = this._ytdEndSnapshot();
+    if (!base || !end) return null;
     return {
-      nw:     this.netWorth()          - base.netWorth,
-      assets: this.totalAssets()       - base.totalAssets,
-      liabs:  this.totalLiabilities()  - base.totalLiabilities,
+      nw:     end.netWorth          - base.netWorth,
+      assets: end.totalAssets       - base.totalAssets,
+      liabs:  end.totalLiabilities  - base.totalLiabilities,
     };
   });
 

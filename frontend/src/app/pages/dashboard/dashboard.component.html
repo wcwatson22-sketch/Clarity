@@ -327,30 +327,32 @@
     </div>
   </div>
 
-  <!-- ── Movement Cards (replaces chart) ─────────────────────────────── -->
+  <!-- ── Movement Cards ───────────────────────────────────────────────── -->
+  <!-- Both MoM and YTD compare snapshots to snapshots — live edits are     -->
+  <!-- never reflected until the user saves a new snapshot.                  -->
   <div class="movement-section">
-    <h3 class="movement-title">Financial Movement</h3>
+    <h3 class="movement-title">Snapshot Movement</h3>
     <div class="movement-grid">
 
-      <!-- Net Worth · This Month -->
+      <!-- Net Worth MoM -->
       <div class="mv-card">
-        <span class="mv-label">Net Worth · This Month</span>
+        <span class="mv-label">Net Worth MoM</span>
         @if (momDeltas(); as m) {
           <span class="mv-value" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
             {{ m.nw >= 0 ? '+' : '' }}{{ formatCurrency(m.nw) }}
           </span>
           <span class="mv-trend" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
-            {{ m.nw >= 0 ? '↑ Improving' : '↓ Declined' }}
+            {{ m.nw >= 0 ? '↑ Up' : '↓ Down' }}
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Save a snapshot each month to track progress</span>
+          <span class="mv-empty">Need a prior-month snapshot</span>
         }
       </div>
 
-      <!-- Net Worth · YTD -->
+      <!-- Net Worth YTD -->
       <div class="mv-card">
-        <span class="mv-label">Net Worth · YTD</span>
+        <span class="mv-label">Net Worth YTD</span>
         @if (ytdDeltas(); as y) {
           <span class="mv-value" [class.green]="y.nw >= 0" [class.coral]="y.nw < 0">
             {{ y.nw >= 0 ? '+' : '' }}{{ formatCurrency(y.nw) }}
@@ -360,13 +362,13 @@
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+          <span class="mv-empty">Save another snapshot for YTD</span>
         }
       </div>
 
-      <!-- Assets · This Month -->
+      <!-- Assets MoM -->
       <div class="mv-card">
-        <span class="mv-label">Assets · This Month</span>
+        <span class="mv-label">Assets MoM</span>
         @if (momDeltas(); as m) {
           <span class="mv-value" [class.green]="m.assets >= 0" [class.coral]="m.assets < 0">
             {{ m.assets >= 0 ? '+' : '' }}{{ formatCurrency(m.assets) }}
@@ -376,13 +378,13 @@
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Save a snapshot each month to track progress</span>
+          <span class="mv-empty">Need a prior-month snapshot</span>
         }
       </div>
 
-      <!-- Assets · YTD -->
+      <!-- Assets YTD -->
       <div class="mv-card">
-        <span class="mv-label">Assets · YTD</span>
+        <span class="mv-label">Assets YTD</span>
         @if (ytdDeltas(); as y) {
           <span class="mv-value" [class.green]="y.assets >= 0" [class.coral]="y.assets < 0">
             {{ y.assets >= 0 ? '+' : '' }}{{ formatCurrency(y.assets) }}
@@ -392,40 +394,40 @@
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+          <span class="mv-empty">Save another snapshot for YTD</span>
         }
       </div>
 
-      <!-- Liabilities · This Month -->
+      <!-- Liabilities MoM -->
+      <!-- Liability DECREASE = improving (green); INCREASE = worsening (coral) -->
       <div class="mv-card">
-        <span class="mv-label">Liabilities · This Month</span>
+        <span class="mv-label">Liabilities MoM</span>
         @if (momDeltas(); as m) {
-          <!-- Liability decrease = good (green), increase = bad (coral) -->
           <span class="mv-value" [class.green]="m.liabs <= 0" [class.coral]="m.liabs > 0">
-            {{ m.liabs >= 0 ? '+' : '' }}{{ formatCurrency(m.liabs) }}
+            {{ m.liabs > 0 ? '+' : '' }}{{ formatCurrency(m.liabs) }}
           </span>
           <span class="mv-trend" [class.green]="m.liabs <= 0" [class.coral]="m.liabs > 0">
-            {{ m.liabs <= 0 ? '↓ Debt reducing' : '↑ Debt increased' }}
+            {{ m.liabs < 0 ? '↓ Improving' : m.liabs > 0 ? '↑ Worsening' : '→ Unchanged' }}
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Save a snapshot each month to track progress</span>
+          <span class="mv-empty">Need a prior-month snapshot</span>
         }
       </div>
 
-      <!-- Liabilities · YTD -->
+      <!-- Liabilities YTD -->
       <div class="mv-card">
-        <span class="mv-label">Liabilities · YTD</span>
+        <span class="mv-label">Liabilities YTD</span>
         @if (ytdDeltas(); as y) {
           <span class="mv-value" [class.green]="y.liabs <= 0" [class.coral]="y.liabs > 0">
-            {{ y.liabs >= 0 ? '+' : '' }}{{ formatCurrency(y.liabs) }}
+            {{ y.liabs > 0 ? '+' : '' }}{{ formatCurrency(y.liabs) }}
           </span>
           <span class="mv-trend" [class.green]="y.liabs <= 0" [class.coral]="y.liabs > 0">
-            {{ y.liabs <= 0 ? '↓ Less debt this year' : '↑ More debt this year' }}
+            {{ y.liabs < 0 ? '↓ Improving' : y.liabs > 0 ? '↑ Worsening' : '→ Unchanged' }}
           </span>
         } @else {
           <span class="mv-value mv-na">—</span>
-          <span class="mv-empty">Need 2+ snapshots this year for YTD</span>
+          <span class="mv-empty">Save another snapshot for YTD</span>
         }
       </div>
 
