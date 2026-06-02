@@ -521,7 +521,7 @@
 .metric-value.amber { color: #BA7517; }
 .metric-sub { font-size: 11px; color: #9CA3AF; }
 
-/* Momentum / LTV */
+/* LTV section card */
 .section-card {
   background: #fff;
   border-radius: 16px;
@@ -529,19 +529,6 @@
   padding: 20px 24px;
 }
 .section-title { font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 12px; }
-
-.momentum-list { display: flex; flex-direction: column; }
-.momentum-item {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 10px 0;
-}
-.momentum-divider { border-bottom: 1px solid #F3F4F6; }
-.momentum-sentence { font-size: 14px; color: #6B7280; flex: 1; }
-.momentum-sentence.green { color: #1D9E75; }
-.momentum-sentence.coral { color: #EF4444; }
-.momentum-amount { font-size: 15px; font-weight: 700; white-space: nowrap; }
-.momentum-amount.green { color: #1D9E75; }
-.momentum-amount.coral { color: #EF4444; }
 
 .ltv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .ltv-item { display: flex; flex-direction: column; gap: 3px; }
