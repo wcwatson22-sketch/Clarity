@@ -553,7 +553,7 @@
               }
 
             }
-            <button class="add-row-btn" (click)="addToGroup(group.name, 'Asset', group.accounts[0].category ?? assetCategories[0].value)">
+            <button class="add-row-btn" (click)="addToGroup(group.name, 'Asset', group.accounts[0].category || assetCategories[0].value)">
               + Add account
             </button>
           </div>
@@ -640,7 +640,7 @@
               }
 
             }
-            <button class="add-row-btn" (click)="addToGroup(group.name, 'Liability', group.accounts[0].category ?? liabilityCategories[0].value)">
+            <button class="add-row-btn" (click)="addToGroup(group.name, 'Liability', group.accounts[0].category || liabilityCategories[0].value)">
               + Add debt
             </button>
           </div>
