@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { AuthService } from '../../services/auth.service';
@@ -17,10 +18,11 @@ import { environment } from '../../../environments/environment';
   styleUrl:    './lock-screen.component.scss',
 })
 export class LockScreenComponent implements OnInit {
-  private auth  = inject(AuthService);
-  readonly lock = inject(LockService);
-  private http = inject(HttpClient);
-  private base = environment.apiUrl;
+  private auth   = inject(AuthService);
+  readonly lock  = inject(LockService);
+  private http   = inject(HttpClient);
+  private router = inject(Router);
+  private base   = environment.apiUrl;
 
   readonly username = computed(() => this.auth.currentUser()?.username ?? '');
 
@@ -67,17 +69,21 @@ export class LockScreenComponent implements OnInit {
         cancelTitle: 'Use Password',
         iosFallbackTitle: 'Use Password',
       });
-      // Biometric passed — refresh JWT before unlocking so API calls don't 401
-      // if the token expired while the app was locked/backgrounded.
+      // Biometric passed — refresh JWT to ensure API calls don't 401 if the
+      // token expired while the app was locked/backgrounded.
+      // NOTE: the auth interceptor is configured to NOT auto-logout on a 401
+      // from /auth/refresh, so this catch block will actually run when expired.
       try {
         const res = await firstValueFrom(
           this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {})
         );
         this.auth.storeAuth(res);
         this.lock.unlock();
+        this.navigateAfterUnlock();
       } catch {
-        // JWT is expired and cannot be refreshed — require one password login
-        // to restore the session cleanly.
+        // JWT has expired — the token is still in localStorage (interceptor won't
+        // auto-logout on /auth/refresh 401s), so the lock screen stays visible.
+        // Show the password form so the user can re-authenticate once.
         this.loading.set(false);
         this.showPassword.set(true);
         this.error.set('Your session has expired. Enter your password once to restore access.');
@@ -101,6 +107,7 @@ export class LockScreenComponent implements OnInit {
       next: res => {
         this.auth.storeAuth(res);
         this.lock.unlock();
+        this.navigateAfterUnlock();
       },
       error: () => {
         this.loading.set(false);
@@ -111,5 +118,18 @@ export class LockScreenComponent implements OnInit {
 
   onPasswordKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') this.unlockWithPassword();
+  }
+
+  /**
+   * After a successful unlock (biometric or password), ensure the user lands on
+   * the dashboard. This is a safety net for the edge case where the router ended
+   * up on /login (e.g. from a previous navigation before the lock screen appeared).
+   * Under normal operation the router is already on /dashboard, so this is a no-op.
+   */
+  private navigateAfterUnlock() {
+    const url = this.router.url;
+    if (url === '/login' || url === '/' || url === '') {
+      this.router.navigate(['/dashboard']);
+    }
   }
 }

@@ -14,8 +14,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
       if (err.status === 401 && auth.isLoggedIn()) {
-        // Token expired or invalid — log the user out gracefully
-        auth.logout();
+        // Do NOT auto-logout on /auth/refresh 401.
+        // That endpoint is called by the lock screen after Face ID succeeds to
+        // validate the stored session. A 401 there means the token expired while
+        // the app was backgrounded — an expected, recoverable condition.
+        // The lock screen handles this case by showing the password fallback.
+        // Auto-logging-out would destroy the lock screen before it could show the
+        // password form, leaving the user on the /login page after a successful
+        // Face ID scan — which is the bug this fix addresses.
+        const isTokenRefresh = req.url.includes('/auth/refresh');
+        if (!isTokenRefresh) {
+          auth.logout();
+        }
       }
       return throwError(() => err);
     })
