@@ -313,24 +313,36 @@ export class DashboardComponent implements OnInit {
   });
 
   /**
-   * Earliest snapshot in the current calendar year (the YTD starting point).
-   * Null if fewer than 2 this-year snapshots exist — first snapshot is the baseline, not movement.
+   * All snapshots in the current calendar year that have meaningful data
+   * (at least some assets or liabilities > 0). Zero-value snapshots are excluded
+   * because they represent an empty initial save made before the user entered any
+   * account data — treating one as the YTD baseline would make the full account
+   * balance appear as a YTD gain, which is misleading and wrong.
    */
-  private readonly _ytdBaseSnapshot = computed(() => {
+  private readonly _ytdCandidates = computed(() => {
     const yr = new Date().getFullYear();
-    const thisYear = this.snapshots().filter(s => new Date(s.createdAt).getFullYear() === yr);
-    // Need at least 2: one to be the baseline, one to measure against it.
-    return thisYear.length >= 2 ? thisYear[thisYear.length - 1] : null; // oldest = last in newest-first list
+    return this.snapshots().filter(s =>
+      new Date(s.createdAt).getFullYear() === yr &&
+      (s.totalAssets > 0 || s.totalLiabilities > 0)
+    ); // snapshots() is newest-first; filter preserves that order
   });
 
   /**
-   * Most recent snapshot in the current calendar year (the YTD endpoint).
-   * Null if fewer than 2 this-year snapshots exist.
+   * Earliest meaningful snapshot in the current year — the YTD starting point.
+   * Null when fewer than 2 meaningful this-year snapshots exist.
+   */
+  private readonly _ytdBaseSnapshot = computed(() => {
+    const snaps = this._ytdCandidates();
+    return snaps.length >= 2 ? snaps[snaps.length - 1] : null; // oldest = last in newest-first list
+  });
+
+  /**
+   * Most recent meaningful snapshot in the current year — the YTD endpoint.
+   * Null when fewer than 2 meaningful this-year snapshots exist.
    */
   private readonly _ytdEndSnapshot = computed(() => {
-    const yr = new Date().getFullYear();
-    const thisYear = this.snapshots().filter(s => new Date(s.createdAt).getFullYear() === yr);
-    return thisYear.length >= 2 ? thisYear[0] : null; // newest = first in newest-first list
+    const snaps = this._ytdCandidates();
+    return snaps.length >= 2 ? snaps[0] : null; // newest = first in newest-first list
   });
 
   /**
