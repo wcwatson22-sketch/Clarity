@@ -313,18 +313,30 @@ export class DashboardComponent implements OnInit {
   });
 
   /**
-   * All snapshots in the current calendar year that have meaningful data
-   * (at least some assets or liabilities > 0). Zero-value snapshots are excluded
-   * because they represent an empty initial save made before the user entered any
-   * account data — treating one as the YTD baseline would make the full account
-   * balance appear as a YTD gain, which is misleading and wrong.
+   * All snapshots in the current calendar year that have meaningful data.
+   *
+   * A snapshot is considered meaningful if its total (assets + liabilities)
+   * meets BOTH of these criteria:
+   *   1. At least $1,000 absolute — avoids anchor-account or near-empty saves
+   *   2. At least 1% of the latest snapshot's total — avoids a tiny "setup"
+   *      snapshot being used as a YTD baseline against a large current portfolio
+   *
+   * This prevents an early snapshot saved before the user entered all their
+   * accounts from showing the full portfolio value as a fake YTD gain.
    */
   private readonly _ytdCandidates = computed(() => {
     const yr = new Date().getFullYear();
-    return this.snapshots().filter(s =>
-      new Date(s.createdAt).getFullYear() === yr &&
-      (s.totalAssets > 0 || s.totalLiabilities > 0)
-    ); // snapshots() is newest-first; filter preserves that order
+    const allThisYear = this.snapshots().filter(s =>
+      new Date(s.createdAt).getFullYear() === yr
+    );
+    if (allThisYear.length === 0) return [];
+
+    const latestTotal = allThisYear[0].totalAssets + allThisYear[0].totalLiabilities;
+    const threshold   = Math.max(1000, latestTotal * 0.01); // whichever is higher
+
+    return allThisYear.filter(s =>
+      s.totalAssets + s.totalLiabilities >= threshold
+    );
   });
 
   /**
