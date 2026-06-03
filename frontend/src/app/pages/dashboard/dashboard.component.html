@@ -334,9 +334,9 @@
     <h3 class="movement-title">Snapshot Movement</h3>
     <div class="movement-grid">
 
-      <!-- Net Worth MoM -->
+      <!-- Net Worth Monthly -->
       <div class="mv-card">
-        <span class="mv-label">Net Worth MoM</span>
+        <span class="mv-label">Net Worth — Monthly</span>
         @if (momDeltas(); as m) {
           <span class="mv-value" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
             {{ m.nw >= 0 ? '+' : '' }}{{ formatCurrency(m.nw) }}
@@ -366,9 +366,9 @@
         }
       </div>
 
-      <!-- Assets MoM -->
+      <!-- Assets Monthly -->
       <div class="mv-card">
-        <span class="mv-label">Assets MoM</span>
+        <span class="mv-label">Assets — Monthly</span>
         @if (momDeltas(); as m) {
           <span class="mv-value" [class.green]="m.assets >= 0" [class.coral]="m.assets < 0">
             {{ m.assets >= 0 ? '+' : '' }}{{ formatCurrency(m.assets) }}
@@ -398,10 +398,10 @@
         }
       </div>
 
-      <!-- Liabilities MoM -->
+      <!-- Liabilities Monthly -->
       <!-- Liability DECREASE = improving (green); INCREASE = worsening (coral) -->
       <div class="mv-card">
-        <span class="mv-label">Liabilities MoM</span>
+        <span class="mv-label">Liabilities — Monthly</span>
         @if (momDeltas(); as m) {
           <span class="mv-value" [class.green]="m.liabs <= 0" [class.coral]="m.liabs > 0">
             {{ m.liabs > 0 ? '+' : '' }}{{ formatCurrency(m.liabs) }}
