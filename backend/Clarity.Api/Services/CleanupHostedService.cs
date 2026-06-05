@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Clarity.Api.Services;
 
 /// <summary>
-/// Runs once per day. Sends a 7-day warning email to unpaid users whose trial
-/// has expired, then permanently deletes them 14 days after trial end.
-/// Admins and paid users are never touched.
+/// Runs once per day.
+/// - Sends a push notification to users whose trial expires within 3 days.
+/// - Sends a trial-ended email to unpaid users whose trial just expired (once only).
+/// - Sends a re-engagement email to paid users inactive for 15+ days (30-day cooldown).
+/// Accounts are NOT deleted — expired-trial users are simply locked out by the frontend.
+/// Admins and paid users are never touched by expiry logic.
 /// </summary>
 public class CleanupHostedService(
     IServiceScopeFactory scopeFactory,
@@ -60,50 +63,7 @@ public class CleanupHostedService(
                 "/settings");
         }
 
-        // Candidate users: unpaid, not admin, trial has ended
-        var candidates = await db.Users
-            .Where(u => !u.IsAdmin
-                     && u.Tier == UserTier.Base
-                     && u.TrialEndsAt < now)
-            .ToListAsync(ct);
-
-        int warned = 0, deleted = 0;
-
-        foreach (var user in candidates)
-        {
-            var daysPastTrial = (now - user.TrialEndsAt).TotalDays;
-
-            // ── DELETE: 14+ days past trial end ───────────────────────────────
-            if (daysPastTrial >= 14)
-            {
-                logger.LogInformation("[Cleanup] Deleting inactive user #{Id} (trial ended {Days:F0} days ago)",
-                    user.Id, daysPastTrial);
-
-                // Send deletion confirmation email (best-effort)
-                await email.SendAccountDeletedAsync(user.Email, user.FirstName);
-
-                db.Users.Remove(user);
-                deleted++;
-                continue;
-            }
-
-            // ── WARN: 7–13 days past trial end, warning not yet sent ──────────
-            if (daysPastTrial >= 7 && user.DeletionNoticeSentAt is null)
-            {
-                var deleteOn = user.TrialEndsAt.AddDays(14);
-                logger.LogInformation("[Cleanup] Sending deletion warning to user #{Id} (deletes {DeleteOn:yyyy-MM-dd})",
-                    user.Id, deleteOn);
-
-                await email.SendDeletionWarningAsync(user.Email, user.FirstName, deleteOn);
-                user.DeletionNoticeSentAt = now;
-                warned++;
-            }
-        }
-
-        if (warned > 0 || deleted > 0)
-            await db.SaveChangesAsync(ct);
-
-        logger.LogInformation("[Cleanup] Run complete — {Warned} warned, {Deleted} deleted", warned, deleted);
+        logger.LogInformation("[Cleanup] Daily run complete");
 
         // ── Trial-ended email ──────────────────────────────────────────────────
         // Sent once, as soon as the trial expires, for unpaid users who haven't
