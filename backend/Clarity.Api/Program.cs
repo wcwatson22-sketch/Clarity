@@ -256,6 +256,23 @@ try
         }
         catch { /* column already exists */ }
 
+        // Activity & lifecycle email tracking columns
+        foreach (var col in new[]
+        {
+            "ALTER TABLE Users ADD COLUMN LastActiveAt TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN TrialEndedEmailSentAt TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN InactiveEmailLastSentAt TEXT NULL",
+        })
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = col;
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch { /* column already exists */ }
+        }
+
         // Back-fill AnonymousId for existing users who don't have one yet
         var usersWithoutId = ctx.Users.Where(u => u.AnonymousId == "").ToList();
         foreach (var u in usersWithoutId)
@@ -300,6 +317,7 @@ try
     app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseMiddleware<Clarity.Api.Middleware.ActivityTrackingMiddleware>();
 
     // Stripe webhook needs raw body — disable buffering for that route
     app.Use(async (ctx, next) =>

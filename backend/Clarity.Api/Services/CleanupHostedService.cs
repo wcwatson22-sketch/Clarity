@@ -104,5 +104,77 @@ public class CleanupHostedService(
             await db.SaveChangesAsync(ct);
 
         logger.LogInformation("[Cleanup] Run complete — {Warned} warned, {Deleted} deleted", warned, deleted);
+
+        // ── Trial-ended email ──────────────────────────────────────────────────
+        // Sent once, as soon as the trial expires, for unpaid users who haven't
+        // upgraded. Separate from the deletion-warning (which fires 7+ days later).
+        var trialEndedCandidates = await db.Users
+            .Where(u => !u.IsAdmin
+                     && u.Tier == UserTier.Base
+                     && u.StripeSubscriptionId == null
+                     && u.AppleOriginalTransactionId == null
+                     && u.TrialEndsAt < now
+                     && u.TrialEndedEmailSentAt == null)
+            .ToListAsync(ct);
+
+        int trialEndedSent = 0;
+        foreach (var user in trialEndedCandidates)
+        {
+            var ok = await email.SendTrialEndedAsync(user.Email, user.FirstName);
+            if (ok)
+            {
+                user.TrialEndedEmailSentAt = now;
+                trialEndedSent++;
+                logger.LogInformation("[Cleanup] Trial-ended email sent to user #{Id}", user.Id);
+            }
+            else
+            {
+                logger.LogWarning("[Cleanup] Trial-ended email FAILED for user #{Id}", user.Id);
+            }
+        }
+
+        if (trialEndedSent > 0)
+            await db.SaveChangesAsync(ct);
+
+        // ── Inactive paid-user email ────────────────────────────────────────────
+        // Sent to paying subscribers who haven't been active for 15+ days.
+        // Cooldown: at most once every 30 days per user.
+        // Uses LastActiveAt if available, falls back to LastLoginAt, then CreatedAt.
+        var thirtyDaysAgo  = now.AddDays(-30);
+        var fifteenDaysAgo = now.AddDays(-15);
+
+        var inactivePaidCandidates = await db.Users
+            .Where(u => !u.IsAdmin
+                     && (u.StripeSubscriptionId != null || u.AppleOriginalTransactionId != null)
+                     && (u.InactiveEmailLastSentAt == null || u.InactiveEmailLastSentAt < thirtyDaysAgo))
+            .ToListAsync(ct);
+
+        int inactiveSent = 0;
+        foreach (var user in inactivePaidCandidates)
+        {
+            // Resolve the best available activity timestamp
+            var effectiveLastActive = user.LastActiveAt ?? user.LastLoginAt ?? user.CreatedAt;
+            if (effectiveLastActive >= fifteenDaysAgo) continue;  // still active
+
+            var ok = await email.SendInactivePaidUserAsync(user.Email, user.FirstName);
+            if (ok)
+            {
+                user.InactiveEmailLastSentAt = now;
+                inactiveSent++;
+                logger.LogInformation("[Cleanup] Inactive-paid email sent to user #{Id} (last active {LastActive:yyyy-MM-dd})",
+                    user.Id, effectiveLastActive);
+            }
+            else
+            {
+                logger.LogWarning("[Cleanup] Inactive-paid email FAILED for user #{Id}", user.Id);
+            }
+        }
+
+        if (inactiveSent > 0)
+            await db.SaveChangesAsync(ct);
+
+        logger.LogInformation(
+            "[Cleanup] Lifecycle emails — trial-ended: {TrialEnded}, inactive-paid: {Inactive}",
+            trialEndedSent, inactiveSent);
     }
 }

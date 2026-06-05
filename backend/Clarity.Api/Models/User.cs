@@ -22,6 +22,15 @@ public class User
     public DateTime TrialEndsAt { get; set; } = DateTime.UtcNow.AddDays(14);
     public DateTime? LastLoginAt { get; set; }
     public DateTime? DeletionNoticeSentAt { get; set; }
+
+    // ── Activity & lifecycle email tracking ───────────────────────────────────
+    /// <summary>Updated (max once per hour) on any authenticated API request.</summary>
+    public DateTime? LastActiveAt { get; set; }
+    /// <summary>Set once when the trial-ended email is dispatched. Prevents duplicates.</summary>
+    public DateTime? TrialEndedEmailSentAt { get; set; }
+    /// <summary>Set each time the inactive-paid-user email is sent. Enforces 30-day cooldown.</summary>
+    public DateTime? InactiveEmailLastSentAt { get; set; }
+
     public string? StripeCustomerId { get; set; }
     public string? StripeSubscriptionId { get; set; }
     public string? AppleOriginalTransactionId { get; set; }  // StoreKit IAP

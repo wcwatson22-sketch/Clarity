@@ -256,6 +256,106 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         return await SendAsync(toEmail, $"Welcome to Clarity {planLabel}! Your subscription is active", html);
     }
 
+    // ── Lifecycle emails ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Sent once when a user's free trial expires and they haven't upgraded.
+    /// Explains both paid plans and provides an upgrade link.
+    /// </summary>
+    public async Task<bool> SendTrialEndedAsync(string toEmail, string firstName)
+    {
+        var name = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
+        var html = $"""
+            <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+                <div style="width:12px;height:12px;border-radius:50%;background:#1D9E75;"></div>
+                <span style="font-size:18px;font-weight:700;color:#111827;">Clarity</span>
+              </div>
+
+              <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 12px;">
+                Your Clarity free trial has ended
+              </h1>
+              <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
+                Hi {name}, your 14-day Clarity free trial has ended. To continue using the platform,
+                choose one of the paid plans below.
+              </p>
+
+              <div style="border:1px solid #E5E7EB;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+                <p style="font-weight:700;color:#111827;font-size:15px;margin:0 0 4px;">
+                  Compare Plan — $0.99/month
+                </p>
+                <p style="color:#6B7280;font-size:13px;margin:0 0 12px;line-height:1.6;">
+                  Unlock financial comparison tools to help you review options before making decisions.
+                </p>
+              </div>
+
+              <div style="border:2px solid #1D9E75;border-radius:12px;padding:20px 24px;background:#F0FDF4;margin-bottom:28px;">
+                <p style="font-weight:700;color:#111827;font-size:15px;margin:0 0 4px;">
+                  Premium Plan — $4.99/month
+                </p>
+                <p style="color:#374151;font-size:13px;margin:0 0 12px;line-height:1.6;">
+                  Includes Compare, plus Loan Prep guides, Personal Financial Statement tools,
+                  and banker-style financial readiness features.
+                </p>
+              </div>
+
+              <a href="https://clarityfinancialtools.com/settings"
+                 style="display:inline-block;background:#1D9E75;color:#fff;text-decoration:none;
+                        padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;">
+                Choose a Plan →
+              </a>
+
+              <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
+                Questions? Reply to this email anytime.<br/>— The Clarity Team
+              </p>
+            </div>
+            """;
+        return await SendAsync(toEmail, "Your Clarity free trial has ended", html);
+    }
+
+    /// <summary>
+    /// Sent to paying users who haven't been active in 15+ days.
+    /// Gentle re-engagement — no financial data, no guilt.
+    /// </summary>
+    public async Task<bool> SendInactivePaidUserAsync(string toEmail, string firstName)
+    {
+        var name = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
+        var html = $"""
+            <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+                <div style="width:12px;height:12px;border-radius:50%;background:#1D9E75;"></div>
+                <span style="font-size:18px;font-weight:700;color:#111827;">Clarity</span>
+              </div>
+
+              <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 12px;">
+                Your financial picture may be out of date
+              </h1>
+              <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
+                Hi {name}, we want you to get the full benefit of Clarity.
+              </p>
+              <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
+                If it's been a while since your last update, take a minute to refresh
+                your financial picture. Updating your income, expenses, assets, liabilities,
+                and snapshots helps Clarity give you a cleaner view of where you stand.
+              </p>
+              <p style="color:#374151;line-height:1.7;margin:0 0 32px;">
+                Log back in today and make sure your numbers still reflect real life.
+              </p>
+
+              <a href="https://clarityfinancialtools.com/dashboard"
+                 style="display:inline-block;background:#1D9E75;color:#fff;text-decoration:none;
+                        padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;">
+                Go to Dashboard →
+              </a>
+
+              <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
+                Questions? Reply to this email anytime.<br/>— The Clarity Team
+              </p>
+            </div>
+            """;
+        return await SendAsync(toEmail, "Your financial picture may be out of date", html);
+    }
+
     public async Task<bool> SendCancellationConfirmationAsync(string toEmail, string firstName)
     {
         var name = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
