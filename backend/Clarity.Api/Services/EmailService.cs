@@ -65,8 +65,8 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </div>
 
               <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
-                After your trial, continue with a <strong>Base plan ($1/month)</strong> or
-                unlock everything with <strong>Premium ($5/month)</strong>.
+                After your trial, continue with a <strong>Compare plan ($0.99/month)</strong> or
+                unlock everything with <strong>Premium ($4.99/month)</strong>.
               </p>
 
               <a href="https://clarityfinancialtools.com/dashboard"
@@ -177,7 +177,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                 </p>
               </div>
               <p style="color:#9CA3AF;font-size:12px;line-height:1.6;">
-                Plans start at just $1/month. If you have questions, reply to this email anytime.<br/>— The Clarity Team
+                Plans start at just $0.99/month. If you have questions, reply to this email anytime.<br/>— The Clarity Team
               </p>
             </div>
             """;
@@ -219,10 +219,10 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
     public async Task<bool> SendSubscriptionConfirmationAsync(string toEmail, string firstName, string plan)
     {
         var name      = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
-        var planLabel = plan == "base" ? "Base ($1/month)" : "Premium ($5/month)";
+        var planLabel = plan == "base" ? "Compare ($0.99/month)" : "Premium ($4.99/month)";
         var features  = plan == "base"
-            ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget</li><li>📸 10 snapshots per month</li><li>📚 Learn &amp; PFS</li>"
-            : "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget</li><li>📸 Unlimited snapshots</li><li>📚 Learn &amp; PFS</li><li>📈 Benchmarking &amp; compare</li>";
+            ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 10 snapshots per month</li><li>📈 Compare tab — see how you stack up</li>"
+            : "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 Unlimited snapshots</li><li>📈 Compare tab</li><li>🏦 Loan Prep guides</li><li>📄 Personal Financial Statement (PFS)</li>";
 
         var html = $"""
             <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;">
