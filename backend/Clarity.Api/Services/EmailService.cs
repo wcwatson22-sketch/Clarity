@@ -1,10 +1,17 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Clarity.Api.Data;
+using Clarity.Api.Models;
 
 namespace Clarity.Api.Services;
 
-public class EmailService(IConfiguration config, ILogger<EmailService> logger, HttpClient http)
+public class EmailService(
+    IConfiguration config,
+    ILogger<EmailService> logger,
+    HttpClient http,
+    IServiceScopeFactory scopeFactory)
 {
     private readonly string _apiKey   = config["Resend:ApiKey"] ?? config["Smtp:Password"] ?? string.Empty;
     private readonly string _from     = config["Smtp:FromEmail"] ?? "noreply@clarityfinancialtools.com";
@@ -30,7 +37,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Reset your Clarity password", html);
+        return await SendAsync(toEmail, "Reset your Clarity password", html, "password-reset");
     }
 
     public async Task<bool> SendWelcomeAsync(string toEmail, string firstName, DateTime trialEndsAt)
@@ -80,7 +87,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, $"Welcome to Clarity, {name}! 🎉", html);
+        return await SendAsync(toEmail, $"Welcome to Clarity, {name}! 🎉", html, "welcome");
     }
 
     public async Task<bool> SendForgotUsernameAsync(string toEmail, string username)
@@ -105,7 +112,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </a>
             </div>
             """;
-        return await SendAsync(toEmail, "Your Clarity username", html);
+        return await SendAsync(toEmail, "Your Clarity username", html, "forgot-username");
     }
 
     public async Task<bool> SendSignupNotificationAsync(string newUserEmail, string ageBracket, string city, string state)
@@ -123,7 +130,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </table>
             </div>
             """;
-        return await SendAsync(notifyAddress, $"New Clarity signup — {newUserEmail}", html);
+        return await SendAsync(notifyAddress, $"New Clarity signup — {newUserEmail}", html, "signup-notification");
     }
 
     public async Task<bool> SendVerificationAsync(string toEmail, string verifyUrl)
@@ -144,7 +151,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Verify your Clarity email", html);
+        return await SendAsync(toEmail, "Verify your Clarity email", html, "verification");
     }
 
     public async Task<bool> SendDeletionWarningAsync(string toEmail, string firstName, DateTime deleteOn)
@@ -181,7 +188,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Action required: your Clarity account will be deleted soon", html);
+        return await SendAsync(toEmail, "Action required: your Clarity account will be deleted soon", html, "deletion-warning");
     }
 
     public async Task<bool> SendAccountDeletedAsync(string toEmail, string firstName)
@@ -213,7 +220,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Your Clarity account has been deleted", html);
+        return await SendAsync(toEmail, "Your Clarity account has been deleted", html, "account-deleted");
     }
 
     public async Task<bool> SendSubscriptionConfirmationAsync(string toEmail, string firstName, string plan)
@@ -253,7 +260,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, $"Welcome to Clarity {planLabel}! Your subscription is active", html);
+        return await SendAsync(toEmail, $"Welcome to Clarity {planLabel}! Your subscription is active", html, "subscription-confirmation");
     }
 
     // ── Lifecycle emails ──────────────────────────────────────────────────────
@@ -310,7 +317,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Your Clarity free trial has ended", html);
+        return await SendAsync(toEmail, "Your Clarity free trial has ended", html, "trial-ended");
     }
 
     /// <summary>
@@ -353,7 +360,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Your financial picture may be out of date", html);
+        return await SendAsync(toEmail, "Your financial picture may be out of date", html, "inactive-paid");
     }
 
     public async Task<bool> SendCancellationConfirmationAsync(string toEmail, string firstName)
@@ -386,50 +393,95 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               </p>
             </div>
             """;
-        return await SendAsync(toEmail, "Your Clarity subscription has been cancelled", html);
+        return await SendAsync(toEmail, "Your Clarity subscription has been cancelled", html, "cancellation-confirmation");
     }
 
-    private async Task<bool> SendAsync(string toEmail, string subject, string html)
+    private async Task<bool> SendAsync(string toEmail, string subject, string html,
+        string emailType = "unknown", int? userId = null)
     {
+        bool   success           = false;
+        string? providerMessageId = null;
+        string? errorMessage      = null;
+
         if (string.IsNullOrWhiteSpace(_apiKey))
         {
             logger.LogWarning("[EmailService] Resend API key not configured — skipping send to {Email}", toEmail);
-            return false;
+            errorMessage = "Resend API key not configured";
         }
-
-        try
+        else
         {
-            var payload = new
+            try
             {
-                from = $"{_fromName} <{_from}>",
-                to   = new[] { toEmail },
-                subject,
-                html
-            };
+                var payload = new
+                {
+                    from = $"{_fromName} <{_from}>",
+                    to   = new[] { toEmail },
+                    subject,
+                    html
+                };
 
-            var json    = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var json    = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-            request.Content = content;
+                using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                request.Content = content;
 
-            var response = await http.SendAsync(request);
-            var body     = await response.Content.ReadAsStringAsync();
+                var response = await http.SendAsync(request);
+                var body     = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogError("[EmailService] Resend API error {Status}: {Body}", (int)response.StatusCode, body);
-                return false;
+                if (!response.IsSuccessStatusCode)
+                {
+                    errorMessage = $"HTTP {(int)response.StatusCode}: {body}";
+                    logger.LogError("[EmailService] Resend API error {Status}: {Body}", (int)response.StatusCode, body);
+                }
+                else
+                {
+                    success = true;
+                    // Extract Resend message ID ({"id":"re_..."})
+                    try
+                    {
+                        providerMessageId = JsonNode.Parse(body)?["id"]?.GetValue<string>();
+                    }
+                    catch { /* non-critical */ }
+
+                    logger.LogInformation("[EmailService] {Type} email sent to {Email} — {Subject} [{MsgId}]",
+                        emailType, toEmail, subject, providerMessageId ?? "no-id");
+                }
             }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                logger.LogError(ex, "[EmailService] Failed to send email to {Email}", toEmail);
+            }
+        }
 
-            logger.LogInformation("[EmailService] Email sent to {Email} — {Subject}", toEmail, subject);
-            return true;
-        }
-        catch (Exception ex)
+        // Log the send attempt to the EmailLog table (fire-and-forget)
+        _ = Task.Run(async () =>
         {
-            logger.LogError(ex, "[EmailService] Failed to send email to {Email}", toEmail);
-            return false;
-        }
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.EmailLogs.Add(new EmailLog
+                {
+                    UserId            = userId,
+                    EmailType         = emailType,
+                    RecipientEmail    = toEmail,
+                    Subject           = subject,
+                    SentAt            = DateTime.UtcNow,
+                    Success           = success,
+                    ProviderMessageId = providerMessageId,
+                    ErrorMessage      = errorMessage,
+                });
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "[EmailService] Failed to write EmailLog for {Email}/{Type}", toEmail, emailType);
+            }
+        });
+
+        return success;
     }
 }

@@ -256,6 +256,27 @@ try
         }
         catch { /* column already exists */ }
 
+        // EmailLog table — full history of every email sent
+        try
+        {
+            using var createEmailLog = conn.CreateCommand();
+            createEmailLog.CommandText = """
+                CREATE TABLE IF NOT EXISTS "EmailLogs" (
+                    "Id"                INTEGER NOT NULL CONSTRAINT "PK_EmailLogs" PRIMARY KEY AUTOINCREMENT,
+                    "UserId"            INTEGER NULL,
+                    "EmailType"         TEXT NOT NULL DEFAULT '',
+                    "RecipientEmail"    TEXT NOT NULL DEFAULT '',
+                    "Subject"           TEXT NOT NULL DEFAULT '',
+                    "SentAt"            TEXT NOT NULL DEFAULT '0001-01-01 00:00:00',
+                    "Success"           INTEGER NOT NULL DEFAULT 0,
+                    "ProviderMessageId" TEXT NULL,
+                    "ErrorMessage"      TEXT NULL
+                )
+                """;
+            await createEmailLog.ExecuteNonQueryAsync();
+        }
+        catch { /* table already exists */ }
+
         // Activity & lifecycle email tracking columns
         foreach (var col in new[]
         {

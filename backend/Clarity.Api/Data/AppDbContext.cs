@@ -15,7 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SurveyResponse> SurveyResponses => Set<SurveyResponse>();
     public DbSet<PasswordResetToken> ResetTokens => Set<PasswordResetToken>();
     public DbSet<UserPushSubscription> PushSubscriptions => Set<UserPushSubscription>();
-    public DbSet<Lesson> Lessons => Set<Lesson>();
+    public DbSet<Lesson>    Lessons    => Set<Lesson>();
+    public DbSet<EmailLog>  EmailLogs  => Set<EmailLog>();
 
     private static readonly JsonSerializerOptions _json = new();
 

@@ -116,6 +116,39 @@ public class AdminController(AppDbContext db, AnalyticsService analytics) : Cont
         return Ok(new { message = $"Admin access confirmed for {username}." });
     }
 
+    // ── GET /api/admin/email-log ─────────────────────────────────────────────
+    // Returns the last N email send records, newest first.
+    [HttpGet("email-log")]
+    public async Task<IActionResult> GetEmailLog([FromQuery] int limit = 200, [FromQuery] string? type = null)
+    {
+        var query = db.EmailLogs.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(type))
+            query = query.Where(e => e.EmailType == type);
+
+        var logs = await query
+            .OrderByDescending(e => e.SentAt)
+            .Take(Math.Min(limit, 1000))
+            .Select(e => new
+            {
+                e.Id,
+                e.UserId,
+                e.EmailType,
+                e.RecipientEmail,
+                e.Subject,
+                e.SentAt,
+                e.Success,
+                e.ProviderMessageId,
+                e.ErrorMessage,
+            })
+            .ToListAsync();
+
+        var total    = await db.EmailLogs.CountAsync();
+        var failures = await db.EmailLogs.CountAsync(e => !e.Success);
+
+        return Ok(new { total, failures, logs });
+    }
+
     // ── Lesson CRUD ──────────────────────────────────────────────────────────
 
     [HttpGet("lessons")]
