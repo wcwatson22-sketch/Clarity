@@ -81,6 +81,14 @@ public record UserComparisonItem(
     string Message
 );
 
+// ── Admin: patch user request ────────────────────────────────────────────────
+public class AdminPatchUserRequest
+{
+    public bool? IsAdmin { get; set; }
+    public bool? Enroll  { get; set; }   // true = extend trial indefinitely
+    public UserTier? Tier { get; set; }
+}
+
 // ── User-facing comparison response ─────────────────────────────────────────
 public record UserComparisonResponse(
     string AgeBracket,

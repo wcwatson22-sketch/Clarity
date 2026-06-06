@@ -6,8 +6,8 @@ import { environment } from '../../environments/environment';
 
 /** Product IDs matching App Store Connect configuration. */
 export const IAP_PRODUCTS = {
-  BASE_MONTHLY:    'com.clarityfinancialtools.app.base_monthly',
-  PREMIUM_MONTHLY: 'com.clarityfinancialtools.app.premium_monthly',
+  BASE_MONTHLY:    'com.clarityfinancialtools.app.baseplan',
+  PREMIUM_MONTHLY: 'com.clarityfinancialtools.app.premium',
 } as const;
 
 export interface IapProduct {

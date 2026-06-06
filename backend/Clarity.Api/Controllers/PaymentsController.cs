@@ -293,10 +293,9 @@ public class PaymentsController(
 
     private static UserTier? MapProductToTier(string? productId) => productId switch
     {
-        "com.clarityfinancialtools.app.premium_monthly" => UserTier.Premium,
-        "com.clarityfinancialtools.app.base_monthly"    => UserTier.Base,
-        "com.clarityfinancialtools.app.premium_annual"  => UserTier.Premium,
-        _                                               => null
+        "com.clarityfinancialtools.app.premium"  => UserTier.Premium,
+        "com.clarityfinancialtools.app.baseplan" => UserTier.Base,
+        _                                        => null
     };
 
     /// <summary>Create a signed JWT for the App Store Server API.</summary>

@@ -150,8 +150,8 @@ export class SettingsComponent implements OnInit {
         const isP = me.tier === 'Premium';
         this.upgradeSuccess.set(isP
           ? 'Welcome to Premium! All features unlocked.'
-          : 'Welcome to the Compare plan! Subscription active.');
-        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Compare plan activated!');
+          : 'Welcome to the Base plan! Subscription active.');
+        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Base plan activated!');
       });
     } else if (this.iap.error()) {
       this.upgradeError.set(this.iap.error());
@@ -217,8 +217,8 @@ export class SettingsComponent implements OnInit {
               this.upgradeSuccess.set('Welcome to Premium! Unlimited snapshots and more are now unlocked.');
               this.toast.success('🎉 Upgraded to Premium!');
             } else if (user.isPaid) {
-              this.upgradeSuccess.set('Welcome to the Compare plan! Your subscription is now active.');
-              this.toast.success('🎉 Subscribed to Compare plan!');
+              this.upgradeSuccess.set('Welcome to the Base plan! Your subscription is now active.');
+              this.toast.success('🎉 Subscribed to Base plan!');
             }
           }
         });

@@ -149,6 +149,30 @@ public class AdminController(AppDbContext db, AnalyticsService analytics) : Cont
         return Ok(new { total, failures, logs });
     }
 
+    // ── PATCH /api/admin/users/{id} ──────────────────────────────────────────
+    // Update a user's IsAdmin flag and/or extend their trial (enroll).
+    [HttpPatch("users/{id:int}")]
+    public async Task<IActionResult> PatchUser(int id, [FromBody] AdminPatchUserRequest req)
+    {
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return NotFound(new { error = $"User {id} not found." });
+
+        if (req.IsAdmin.HasValue)
+            user.IsAdmin = req.IsAdmin.Value;
+
+        if (req.Enroll.HasValue && req.Enroll.Value)
+        {
+            // Extend trial far into the future (effectively permanent access)
+            user.TrialEndsAt = DateTime.UtcNow.AddYears(100);
+        }
+
+        if (req.Tier.HasValue)
+            user.Tier = req.Tier.Value;
+
+        await db.SaveChangesAsync();
+        return Ok(new { id = user.Id, isAdmin = user.IsAdmin, tier = user.Tier.ToString(), trialEndsAt = user.TrialEndsAt });
+    }
+
     // ── Lesson CRUD ──────────────────────────────────────────────────────────
 
     [HttpGet("lessons")]
