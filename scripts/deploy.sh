@@ -49,8 +49,9 @@ fi
 
 # Check secrets are filled in on the server
 echo "[pre-flight] Checking server secrets..."
-UNFILLED=$($SSH_CMD "grep -c 'REPLACE_ME' $REMOTE_ENV_FILE 2>/dev/null || echo 0")
-if [ "$UNFILLED" -gt 0 ]; then
+UNFILLED=$(($SSH_CMD "grep -c 'REPLACE_ME' $REMOTE_ENV_FILE 2>/dev/null" | tr -d '[:space:]') || echo "0")
+UNFILLED="${UNFILLED:-0}"
+if [ "${UNFILLED//[!0-9]/}" != "0" ] && [ -n "${UNFILLED//[!0-9]/}" ]; then
   echo ""
   echo "  ⚠️  WARNING: $UNFILLED value(s) in $REMOTE_ENV_FILE still say REPLACE_ME."
   echo "  The app will fail to start until all secrets are filled in."
@@ -80,7 +81,7 @@ echo "  ✅ Backend published → $BUILD_OUT"
 # ── Step 3: Ship frontend ─────────────────────────────────────────────────────
 echo "[3/5] Uploading frontend to server..."
 # Clear existing files first, then upload
-$SSH_CMD "sudo rm -rf $REMOTE_WEB_DIR/* && sudo mkdir -p $REMOTE_WEB_DIR"
+$SSH_CMD "sudo rm -rf $REMOTE_WEB_DIR/* && sudo mkdir -p $REMOTE_WEB_DIR && mkdir -p /tmp/clarity-web"
 $SCP_CMD -r "$REPO_ROOT/frontend/dist/clarity-frontend/browser/." \
   "$SERVER_USER@$SERVER_IP:/tmp/clarity-web/"
 $SSH_CMD "sudo cp -r /tmp/clarity-web/. $REMOTE_WEB_DIR/ && sudo chown -R www-data:www-data $REMOTE_WEB_DIR && rm -rf /tmp/clarity-web"
@@ -88,7 +89,7 @@ echo "  ✅ Frontend uploaded to $REMOTE_WEB_DIR"
 
 # ── Step 4: Ship backend ──────────────────────────────────────────────────────
 echo "[4/5] Uploading backend to server..."
-$SSH_CMD "sudo systemctl stop clarity-api 2>/dev/null || true"
+$SSH_CMD "sudo systemctl stop clarity-api 2>/dev/null || true && mkdir -p /tmp/clarity-api-new"
 $SCP_CMD -r "$BUILD_OUT/." "$SERVER_USER@$SERVER_IP:/tmp/clarity-api-new/"
 
 # Copy backup + restore scripts alongside the app

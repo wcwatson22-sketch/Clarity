@@ -16,6 +16,12 @@ __DOMAIN__ {
         reverse_proxy localhost:5000
     }
 
+    # Serve privacy policy as a static file
+    handle /privacy* {
+        try_files {path} {path}/index.html
+        file_server
+    }
+
     # Angular HTML5 routing — send all unmatched routes to index.html
     handle {
         try_files {path} /index.html
