@@ -224,7 +224,7 @@ import { environment } from '../environments/environment';
       height: auto;
       display: block;
     }
-    .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; min-height: 0; }
     .nav-link {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 12px; border-radius: 10px;
