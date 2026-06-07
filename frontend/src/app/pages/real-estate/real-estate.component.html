@@ -1,24 +1,31 @@
 <div class="page">
 
-  <!-- ── Premium gate ───────────────────────────────────────────────────── -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Investment Real Estate</h1>
+        <p class="page-sub">Analyze rental property cash flow, DSCR, cap rate, and 5-year projections — investment properties only</p>
+      </div>
+      @if (hasAccess()) {
+        <button class="btn-add" (click)="openAdd()">+ Add Property</button>
+      }
+    </div>
+
   @if (!hasAccess()) {
     <div class="gate-wrap">
-      <div class="gate-icon">🏠</div>
-      <h2 class="gate-title">Real Estate Cash Flow</h2>
-      <p class="gate-body">Analyze rental property returns — DSCR, cap rate, cash-on-cash, 5-year projections and more. Available on the Premium plan.</p>
+      <svg class="gate-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="28" width="48" height="30" rx="3" stroke="#D1D5DB" stroke-width="2.5" fill="#F9FAFB"/>
+        <path d="M4 30L32 8L60 30" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="24" y="40" width="16" height="18" rx="2" fill="#E5E7EB"/>
+        <rect x="14" y="34" width="10" height="10" rx="1.5" fill="#E5E7EB"/>
+        <rect x="40" y="34" width="10" height="10" rx="1.5" fill="#E5E7EB"/>
+      </svg>
+      <h2 class="gate-title">Premium Feature</h2>
+      <p class="gate-body">Add investment properties and instantly see DSCR, cap rate, cash-on-cash return, break-even occupancy, and 5-year projections. Upgrade to unlock.</p>
       <a routerLink="/settings" class="gate-btn">Upgrade to Premium →</a>
     </div>
   }
 
   @if (hasAccess()) {
-
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Real Estate</h1>
-        <p class="page-sub">Analyze rental property cash flow and returns</p>
-      </div>
-      <button class="btn-add" (click)="openAdd()">+ Add Property</button>
-    </div>
 
     @if (loading()) {
       <p class="loading-msg">Loading properties…</p>
