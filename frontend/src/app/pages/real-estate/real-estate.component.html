@@ -241,7 +241,7 @@
 
             <!-- ── 5-Year Projection ── -->
             <div class="projection-section">
-              <button class="btn-toggle-5yr" (click)="show5Year.update(v => !v)">
+              <button class="btn-toggle-5yr" (click)="show5Year.set(!show5Year())">
                 {{ show5Year() ? '▲ Hide' : '▼ Show' }} 5-Year Projection
               </button>
 
