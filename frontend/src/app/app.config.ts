@@ -16,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     // Disable service worker on native (Capacitor) — iOS 16+ supports SW in WKWebView
     // but Angular's ngsw navigation handler intercepts API calls returning index.html
     provideServiceWorker('ngsw-worker.js', {
-      enabled: !isDevMode() && !Capacitor.isNativePlatform(),
+      enabled: false,
       registrationStrategy: 'registerWhenStable:30000'
     }),
   ]

@@ -25,6 +25,14 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/Icon.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/Icon.png">
 </head>
+<script>
+  // Unregister any cached service workers so hard-refresh deploys normally.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    });
+  }
+</script>
 <body style="margin:0;background:#0a1628;">
   <app-root></app-root>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
