@@ -27,6 +27,7 @@
               "src/favicon.ico",
               "src/assets",
               "src/manifest.webmanifest",
+              "src/ngsw-worker.js",
               { "glob": "**/*", "input": "src/icons", "output": "icons" }
             ],
             "styles": ["src/styles.scss"],
@@ -53,7 +54,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": false
             },
             "development": {
               "optimization": false,
