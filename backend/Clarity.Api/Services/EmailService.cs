@@ -226,7 +226,7 @@ public class EmailService(
     public async Task<bool> SendSubscriptionConfirmationAsync(string toEmail, string firstName, string plan)
     {
         var name      = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
-        var planLabel = plan == "base" ? "Compare ($0.99/month)" : "Premium ($4.99/month)";
+        var planLabel = plan == "base" ? "Base ($0.99/month)" : "Premium ($4.99/month)";
         var features  = plan == "base"
             ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 10 snapshots per month</li><li>📈 Compare tab — see how you stack up</li>"
             : "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 Unlimited snapshots</li><li>📈 Compare tab</li><li>🏦 Loan Prep guides</li><li>📄 Personal Financial Statement (PFS)</li>";
@@ -289,7 +289,7 @@ public class EmailService(
 
               <div style="border:1px solid #E5E7EB;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
                 <p style="font-weight:700;color:#111827;font-size:15px;margin:0 0 4px;">
-                  Compare Plan — $0.99/month
+                  Base Plan — $0.99/month
                 </p>
                 <p style="color:#6B7280;font-size:13px;margin:0 0 12px;line-height:1.6;">
                   Unlock financial comparison tools to help you review options before making decisions.
@@ -394,6 +394,54 @@ public class EmailService(
             </div>
             """;
         return await SendAsync(toEmail, "Your Clarity subscription has been cancelled", html, "cancellation-confirmation");
+    }
+
+    /// <summary>Notify admin when a user subscribes to any plan.</summary>
+    public async Task<bool> SendAdminSubscriptionNotificationAsync(string userEmail, string firstName, string plan)
+    {
+        var notifyAddress = config["Admin:NotifyEmail"];
+        if (string.IsNullOrWhiteSpace(notifyAddress)) return false;
+
+        var planLabel = plan == "base" ? "Base ($0.99/mo)" : "Premium ($4.99/mo)";
+        var html = $"""
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+              <h2 style="color:#085041;margin-bottom:8px;">New Subscriber 💳</h2>
+              <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+                <tr><td style="padding:6px 0;font-weight:600;width:120px;">Email</td><td>{userEmail}</td></tr>
+                <tr><td style="padding:6px 0;font-weight:600;">Name</td><td>{firstName}</td></tr>
+                <tr><td style="padding:6px 0;font-weight:600;">Plan</td><td><strong>{planLabel}</strong></td></tr>
+                <tr><td style="padding:6px 0;font-weight:600;">Time</td><td>{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</td></tr>
+              </table>
+            </div>
+            """;
+        return await SendAsync(notifyAddress, $"New Clarity subscriber — {planLabel} — {userEmail}", html, "admin-subscription-notification");
+    }
+
+    /// <summary>Notify admin when a user submits Learn tab survey feedback.</summary>
+    public async Task<bool> SendAdminSurveyNotificationAsync(string userEmail, string? freeText, IEnumerable<string> topics)
+    {
+        var notifyAddress = config["Admin:NotifyEmail"];
+        if (string.IsNullOrWhiteSpace(notifyAddress)) return false;
+
+        var topicList = topics.Any()
+            ? string.Join(", ", topics)
+            : "(none selected)";
+        var freeTextSection = string.IsNullOrWhiteSpace(freeText)
+            ? ""
+            : $"<tr><td style=\"padding:6px 0;font-weight:600;vertical-align:top;\">Message</td><td>{freeText}</td></tr>";
+
+        var html = $"""
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+              <h2 style="color:#085041;margin-bottom:8px;">Learn Tab Feedback 📚</h2>
+              <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+                <tr><td style="padding:6px 0;font-weight:600;width:120px;">From</td><td>{userEmail}</td></tr>
+                <tr><td style="padding:6px 0;font-weight:600;">Topics</td><td>{topicList}</td></tr>
+                {freeTextSection}
+                <tr><td style="padding:6px 0;font-weight:600;">Time</td><td>{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</td></tr>
+              </table>
+            </div>
+            """;
+        return await SendAsync(notifyAddress, $"Clarity feedback from {userEmail}", html, "admin-survey-notification");
     }
 
     private async Task<bool> SendAsync(string toEmail, string subject, string html,

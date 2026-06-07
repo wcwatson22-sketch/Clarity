@@ -11,7 +11,7 @@ namespace Clarity.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class EducationController(AppDbContext db) : ControllerBase
+public class EducationController(AppDbContext db, EmailService emailService) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -60,6 +60,12 @@ public class EducationController(AppDbContext db) : ControllerBase
         response.SubmittedAt = DateTime.UtcNow;
         db.SurveyResponses.Add(response);
         await db.SaveChangesAsync();
+
+        // Notify admin of new feedback
+        var user = await db.Users.FindAsync(UserId);
+        _ = emailService.SendAdminSurveyNotificationAsync(
+            user?.Email ?? $"User #{UserId}", response.FreeText, response.Topics);
+
         return Ok(response);
     }
 }

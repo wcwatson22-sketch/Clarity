@@ -129,6 +129,7 @@ public class PaymentsController(
                     user.StripeSubscriptionId = session.SubscriptionId;
                     await db.SaveChangesAsync();
                     _ = emailService.SendSubscriptionConfirmationAsync(user.Email, user.FirstName, plan);
+                    _ = emailService.SendAdminSubscriptionNotificationAsync(user.Email, user.FirstName, plan);
                 }
             }
         }
@@ -273,8 +274,9 @@ public class PaymentsController(
         user.AppleOriginalTransactionId = originalTxnId;
         await db.SaveChangesAsync();
 
-        _ = emailService.SendSubscriptionConfirmationAsync(
-            user.Email, user.FirstName, tier.Value == UserTier.Premium ? "premium" : "base");
+        var planName = tier.Value == UserTier.Premium ? "premium" : "base";
+        _ = emailService.SendSubscriptionConfirmationAsync(user.Email, user.FirstName, planName);
+        _ = emailService.SendAdminSubscriptionNotificationAsync(user.Email, user.FirstName, planName);
 
         return Ok(new { tier = user.Tier.ToString(), message = "Purchase verified." });
     }
