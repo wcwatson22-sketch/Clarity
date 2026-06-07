@@ -6,6 +6,7 @@ import { NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
+import { SwUpdate } from '@angular/service-worker';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './services/auth.service';
@@ -501,6 +502,7 @@ export class AppComponent {
   private push      = inject(PushNotificationService);
   private router    = inject(Router);
   private http      = inject(HttpClient);
+  private swUpdate  = inject(SwUpdate, { optional: true });
   private base      = environment.apiUrl;
 
   readonly currentUser = this.auth.currentUser;
@@ -678,6 +680,16 @@ export class AppComponent {
     if (Capacitor.isNativePlatform()) {
       App.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) this.lockSvc.lock();
+      });
+    }
+
+    // Auto-reload when a new service worker version is ready so users always
+    // get the latest app without needing to manually clear cache or close tabs.
+    if (this.swUpdate?.isEnabled) {
+      this.swUpdate.versionUpdates.pipe(
+        filter(e => e.type === 'VERSION_READY')
+      ).subscribe(() => {
+        this.swUpdate!.activateUpdate().then(() => document.location.reload());
       });
     }
   }
