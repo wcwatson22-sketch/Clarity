@@ -88,6 +88,7 @@ export class RealEstateComponent implements OnInit {
   private base  = environment.apiUrl;
 
   readonly hasAccess = computed(() => this.plans.isPremium() || this.plans.trialActive());
+  readonly Math = Math;
 
   properties   = signal<(RealEstateProperty & { id: string })[]>([]);
   loading      = signal(true);
@@ -96,8 +97,25 @@ export class RealEstateComponent implements OnInit {
   editingId    = signal<string | null>(null);
   activeId     = signal<string | null>(null);   // which property is expanded/viewed
   show5Year    = signal(false);
+  expenseMode  = signal<'monthly' | 'annual'>('monthly');
 
   form = signal<RealEstateProperty>(blankProperty());
+
+  /** Display value for an expense field — multiplied by 12 in annual mode */
+  dispExp(v: number): number {
+    return this.expenseMode() === 'annual' ? +(v * 12).toFixed(2) : v;
+  }
+
+  /** Called by expense inputs — divides by 12 when in annual mode before storing */
+  updateExpense(field: keyof RealEstateProperty, inputVal: number) {
+    const stored = this.expenseMode() === 'annual' ? inputVal / 12 : inputVal;
+    this.form.update(f => ({ ...f, [field]: stored }));
+  }
+
+  /** Toggle expense mode and rescale displayed values (data stays monthly in signal) */
+  toggleExpenseMode() {
+    this.expenseMode.update(m => m === 'monthly' ? 'annual' : 'monthly');
+  }
 
   // ── Computed metrics for the active property ─────────────────────────────
 
@@ -250,6 +268,48 @@ export class RealEstateComponent implements OnInit {
       rows.push({ year: yr, grossRent: rent * 12, noi, cashFlow, equity: eq, value });
     }
     return rows;
+  });
+
+  // ── Portfolio-level aggregates (all properties) ──────────────────────────
+
+  /** Helper: compute per-property metrics without relying on active() signals */
+  private propMetrics(p: RealEstateProperty) {
+    const gross = p.grossMonthlyRent + p.otherMonthlyIncome;
+    const egi   = gross * (1 - p.vacancyRate / 100);
+    const mgmt  = p.managementFeeIsPercent ? p.grossMonthlyRent * (p.managementFee / 100) : p.managementFee;
+    const expenses = mgmt + p.repairs + p.repairReserve + p.capExReserve +
+      p.propertyTaxes + p.insurance + p.hoaFees + p.utilities +
+      p.legalFees + p.cleaning + p.otherExpenses;
+    const noi = egi - expenses;
+    const r   = p.interestRate / 100 / 12;
+    const n   = p.amortizationYears * 12;
+    const pmt = (p.loanAmount > 0 && p.interestRate > 0)
+      ? p.loanAmount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
+      : 0;
+    const cashFlow = noi - pmt;
+    const dscr     = pmt > 0 ? (noi * 12) / (pmt * 12) : null;
+    return { egi, noi, pmt, cashFlow, dscr };
+  }
+
+  portfolioGrossRent   = computed(() => this.properties().reduce((s, p) => s + p.grossMonthlyRent, 0));
+  portfolioNOI         = computed(() => this.properties().reduce((s, p) => s + this.propMetrics(p).noi, 0));
+  portfolioCashFlow    = computed(() => this.properties().reduce((s, p) => s + this.propMetrics(p).cashFlow, 0));
+  portfolioTotalValue  = computed(() => this.properties().reduce((s, p) => s + p.appraisedValue, 0));
+  portfolioTotalDebt   = computed(() => this.properties().reduce((s, p) => s + p.loanAmount, 0));
+  portfolioEquity      = computed(() => this.portfolioTotalValue() - this.portfolioTotalDebt());
+  portfolioLTV         = computed(() => {
+    const v = this.portfolioTotalValue();
+    return v > 0 ? this.portfolioTotalDebt() / v : 0;
+  });
+  /** Weighted-average DSCR (weighted by annual debt service) */
+  portfolioDSCR        = computed(() => {
+    let totalNOI = 0, totalDebtService = 0;
+    for (const p of this.properties()) {
+      const m = this.propMetrics(p);
+      totalNOI         += m.noi * 12;
+      totalDebtService += m.pmt * 12;
+    }
+    return totalDebtService > 0 ? totalNOI / totalDebtService : null;
   });
 
   // ── DSCR color ────────────────────────────────────────────────────────────

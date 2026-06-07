@@ -34,6 +34,56 @@
     }
 
     @if (!loading() && properties().length > 0) {
+
+      <!-- ── Portfolio Summary (2+ properties) ─────────────────────────── -->
+      @if (properties().length > 1) {
+        <div class="portfolio-summary">
+          <div class="portfolio-summary-title">📊 Portfolio Summary — {{ properties().length }} Properties</div>
+          <div class="portfolio-stats">
+            <div class="portfolio-stat">
+              <div class="ps-label">Gross Rent</div>
+              <div class="ps-value">{{ fmt(portfolioGrossRent()) }}<span class="ps-freq">/mo</span></div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">Net Cash Flow</div>
+              <div class="ps-value" [class.ps-neg]="portfolioCashFlow() < 0" [class.ps-pos]="portfolioCashFlow() >= 0">
+                {{ portfolioCashFlow() < 0 ? '-' : '+' }}{{ fmt(Math.abs(portfolioCashFlow())) }}<span class="ps-freq">/mo</span>
+              </div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">Portfolio NOI</div>
+              <div class="ps-value">{{ fmt(portfolioNOI() * 12) }}<span class="ps-freq">/yr</span></div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">DSCR (wtd. avg)</div>
+              <div class="ps-value"
+                [class.ps-pos]="portfolioDSCR() != null && portfolioDSCR()! >= 1.25"
+                [class.ps-warn]="portfolioDSCR() != null && portfolioDSCR()! >= 1.0 && portfolioDSCR()! < 1.25"
+                [class.ps-neg]="portfolioDSCR() != null && portfolioDSCR()! < 1.0">
+                {{ portfolioDSCR() != null ? (portfolioDSCR()! | number:'1.2-2') + 'x' : '—' }}
+              </div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">Combined LTV</div>
+              <div class="ps-value"
+                [class.ps-pos]="portfolioLTV() <= 0.75"
+                [class.ps-warn]="portfolioLTV() > 0.75 && portfolioLTV() <= 0.85"
+                [class.ps-neg]="portfolioLTV() > 0.85">
+                {{ portfolioLTV() | percent:'1.0-1' }}
+              </div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">Total Equity</div>
+              <div class="ps-value ps-pos">{{ fmt(portfolioEquity()) }}</div>
+            </div>
+            <div class="portfolio-stat">
+              <div class="ps-label">Portfolio Value</div>
+              <div class="ps-value">{{ fmt(portfolioTotalValue()) }}</div>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="layout">
 
         <!-- Property list sidebar -->
@@ -125,9 +175,9 @@
               </div>
 
               <div class="metric-card">
-                <div class="metric-label">GRM</div>
-                <div class="metric-value">{{ fmtX(grm()) }}</div>
-                <div class="metric-sub">Price ÷ Annual Rent</div>
+                <div class="metric-label">BREAK-EVEN OCC.</div>
+                <div class="metric-value">{{ breakEvenOccupancy() != null ? fmtPct(breakEvenOccupancy()!) : '—' }}</div>
+                <div class="metric-sub">Min. occupancy to cover all costs</div>
               </div>
 
             </div>
@@ -363,10 +413,16 @@
             </div>
 
             <!-- Expenses -->
-            <div class="form-section-title">Operating Expenses (monthly)</div>
+            <div class="form-section-header">
+              <div class="form-section-title">Operating Expenses</div>
+              <div class="expense-mode-toggle">
+                <button type="button" class="toggle-btn" [class.active]="expenseMode() === 'monthly'" (click)="toggleExpenseMode()">Monthly</button>
+                <button type="button" class="toggle-btn" [class.active]="expenseMode() === 'annual'" (click)="toggleExpenseMode()">Annual</button>
+              </div>
+            </div>
             <div class="field-row">
               <div class="field-group">
-                <label>Management Fee</label>
+                <label>Management Fee {{ form().managementFeeIsPercent ? '(% of rent)' : '($/mo)' }}</label>
                 <input type="number" step="0.1" [value]="form().managementFee || ''" (input)="updateForm('managementFee', +$any($event.target).value)" placeholder="10" />
               </div>
               <div class="field-group field-group-checkbox">
@@ -379,52 +435,52 @@
             <div class="field-row">
               <div class="field-group">
                 <label>Property Taxes ($)</label>
-                <input type="number" [value]="form().propertyTaxes || ''" (input)="updateForm('propertyTaxes', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().propertyTaxes) || ''" (input)="updateExpense('propertyTaxes', +$any($event.target).value)" placeholder="0" />
               </div>
               <div class="field-group">
                 <label>Insurance ($)</label>
-                <input type="number" [value]="form().insurance || ''" (input)="updateForm('insurance', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().insurance) || ''" (input)="updateExpense('insurance', +$any($event.target).value)" placeholder="0" />
               </div>
             </div>
             <div class="field-row">
               <div class="field-group">
                 <label>Repairs ($)</label>
-                <input type="number" [value]="form().repairs || ''" (input)="updateForm('repairs', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().repairs) || ''" (input)="updateExpense('repairs', +$any($event.target).value)" placeholder="0" />
               </div>
               <div class="field-group">
                 <label>Repair Reserve ($)</label>
-                <input type="number" [value]="form().repairReserve || ''" (input)="updateForm('repairReserve', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().repairReserve) || ''" (input)="updateExpense('repairReserve', +$any($event.target).value)" placeholder="0" />
               </div>
             </div>
             <div class="field-row">
               <div class="field-group">
                 <label>CapEx Reserve ($)</label>
-                <input type="number" [value]="form().capExReserve || ''" (input)="updateForm('capExReserve', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().capExReserve) || ''" (input)="updateExpense('capExReserve', +$any($event.target).value)" placeholder="0" />
                 <span class="field-hint">Roof, HVAC, appliances — typically 1–2% of value/yr</span>
               </div>
               <div class="field-group">
                 <label>HOA Fees ($)</label>
-                <input type="number" [value]="form().hoaFees || ''" (input)="updateForm('hoaFees', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().hoaFees) || ''" (input)="updateExpense('hoaFees', +$any($event.target).value)" placeholder="0" />
               </div>
             </div>
             <div class="field-row">
               <div class="field-group">
                 <label>Utilities ($)</label>
-                <input type="number" [value]="form().utilities || ''" (input)="updateForm('utilities', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().utilities) || ''" (input)="updateExpense('utilities', +$any($event.target).value)" placeholder="0" />
               </div>
               <div class="field-group">
                 <label>Legal Fees ($)</label>
-                <input type="number" [value]="form().legalFees || ''" (input)="updateForm('legalFees', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().legalFees) || ''" (input)="updateExpense('legalFees', +$any($event.target).value)" placeholder="0" />
               </div>
             </div>
             <div class="field-row">
               <div class="field-group">
                 <label>Cleaning &amp; Maintenance ($)</label>
-                <input type="number" [value]="form().cleaning || ''" (input)="updateForm('cleaning', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().cleaning) || ''" (input)="updateExpense('cleaning', +$any($event.target).value)" placeholder="0" />
               </div>
               <div class="field-group">
                 <label>Other Expenses ($)</label>
-                <input type="number" [value]="form().otherExpenses || ''" (input)="updateForm('otherExpenses', +$any($event.target).value)" placeholder="0" />
+                <input type="number" [value]="dispExp(form().otherExpenses) || ''" (input)="updateExpense('otherExpenses', +$any($event.target).value)" placeholder="0" />
               </div>
             </div>
 

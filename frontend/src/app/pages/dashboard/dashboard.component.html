@@ -435,9 +435,13 @@
   </div>
 
   <!-- ── Real Estate / LTV ──────────────────────────────────────────── -->
-  @if (showLtv()) {
+  @if (showLtv() || re.hasProperties()) {
     <div class="section-card">
       <h3 class="section-title">Real Estate</h3>
+      @if (showLtv()) {
+      <div class="re-invest-header" style="margin-bottom:12px">
+        <span class="re-invest-label">Primary Residence</span>
+      </div>
       <div class="ltv-grid">
         <div class="ltv-item">
           <span class="ltv-label">Home Value</span>
@@ -474,6 +478,55 @@
           <span class="ltv-sub">Est. at 89.9% CLTV</span>
         </div>
       </div>
+      } <!-- end @if showLtv() -->
+
+      <!-- Investment property summary pulled from Real Estate analyzer -->
+      @if (re.hasProperties()) {
+        <div class="re-invest-summary">
+          <div class="re-invest-header">
+            <span class="re-invest-label">Investment Properties ({{ re.properties().length }})</span>
+            <a routerLink="/real-estate" class="re-invest-link">View Analyzer →</a>
+          </div>
+          <div class="ltv-grid">
+            <div class="ltv-item">
+              <span class="ltv-label">Gross Rent</span>
+              <span class="ltv-val">{{ formatCurrency(re.totalGrossRent()) }}<span style="font-size:11px;color:#9CA3AF">/mo</span></span>
+            </div>
+            <div class="ltv-item">
+              <span class="ltv-label">Net Cash Flow</span>
+              <span class="ltv-val" [class.green]="re.totalCashFlow() >= 0" [class.coral]="re.totalCashFlow() < 0">
+                {{ re.totalCashFlow() < 0 ? '-' : '+' }}{{ formatCurrency(re.totalCashFlow() < 0 ? -re.totalCashFlow() : re.totalCashFlow()) }}<span style="font-size:11px;color:#9CA3AF">/mo</span>
+              </span>
+            </div>
+            <div class="ltv-item">
+              <span class="ltv-label">Portfolio NOI</span>
+              <span class="ltv-val">{{ formatCurrency(re.totalNOI() * 12) }}<span style="font-size:11px;color:#9CA3AF">/yr</span></span>
+            </div>
+            <div class="ltv-item">
+              <span class="ltv-label">DSCR</span>
+              <span class="ltv-val"
+                [class.green]="re.portfolioDSCR() != null && re.portfolioDSCR()! >= 1.25"
+                [class.amber]="re.portfolioDSCR() != null && re.portfolioDSCR()! >= 1.0 && re.portfolioDSCR()! < 1.25"
+                [class.coral]="re.portfolioDSCR() != null && re.portfolioDSCR()! < 1.0">
+                {{ re.portfolioDSCR() != null ? (re.portfolioDSCR()! | number:'1.2-2') + 'x' : '—' }}
+              </span>
+            </div>
+            <div class="ltv-item">
+              <span class="ltv-label">Portfolio LTV</span>
+              <span class="ltv-val"
+                [class.green]="re.portfolioLTV() <= 0.75"
+                [class.amber]="re.portfolioLTV() > 0.75 && re.portfolioLTV() <= 0.85"
+                [class.coral]="re.portfolioLTV() > 0.85">
+                {{ re.portfolioLTV() | percent:'1.0-1' }}
+              </span>
+            </div>
+            <div class="ltv-item">
+              <span class="ltv-label">Total Equity</span>
+              <span class="ltv-val green">{{ formatCurrency(re.totalEquity()) }}</span>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   }
 

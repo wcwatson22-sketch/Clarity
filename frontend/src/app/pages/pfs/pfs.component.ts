@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
 import { PlanAccessService } from '../../services/plan-access.service';
+import { RealEstateService } from '../../services/real-estate.service';
+import { RealEstateProperty } from '../real-estate/real-estate.component';
 import { Account, BudgetItem, IncomeData } from '../../models/finance.models';
 
 @Component({
@@ -17,6 +19,7 @@ export class PfsComponent implements OnInit {
   private svc   = inject(FinanceService);
   private auth  = inject(AuthService);
   private plans = inject(PlanAccessService);
+  readonly re   = inject(RealEstateService);
 
   /** PFS requires Premium ($4.99/mo). Trial users can access during trial period. */
   readonly hasAccess = computed(() => this.plans.isPremium() || this.plans.trialActive());
@@ -86,10 +89,124 @@ export class PfsComponent implements OnInit {
     return mortgage.value / home.value;
   });
 
+  // ── Investment Real Estate (from analyzer) ──────────────────────────────
+  investProps      = computed(() => this.re.properties());
+  hasInvestProps   = computed(() => this.investProps().length > 0);
+  investTotalValue = computed(() => this.re.totalValue());
+  investTotalDebt  = computed(() => this.re.totalDebt());
+  investTotalEquity= computed(() => this.re.totalEquity());
+
+  /** Threshold: at or below this count, show full per-property table. Above → grouped summary. */
+  readonly SCHEDULE_THRESHOLD = 20;
+  readonly useLargePortfolioFormat = computed(() => this.investProps().length > this.SCHEDULE_THRESHOLD);
+
+  /** Per-property metrics — used for Schedule A detail (≤20) and Schedule B CSV (always) */
+  scheduleARows = computed(() => this.investProps().map(p => {
+    const r   = p.interestRate / 100 / 12;
+    const n   = p.amortizationYears * 12;
+    const pmt = (p.loanAmount > 0 && p.interestRate > 0)
+      ? p.loanAmount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
+      : 0;
+    const gross    = p.grossMonthlyRent + p.otherMonthlyIncome;
+    const egi      = gross * (1 - p.vacancyRate / 100);
+    const mgmt     = p.managementFeeIsPercent ? p.grossMonthlyRent * (p.managementFee / 100) : p.managementFee;
+    const expenses = mgmt + p.repairs + p.repairReserve + p.capExReserve +
+      p.propertyTaxes + p.insurance + p.hoaFees + p.utilities +
+      p.legalFees + p.cleaning + p.otherExpenses;
+    const noi  = egi - expenses;
+    const dscr = pmt > 0 ? (noi * 12) / (pmt * 12) : null;
+    return {
+      address:        p.address,
+      propertyType:   p.propertyType === 'ltr' ? 'Long-Term Rental' : p.propertyType === 'str' ? 'Short-Term Rental' : 'Multi-Family',
+      appraisedValue: p.appraisedValue,
+      loanBalance:    p.loanAmount,
+      equity:         p.appraisedValue - p.loanAmount,
+      grossRent:      p.grossMonthlyRent,
+      noiAnnual:      noi * 12,
+      monthlyPayment: pmt,
+      annualDebtSvc:  pmt * 12,
+      dscr,
+      interestRate:   p.interestRate,
+      amortYears:     p.amortizationYears,
+    };
+  }));
+
+  /** Grouped summary by property type — used for Schedule A when > 20 properties */
+  scheduleAGroups = computed(() => {
+    const typeLabel: Record<string, string> = {
+      ltr: 'Long-Term Rental (LTR)',
+      str: 'Short-Term Rental (STR)',
+      multifamily: 'Multi-Family',
+    };
+    const groups = new Map<string, {
+      label: string; count: number;
+      totalValue: number; totalDebt: number; totalEquity: number;
+      totalGrossRent: number; totalNOI: number; totalDebtSvc: number;
+    }>();
+
+    for (const row of this.scheduleARows()) {
+      const key = this.investProps().find(p => p.address === row.address)?.propertyType ?? 'ltr';
+      if (!groups.has(key)) groups.set(key, {
+        label: typeLabel[key] ?? key,
+        count: 0, totalValue: 0, totalDebt: 0, totalEquity: 0,
+        totalGrossRent: 0, totalNOI: 0, totalDebtSvc: 0,
+      });
+      const g = groups.get(key)!;
+      g.count++;
+      g.totalValue     += row.appraisedValue;
+      g.totalDebt      += row.loanBalance;
+      g.totalEquity    += row.equity;
+      g.totalGrossRent += row.grossRent;
+      g.totalNOI       += row.noiAnnual;
+      g.totalDebtSvc   += row.annualDebtSvc;
+    }
+
+    return [...groups.values()].map(g => ({
+      ...g,
+      ltv:  g.totalValue  > 0 ? g.totalDebt / g.totalValue : 0,
+      dscr: g.totalDebtSvc > 0 ? g.totalNOI / g.totalDebtSvc : null,
+    }));
+  });
+
+  /** Download full portfolio as CSV (Schedule B) */
+  exportCsv() {
+    const rows = this.scheduleARows();
+    const headers = [
+      'Address','Type','Appraised Value','Loan Balance','Equity',
+      'Gross Rent/mo','Annual NOI','Monthly P&I','Annual Debt Service',
+      'DSCR','Interest Rate (%)','Amort (yrs)'
+    ];
+    const lines = [
+      headers.join(','),
+      ...rows.map(r => [
+        `"${r.address}"`,
+        `"${r.propertyType}"`,
+        r.appraisedValue.toFixed(0),
+        r.loanBalance.toFixed(0),
+        r.equity.toFixed(0),
+        r.grossRent.toFixed(0),
+        r.noiAnnual.toFixed(0),
+        r.monthlyPayment.toFixed(2),
+        r.annualDebtSvc.toFixed(2),
+        r.dscr != null ? r.dscr.toFixed(3) : '',
+        r.interestRate,
+        r.amortYears,
+      ].join(','))
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `clarity-schedule-b-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   ngOnInit() {
     this.svc.getAccounts().subscribe(a => this.accounts.set(a));
     this.svc.getBudget().subscribe(b => this.budgetItems.set(b));
     this.svc.getIncome().subscribe(i => this.income.set(i));
+    this.re.load();
   }
 
   print() { window.print(); }

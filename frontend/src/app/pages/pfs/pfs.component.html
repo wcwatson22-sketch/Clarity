@@ -2,13 +2,24 @@
 <div class="pfs-toolbar no-print">
   <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
   @if (hasAccess()) {
-    <button class="print-btn" (click)="print()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-        <rect x="6" y="14" width="12" height="8"/>
-      </svg>
-      Print / Save as PDF
-    </button>
+    <div class="toolbar-actions">
+      @if (hasInvestProps()) {
+        <button class="print-btn csv-btn" (click)="exportCsv()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download Schedule B (CSV)
+        </button>
+      }
+      <button class="print-btn" (click)="print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect x="6" y="14" width="12" height="8"/>
+        </svg>
+        Print / Save as PDF
+      </button>
+    </div>
   }
 </div>
 
@@ -85,9 +96,22 @@
           }
         </div>
       }
+      <!-- Investment Real Estate from Clarity Analyzer — collapsed into one line -->
+      @if (hasInvestProps()) {
+        <div class="account-group">
+          <div class="group-header">
+            <span>Investment Real Estate</span>
+            <span>{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</span>
+          </div>
+          <div class="account-row">
+            <span class="account-name schedule-ref">{{ investProps().length }} propert{{ investProps().length === 1 ? 'y' : 'ies' }} — See Schedule A (attached)</span>
+            <span class="account-value">{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</span>
+          </div>
+        </div>
+      }
       <div class="section-total">
         <span>Total Assets</span>
-        <span>{{ totalAssets() | currency:'USD':'symbol':'1.0-0' }}</span>
+        <span>{{ (totalAssets() + investTotalValue()) | currency:'USD':'symbol':'1.0-0' }}</span>
       </div>
     </div>
 
@@ -108,9 +132,22 @@
           }
         </div>
       }
+      <!-- Investment mortgage balances from Clarity Analyzer -->
+      @if (hasInvestProps()) {
+        <div class="account-group">
+          <div class="group-header">
+            <span>Investment Mortgages</span>
+            <span>{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</span>
+          </div>
+          <div class="account-row">
+            <span class="account-name schedule-ref">{{ investProps().length }} loan{{ investProps().length === 1 ? '' : 's' }} — See Schedule A (attached)</span>
+            <span class="account-value">{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</span>
+          </div>
+        </div>
+      }
       <div class="section-total">
         <span>Total Liabilities</span>
-        <span>{{ totalLiabilities() | currency:'USD':'symbol':'1.0-0' }}</span>
+        <span>{{ (totalLiabilities() + investTotalDebt()) | currency:'USD':'symbol':'1.0-0' }}</span>
       </div>
 
       <!-- Key Ratios -->
@@ -206,5 +243,236 @@
       </div>
     </div>
   </div>
-</div>
+</div><!-- /pfs-doc -->
+
+<!-- ── Schedule A: Investment Real Estate Detail ─────────────────────── -->
+@if (hasAccess() && hasInvestProps()) {
+  <div class="pfs-doc schedule-a-page">
+
+      <div class="pfs-header">
+        <div class="pfs-title-block">
+          <h1 class="pfs-title">Schedule A — Investment Real Estate</h1>
+          <p class="pfs-subtitle">Attachment to Personal Financial Statement &nbsp;·&nbsp; {{ today | date:'MMMM d, yyyy' }}</p>
+        </div>
+        <div class="pfs-meta">
+          <div class="meta-row"><span class="meta-label">Prepared for</span><span class="meta-val">{{ user()?.firstName }} ({{ user()?.username }})</span></div>
+        </div>
+      </div>
+
+      <!-- Summary totals row -->
+      <div class="schedule-summary">
+        <div class="sched-sum-item"><span class="ss-label">Properties</span><span class="ss-val">{{ investProps().length }}</span></div>
+        <div class="sched-sum-item"><span class="ss-label">Total Appraised Value</span><span class="ss-val">{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</span></div>
+        <div class="sched-sum-item"><span class="ss-label">Total Loan Balances</span><span class="ss-val">{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</span></div>
+        <div class="sched-sum-item"><span class="ss-label">Total Equity</span><span class="ss-val green-text">{{ investTotalEquity() | currency:'USD':'symbol':'1.0-0' }}</span></div>
+        <div class="sched-sum-item"><span class="ss-label">Portfolio LTV</span><span class="ss-val">{{ re.portfolioLTV() | percent:'1.0-1' }}</span></div>
+        <div class="sched-sum-item"><span class="ss-label">Portfolio DSCR</span><span class="ss-val">{{ re.portfolioDSCR() != null ? (re.portfolioDSCR()! | number:'1.2-2') + 'x' : '—' }}</span></div>
+      </div>
+
+      <!-- ── ≤20 properties: full per-property table ── -->
+      @if (!useLargePortfolioFormat()) {
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th class="col-addr">Property Address</th>
+              <th>Type</th>
+              <th class="col-num">Appraised Value</th>
+              <th class="col-num">Loan Balance</th>
+              <th class="col-num">Equity</th>
+              <th class="col-num">Gross Rent/mo</th>
+              <th class="col-num">Annual NOI</th>
+              <th class="col-num">Mo. Payment</th>
+              <th class="col-num">Rate / Term</th>
+              <th class="col-num">DSCR</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of scheduleARows(); track row.address; let i = $index) {
+              <tr [class.row-alt]="i % 2 === 1">
+                <td class="col-addr">{{ row.address }}</td>
+                <td>{{ row.propertyType }}</td>
+                <td class="col-num">{{ row.appraisedValue | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ row.loanBalance | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num green-text">{{ row.equity | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ row.grossRent | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ row.noiAnnual | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ row.monthlyPayment | currency:'USD':'symbol':'1.2-2' }}</td>
+                <td class="col-num">{{ row.interestRate }}% / {{ row.amortYears }}yr</td>
+                <td class="col-num" [class.dscr-good]="row.dscr != null && row.dscr >= 1.25"
+                    [class.dscr-warn]="row.dscr != null && row.dscr >= 1.0 && row.dscr < 1.25"
+                    [class.dscr-bad]="row.dscr != null && row.dscr! < 1.0">
+                  {{ row.dscr != null ? (row.dscr | number:'1.2-2') + 'x' : '—' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="totals-row">
+              <td colspan="2"><strong>TOTALS</strong></td>
+              <td class="col-num"><strong>{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td class="col-num"><strong>{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td class="col-num green-text"><strong>{{ investTotalEquity() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td colspan="5"></td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="schedule-note">All figures are estimates based on data entered in the Clarity Real Estate Cash Flow Analyzer. Appraised values reflect user-entered estimates, not certified appraisals. Loan balances reflect original amounts entered and may not account for amortization to date. For informational purposes only.</p>
+      }
+
+      <!-- ── >20 properties: grouped category summary + Schedule B reference ── -->
+      @if (useLargePortfolioFormat()) {
+        <p class="large-portfolio-note">
+          This portfolio exceeds {{ SCHEDULE_THRESHOLD }} properties. Schedule A summarizes holdings by category.
+          Full property-by-property detail is provided in <strong>Schedule B</strong> (electronic spreadsheet — download via the toolbar above).
+        </p>
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th>Property Type</th>
+              <th class="col-num">Count</th>
+              <th class="col-num">Total Value</th>
+              <th class="col-num">Total Debt</th>
+              <th class="col-num">Total Equity</th>
+              <th class="col-num">Gross Rent/mo</th>
+              <th class="col-num">Annual NOI</th>
+              <th class="col-num">LTV</th>
+              <th class="col-num">Avg. DSCR</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of scheduleAGroups(); track g.label; let i = $index) {
+              <tr [class.row-alt]="i % 2 === 1">
+                <td><strong>{{ g.label }}</strong></td>
+                <td class="col-num">{{ g.count }}</td>
+                <td class="col-num">{{ g.totalValue | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ g.totalDebt | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num green-text">{{ g.totalEquity | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ g.totalGrossRent | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num">{{ g.totalNOI | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="col-num" [class.dscr-good]="g.ltv <= 0.75" [class.dscr-warn]="g.ltv > 0.75 && g.ltv <= 0.85" [class.dscr-bad]="g.ltv > 0.85">
+                  {{ g.ltv | percent:'1.0-1' }}
+                </td>
+                <td class="col-num" [class.dscr-good]="g.dscr != null && g.dscr >= 1.25"
+                    [class.dscr-warn]="g.dscr != null && g.dscr >= 1.0 && g.dscr < 1.25"
+                    [class.dscr-bad]="g.dscr != null && g.dscr! < 1.0">
+                  {{ g.dscr != null ? (g.dscr | number:'1.2-2') + 'x' : '—' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="totals-row">
+              <td><strong>PORTFOLIO TOTAL</strong></td>
+              <td class="col-num"><strong>{{ investProps().length }}</strong></td>
+              <td class="col-num"><strong>{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td class="col-num"><strong>{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td class="col-num green-text"><strong>{{ investTotalEquity() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+              <td colspan="2"></td>
+              <td class="col-num"><strong>{{ re.portfolioLTV() | percent:'1.0-1' }}</strong></td>
+              <td class="col-num"><strong>{{ re.portfolioDSCR() != null ? (re.portfolioDSCR()! | number:'1.2-2') + 'x' : '—' }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+        <p class="schedule-note">
+          Individual property detail — including address, appraised value, loan balance, gross rent, NOI, debt service, and DSCR for each of the {{ investProps().length }} properties — is provided in <strong>Schedule B (Exhibit B)</strong>, an electronic spreadsheet available upon request or downloadable from the Clarity Finance platform. All figures are estimates based on user-entered data. For informational purposes only.
+        </p>
+      }
+
+      <div class="pfs-footer" style="margin-top:32px">
+        <div class="sig-row">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p>Signature (wet ink)</p>
+          </div>
+          <div class="sig-block name-block">
+            <div class="sig-line"></div>
+            <p>Print Name (wet ink)</p>
+          </div>
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p>Date</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+
+<!-- ── Schedule B Preview (screen-only, no-print) ─────────────────────── -->
+@if (hasAccess() && hasInvestProps() && useLargePortfolioFormat()) {
+  <div class="schedule-b-preview no-print">
+    <div class="sched-b-header">
+      <div class="sched-b-title-block">
+        <div class="sched-b-eyebrow">Screen Preview — Does Not Print</div>
+        <h2 class="sched-b-title">Schedule B (Exhibit B) — Full Property Detail</h2>
+        <p class="sched-b-sub">All {{ investProps().length }} investment properties · Download as CSV via toolbar above</p>
+      </div>
+      <button class="print-btn csv-btn sched-b-dl-btn" (click)="exportCsv()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="sched-b-table-wrap">
+      <table class="schedule-table sched-b-table">
+        <thead>
+          <tr>
+            <th class="col-addr">#</th>
+            <th class="col-addr">Property Address</th>
+            <th>Type</th>
+            <th class="col-num">Appraised Value</th>
+            <th class="col-num">Loan Balance</th>
+            <th class="col-num">Equity</th>
+            <th class="col-num">Gross Rent/mo</th>
+            <th class="col-num">Annual NOI</th>
+            <th class="col-num">Mo. P&amp;I</th>
+            <th class="col-num">Rate / Term</th>
+            <th class="col-num">DSCR</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of scheduleARows(); track row.address; let i = $index) {
+            <tr [class.row-alt]="i % 2 === 1">
+              <td class="col-num row-num">{{ i + 1 }}</td>
+              <td class="col-addr">{{ row.address }}</td>
+              <td>{{ row.propertyType }}</td>
+              <td class="col-num">{{ row.appraisedValue | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="col-num">{{ row.loanBalance | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="col-num green-text">{{ row.equity | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="col-num">{{ row.grossRent | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="col-num">{{ row.noiAnnual | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="col-num">{{ row.monthlyPayment | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td class="col-num">{{ row.interestRate }}% / {{ row.amortYears }}yr</td>
+              <td class="col-num"
+                  [class.dscr-good]="row.dscr != null && row.dscr >= 1.25"
+                  [class.dscr-warn]="row.dscr != null && row.dscr >= 1.0 && row.dscr < 1.25"
+                  [class.dscr-bad]="row.dscr != null && row.dscr! < 1.0">
+                {{ row.dscr != null ? (row.dscr | number:'1.2-2') + 'x' : '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td></td>
+            <td colspan="2"><strong>TOTALS ({{ investProps().length }} properties)</strong></td>
+            <td class="col-num"><strong>{{ investTotalValue() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+            <td class="col-num"><strong>{{ investTotalDebt() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+            <td class="col-num green-text"><strong>{{ investTotalEquity() | currency:'USD':'symbol':'1.0-0' }}</strong></td>
+            <td colspan="5"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <p class="sched-b-note">
+      This preview is for on-screen reference only and is excluded from the printed PFS. To share Schedule B with a lender,
+      use the <strong>Download CSV</strong> button above or the <strong>Download Schedule B</strong> button in the toolbar.
+    </p>
+  </div>
+}
+
 } <!-- end @if (hasAccess()) -->

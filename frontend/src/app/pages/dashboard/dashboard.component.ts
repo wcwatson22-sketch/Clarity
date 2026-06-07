@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { AppInstallService } from '../../services/app-install.service';
 import { PushNotificationService } from '../../services/push-notification.service';
+import { RealEstateService } from '../../services/real-estate.service';
 import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.models';
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
@@ -34,6 +35,7 @@ export class DashboardComponent implements OnInit {
   private push  = inject(PushNotificationService);
   private toast = inject(ToastService);
   private http  = inject(HttpClient);
+  readonly re   = inject(RealEstateService);
   private base  = environment.apiUrl;
   readonly install$ = inject(AppInstallService);
   readonly showInstallModal = signal(false);
@@ -288,8 +290,9 @@ export class DashboardComponent implements OnInit {
 
   // ── Computed: LTV ────────────────────────────────────────────────────────
   homeValue       = computed(() => this.accounts().find(a => a.category === 'property')?.value ?? 0);
-  mortgageBalance = computed(() => this.accounts().find(a => a.category === 'mortgage' || a.category === 'mortgage-invest')?.value ?? 0);
-  showLtv = computed(() => this.homeValue() > 0 && this.mortgageBalance() > 0);
+  /** Primary residence mortgage only — investment mortgages are tracked separately */
+  mortgageBalance = computed(() => this.accounts().find(a => a.category === 'mortgage')?.value ?? 0);
+  showLtv = computed(() => this.homeValue() > 0 || this.mortgageBalance() > 0);
   ltv     = computed(() => this.homeValue() > 0 ? this.mortgageBalance() / this.homeValue() : 0);
   equity  = computed(() => this.homeValue() - this.mortgageBalance());
   pmiRequired    = computed(() => this.homeValue() > 0 && this.ltv() > 0.80);
@@ -406,6 +409,7 @@ export class DashboardComponent implements OnInit {
     this.svc.getSnapshots().subscribe({ next: s => { this.snapshots.set(s); done(); }, error: done });
     this.svc.getBudget().subscribe({ next: b => { this.budgetItems.set(b); done(); }, error: done });
     this.svc.getIncome().subscribe({ next: i => { this.income.set(i); done(); }, error: done });
+    this.re.load();
   }
 
   // ── In-app progress banner ───────────────────────────────────────────────

@@ -230,6 +230,145 @@
 }
 
 /* ── Print styles ───────────────────────────────────────────────────────── */
+/* ── Schedule A ──────────────────────────────────────────────────────────── */
+.schedule-ref {
+  font-style: italic; color: #6B7280;
+}
+.schedule-a-page {
+  margin-top: 40px;
+}
+.schedule-summary {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border: 1px solid #E5E7EB; border-radius: 8px;
+  overflow: hidden; margin-bottom: 20px;
+}
+.sched-sum-item {
+  flex: 1 1 140px; padding: 12px 16px;
+  border-right: 1px solid #E5E7EB;
+  &:last-child { border-right: none; }
+}
+.ss-label { font-size: 10px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 3px; }
+.ss-val   { font-size: 15px; font-weight: 700; color: #111827; }
+.green-text { color: #1D9E75 !important; }
+
+.schedule-table {
+  width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px;
+  th {
+    background: #F9FAFB; font-size: 10px; font-weight: 700; color: #6B7280;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 10px; text-align: left; border-bottom: 2px solid #E5E7EB;
+  }
+  td {
+    padding: 9px 10px; border-bottom: 1px solid #F3F4F6; vertical-align: top;
+  }
+  .col-num { text-align: right; }
+  .col-addr { min-width: 160px; }
+  .row-alt td { background: #FAFAFA; }
+  .totals-row td {
+    border-top: 2px solid #E5E7EB; border-bottom: none;
+    background: #F9FAFB; padding-top: 10px;
+  }
+}
+.dscr-good { color: #1D9E75; font-weight: 700; }
+.dscr-warn { color: #D97706; font-weight: 700; }
+.dscr-bad  { color: #EF4444; font-weight: 700; }
+
+.schedule-note {
+  font-size: 10px; color: #9CA3AF; line-height: 1.5;
+  border-top: 1px solid #F3F4F6; padding-top: 12px; margin-top: 8px;
+}
+.large-portfolio-note {
+  font-size: 12px; color: #374151; background: #FFFBEB;
+  border: 1px solid #FDE68A; border-radius: 6px;
+  padding: 10px 14px; margin-bottom: 16px; line-height: 1.5;
+}
+/* ── Schedule B Preview (screen only) ───────────────────────────────────── */
+.schedule-b-preview {
+  max-width: 860px;
+  margin: 24px auto 0;
+  opacity: 0.62;
+  border: 2px dashed #D1D5DB;
+  border-radius: 16px;
+  padding: 28px 32px 20px;
+  background: #F9FAFB;
+  transition: opacity 0.2s;
+  position: relative;
+
+  &:hover { opacity: 0.88; }
+}
+
+.sched-b-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.sched-b-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  margin-bottom: 4px;
+  background: #E5E7EB;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.sched-b-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #374151;
+  margin: 6px 0 4px;
+}
+
+.sched-b-sub {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+.sched-b-dl-btn {
+  flex-shrink: 0;
+  margin-top: 4px;
+  font-size: 12px !important;
+  padding: 8px 14px !important;
+}
+
+.sched-b-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+.sched-b-table {
+  margin-bottom: 0 !important;
+
+  th { background: #F3F4F6 !important; color: #9CA3AF !important; }
+  td { color: #6B7280; }
+  .row-num { color: #D1D5DB; font-size: 11px; }
+  .green-text { color: #6EE7B7 !important; } // desaturated in preview
+}
+
+.sched-b-note {
+  font-size: 10px;
+  color: #9CA3AF;
+  margin: 12px 0 0;
+  line-height: 1.5;
+  strong { color: #6B7280; }
+}
+
+.toolbar-actions { display: flex; gap: 8px; align-items: center; }
+.csv-btn {
+  background: #fff !important; color: #1D9E75 !important;
+  border: 1.5px solid #1D9E75 !important;
+  &:hover { background: #F0FDF9 !important; }
+}
+
 @media print {
   .no-print { display: none !important; }
 
@@ -248,8 +387,18 @@
   .pfs-title { font-size: 16px; }
   .summary-value { font-size: 16px; }
 
+  .schedule-a-page {
+    page-break-before: always;
+    margin-top: 0;
+  }
+
+  .schedule-table {
+    font-size: 10px;
+    th, td { padding: 6px 7px; }
+  }
+
   @page {
-    size: letter portrait;
+    size: letter landscape;
     margin: 0.5in;
   }
 }
