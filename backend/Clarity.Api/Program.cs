@@ -315,6 +315,25 @@ try
             }
         }
 
+        // Grant admin rights to any user IDs listed in Admin:UserIds (comma-separated)
+        var adminUserIdsRaw = app.Configuration["Admin:UserIds"];
+        if (!string.IsNullOrWhiteSpace(adminUserIdsRaw))
+        {
+            var adminIds = adminUserIdsRaw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var n) ? n : -1)
+                .Where(n => n > 0)
+                .ToList();
+            var toPromote = ctx.Users.Where(u => adminIds.Contains(u.Id) && !u.IsAdmin).ToList();
+            foreach (var u in toPromote)
+            {
+                u.IsAdmin = true;
+                Log.Information("Admin rights granted to user ID: {Id}", u.Id);
+            }
+            if (toPromote.Count > 0)
+                await ctx.SaveChangesAsync();
+        }
+
         // ── Seed lessons if table is empty ──────────────────────────────
         if (!ctx.Lessons.Any())
         {
