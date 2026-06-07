@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Clarity.Api.Data;
+using Clarity.Api.Models;
 using Clarity.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
