@@ -1,0 +1,481 @@
+<div class="page">
+
+  <!-- ── Premium gate ───────────────────────────────────────────────────── -->
+  @if (!hasAccess()) {
+    <div class="gate-wrap">
+      <div class="gate-icon">🏠</div>
+      <h2 class="gate-title">Real Estate Cash Flow</h2>
+      <p class="gate-body">Analyze rental property returns — DSCR, cap rate, cash-on-cash, 5-year projections and more. Available on the Premium plan.</p>
+      <a routerLink="/settings" class="gate-btn">Upgrade to Premium →</a>
+    </div>
+  }
+
+  @if (hasAccess()) {
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Real Estate</h1>
+        <p class="page-sub">Analyze rental property cash flow and returns</p>
+      </div>
+      <button class="btn-add" (click)="openAdd()">+ Add Property</button>
+    </div>
+
+    @if (loading()) {
+      <p class="loading-msg">Loading properties…</p>
+    }
+
+    @if (!loading() && properties().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">🏠</div>
+        <h3>No properties yet</h3>
+        <p>Add your first rental property to analyze its cash flow and returns.</p>
+        <button class="btn-add" (click)="openAdd()">Add Property</button>
+      </div>
+    }
+
+    @if (!loading() && properties().length > 0) {
+      <div class="layout">
+
+        <!-- Property list sidebar -->
+        <div class="prop-list">
+          @for (prop of properties(); track prop.id) {
+            <div class="prop-card" [class.active]="activeId() === prop.id" (click)="selectProperty(prop.id)">
+              <div class="prop-card-top">
+                <span class="prop-type-badge" [class.str]="prop.propertyType === 'str'" [class.mf]="prop.propertyType === 'multifamily'">
+                  {{ prop.propertyType === 'ltr' ? 'LTR' : prop.propertyType === 'str' ? 'STR' : 'Multi' }}
+                </span>
+                <span class="prop-address">{{ prop.address }}</span>
+              </div>
+              <div class="prop-card-stats">
+                <span>{{ fmt(prop.grossMonthlyRent) }}/mo</span>
+                <span class="dot">·</span>
+                <span>{{ fmt(prop.purchasePrice) }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Main analysis panel -->
+        @if (active(); as prop) {
+          <div class="analysis-panel">
+
+            <!-- Property header -->
+            <div class="prop-header">
+              <div class="prop-header-left">
+                <h2 class="prop-address-lg">{{ prop.address }}</h2>
+                <div class="prop-meta">
+                  @if (prop.bedrooms) { <span>{{ prop.bedrooms }} bed</span><span class="dot">·</span> }
+                  @if (prop.bathrooms) { <span>{{ prop.bathrooms }} bath</span><span class="dot">·</span> }
+                  @if (prop.squareFeet) { <span>{{ prop.squareFeet | number }} sqft</span><span class="dot">·</span> }
+                  @if (prop.yearBuilt) { <span>Built {{ prop.yearBuilt }}</span> }
+                </div>
+              </div>
+              <div class="prop-actions">
+                <button class="btn-edit" (click)="openEdit(prop)">Edit</button>
+                <button class="btn-delete" (click)="deleteProperty(prop.id, prop.address)">Delete</button>
+              </div>
+            </div>
+
+            <!-- ── Key Metrics Row ── -->
+            <div class="metrics-grid">
+
+              <div class="metric-card" [style.border-color]="dscrColor()">
+                <div class="metric-label">DSCR</div>
+                <div class="metric-value" [style.color]="dscrColor()">
+                  {{ dscr() !== null ? fmtX(dscr()!) : '—' }}
+                </div>
+                <div class="metric-sub">
+                  @if (dscr() === null) { No debt }
+                  @else if (dscr()! >= 1.25) { ✓ Lender-ready (&gt;1.25) }
+                  @else if (dscr()! >= 1.0) { ⚠ Marginal (1.0–1.25) }
+                  @else { ✗ Below break-even }
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Monthly Cash Flow</div>
+                <div class="metric-value" [style.color]="monthlyCashFlow() >= 0 ? '#1D9E75' : '#EF4444'">
+                  {{ fmtExact(monthlyCashFlow()) }}
+                </div>
+                <div class="metric-sub">{{ fmt(annualCashFlow()) }}/yr</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Cap Rate</div>
+                <div class="metric-value">{{ fmtPct(capRate()) }}</div>
+                <div class="metric-sub">NOI ÷ Purchase Price</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Cash-on-Cash</div>
+                <div class="metric-value" [style.color]="cashOnCash() >= 0.06 ? '#1D9E75' : cashOnCash() >= 0.03 ? '#D97706' : '#EF4444'">
+                  {{ fmtPct(cashOnCash()) }}
+                </div>
+                <div class="metric-sub">Annual return on down payment</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Expense Ratio</div>
+                <div class="metric-value" [style.color]="expenseRatioColor()">{{ fmtPct(expenseRatio()) }}</div>
+                <div class="metric-sub">
+                  @if (expenseRatio() <= 0.30) { ✓ Conservative (&lt;30%) }
+                  @else if (expenseRatio() <= 0.40) { ⚠ Moderate (30–40%) }
+                  @else { ✗ High (&gt;40%) }
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">GRM</div>
+                <div class="metric-value">{{ fmtX(grm()) }}</div>
+                <div class="metric-sub">Price ÷ Annual Rent</div>
+              </div>
+
+            </div>
+
+            <!-- ── Income / Expenses / Debt columns ── -->
+            <div class="analysis-cols">
+
+              <!-- Income -->
+              <div class="analysis-section">
+                <h3 class="section-title">📥 Income</h3>
+                <div class="line-row">
+                  <span>Gross Monthly Rent</span>
+                  <span>{{ fmtExact(prop.grossMonthlyRent) }}</span>
+                </div>
+                @if (prop.otherMonthlyIncome > 0) {
+                  <div class="line-row">
+                    <span>Other Income</span>
+                    <span>{{ fmtExact(prop.otherMonthlyIncome) }}</span>
+                  </div>
+                }
+                <div class="line-row muted">
+                  <span>Vacancy ({{ prop.vacancyRate }}%)</span>
+                  <span class="red">– {{ fmtExact((prop.grossMonthlyRent + prop.otherMonthlyIncome) * prop.vacancyRate / 100) }}</span>
+                </div>
+                <div class="line-row sub-text">
+                  <span class="metric-sub-hint">{{ suggestedVacancy() }}</span>
+                </div>
+                <div class="line-row total-row">
+                  <span>Effective Gross Income</span>
+                  <span>{{ fmtExact(egi()) }}</span>
+                </div>
+              </div>
+
+              <!-- Expenses -->
+              <div class="analysis-section">
+                <h3 class="section-title">📤 Operating Expenses</h3>
+                @if (managementFeeAmt() > 0) {
+                  <div class="line-row">
+                    <span>Management Fee {{ prop.managementFeeIsPercent ? '(' + prop.managementFee + '%)' : '' }}</span>
+                    <span>{{ fmtExact(managementFeeAmt()) }}</span>
+                  </div>
+                }
+                @if (prop.propertyTaxes > 0) {
+                  <div class="line-row"><span>Property Taxes</span><span>{{ fmtExact(prop.propertyTaxes) }}</span></div>
+                }
+                @if (prop.insurance > 0) {
+                  <div class="line-row"><span>Insurance</span><span>{{ fmtExact(prop.insurance) }}</span></div>
+                }
+                @if (prop.repairs > 0) {
+                  <div class="line-row"><span>Repairs</span><span>{{ fmtExact(prop.repairs) }}</span></div>
+                }
+                @if (prop.repairReserve > 0) {
+                  <div class="line-row"><span>Repair Reserve</span><span>{{ fmtExact(prop.repairReserve) }}</span></div>
+                }
+                @if (prop.capExReserve > 0) {
+                  <div class="line-row"><span>CapEx Reserve</span><span>{{ fmtExact(prop.capExReserve) }}</span></div>
+                }
+                @if (prop.hoaFees > 0) {
+                  <div class="line-row"><span>HOA Fees</span><span>{{ fmtExact(prop.hoaFees) }}</span></div>
+                }
+                @if (prop.utilities > 0) {
+                  <div class="line-row"><span>Utilities</span><span>{{ fmtExact(prop.utilities) }}</span></div>
+                }
+                @if (prop.legalFees > 0) {
+                  <div class="line-row"><span>Legal Fees</span><span>{{ fmtExact(prop.legalFees) }}</span></div>
+                }
+                @if (prop.cleaning > 0) {
+                  <div class="line-row"><span>Cleaning &amp; Maintenance</span><span>{{ fmtExact(prop.cleaning) }}</span></div>
+                }
+                @if (prop.otherExpenses > 0) {
+                  <div class="line-row"><span>Other</span><span>{{ fmtExact(prop.otherExpenses) }}</span></div>
+                }
+                <div class="line-row total-row red">
+                  <span>Total Expenses</span>
+                  <span>{{ fmtExact(totalExpenses()) }}</span>
+                </div>
+                <div class="line-row total-row green">
+                  <span>Net Operating Income</span>
+                  <span>{{ fmtExact(noi()) }}</span>
+                </div>
+              </div>
+
+              <!-- Debt & Equity -->
+              <div class="analysis-section">
+                <h3 class="section-title">🏦 Debt & Equity</h3>
+                <div class="line-row"><span>Purchase Price</span><span>{{ fmt(prop.purchasePrice) }}</span></div>
+                <div class="line-row"><span>Appraised Value</span><span>{{ fmt(prop.appraisedValue) }}</span></div>
+                <div class="line-row"><span>Loan Amount</span><span>{{ fmt(prop.loanAmount) }}</span></div>
+                <div class="line-row">
+                  <span>Down Payment</span>
+                  <span>{{ fmt(downPayment()) }} ({{ fmtPct(downPaymentPct()) }})</span>
+                </div>
+                <div class="line-row"><span>Interest Rate</span><span>{{ prop.interestRate }}%</span></div>
+                <div class="line-row"><span>Amortization</span><span>{{ prop.amortizationYears }} years</span></div>
+                <div class="line-row total-row">
+                  <span>Monthly Payment (P&I)</span>
+                  <span>{{ fmtExact(monthlyPayment()) }}</span>
+                </div>
+                <div class="line-row"><span>LTV</span><span>{{ fmtPct(ltv()) }}</span></div>
+                <div class="line-row green"><span>Current Equity</span><span>{{ fmt(equity()) }}</span></div>
+
+                @if (active()?.propertyType === 'str' && breakEvenOccupancy() !== null) {
+                  <div class="break-even-note">
+                    <strong>Break-even occupancy:</strong> {{ fmtPct(breakEvenOccupancy()!) }}
+                    — you need at least this occupancy rate to cover all costs.
+                  </div>
+                }
+              </div>
+
+            </div>
+
+            <!-- ── 5-Year Projection ── -->
+            <div class="projection-section">
+              <button class="btn-toggle-5yr" (click)="show5Year.update(v => !v)">
+                {{ show5Year() ? '▲ Hide' : '▼ Show' }} 5-Year Projection
+              </button>
+
+              @if (show5Year()) {
+                <div class="projection-note">
+                  Assumes {{ active()!.annualRentGrowthPct }}% annual rent growth and
+                  {{ active()!.annualAppreciationPct }}% appreciation. Expenses held flat.
+                </div>
+                <div class="projection-table-wrap">
+                  <table class="projection-table">
+                    <thead>
+                      <tr>
+                        <th>Year</th>
+                        <th>Gross Rent</th>
+                        <th>NOI</th>
+                        <th>Cash Flow</th>
+                        <th>Equity</th>
+                        <th>Est. Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of fiveYearProjection(); track row.year) {
+                        <tr>
+                          <td>Yr {{ row.year }}</td>
+                          <td>{{ fmt(row.grossRent) }}</td>
+                          <td>{{ fmt(row.noi) }}</td>
+                          <td [style.color]="row.cashFlow >= 0 ? '#1D9E75' : '#EF4444'">{{ fmt(row.cashFlow) }}</td>
+                          <td>{{ fmt(row.equity) }}</td>
+                          <td>{{ fmt(row.value) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <p class="disclaimer">
+              For educational purposes only. Not financial advice. Verify vacancy rates with local market data (Airbnb, VRBO, local property managers). Consult a licensed professional before making investment decisions.
+            </p>
+
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Add/Edit Form Modal ── -->
+    @if (showForm()) {
+      <div class="modal-overlay" (click)="closeForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>{{ editingId() ? 'Edit Property' : 'Add Property' }}</h2>
+            <button class="modal-close" (click)="closeForm()">✕</button>
+          </div>
+
+          <div class="modal-body">
+
+            <!-- Property Info -->
+            <div class="form-section-title">Property Info</div>
+            <div class="field-group">
+              <label>Address *</label>
+              <input type="text" [value]="form().address" (input)="updateForm('address', $any($event.target).value)" placeholder="123 Main St, City, State" />
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Property Type</label>
+                <select [value]="form().propertyType" (change)="updateForm('propertyType', $any($event.target).value); onPropertyTypeChange()">
+                  <option value="ltr">Long-Term Rental (LTR)</option>
+                  <option value="str">Short-Term Rental (STR)</option>
+                  <option value="multifamily">Multi-Family</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>Year Built</label>
+                <input type="number" [value]="form().yearBuilt ?? ''" (input)="updateForm('yearBuilt', +$any($event.target).value || undefined)" placeholder="e.g. 2005" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Bedrooms</label>
+                <input type="number" [value]="form().bedrooms ?? ''" (input)="updateForm('bedrooms', +$any($event.target).value || undefined)" placeholder="3" />
+              </div>
+              <div class="field-group">
+                <label>Bathrooms</label>
+                <input type="number" step="0.5" [value]="form().bathrooms ?? ''" (input)="updateForm('bathrooms', +$any($event.target).value || undefined)" placeholder="2" />
+              </div>
+              <div class="field-group">
+                <label>Sq Ft</label>
+                <input type="number" [value]="form().squareFeet ?? ''" (input)="updateForm('squareFeet', +$any($event.target).value || undefined)" placeholder="1500" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Purchase Price ($)</label>
+                <input type="number" [value]="form().purchasePrice || ''" (input)="updateForm('purchasePrice', +$any($event.target).value); onPurchasePriceChange()" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Appraised Value ($)</label>
+                <input type="number" [value]="form().appraisedValue || ''" (input)="updateForm('appraisedValue', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+
+            <!-- Income -->
+            <div class="form-section-title">Income</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Gross Monthly Rent ($)</label>
+                <input type="number" [value]="form().grossMonthlyRent || ''" (input)="updateForm('grossMonthlyRent', +$any($event.target).value)" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Other Income ($/mo)</label>
+                <input type="number" [value]="form().otherMonthlyIncome || ''" (input)="updateForm('otherMonthlyIncome', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Vacancy Rate (%)</label>
+              <input type="number" step="0.5" [value]="form().vacancyRate" (input)="updateForm('vacancyRate', +$any($event.target).value)" />
+              <span class="field-hint">Suggested: {{ suggestedVacancy() }}</span>
+            </div>
+
+            <!-- Expenses -->
+            <div class="form-section-title">Operating Expenses (monthly)</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Management Fee</label>
+                <input type="number" step="0.1" [value]="form().managementFee || ''" (input)="updateForm('managementFee', +$any($event.target).value)" placeholder="10" />
+              </div>
+              <div class="field-group field-group-checkbox">
+                <label class="checkbox-label">
+                  <input type="checkbox" [checked]="form().managementFeeIsPercent" (change)="updateForm('managementFeeIsPercent', $any($event.target).checked)" />
+                  As % of rent (vs. flat $)
+                </label>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Property Taxes ($)</label>
+                <input type="number" [value]="form().propertyTaxes || ''" (input)="updateForm('propertyTaxes', +$any($event.target).value)" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Insurance ($)</label>
+                <input type="number" [value]="form().insurance || ''" (input)="updateForm('insurance', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Repairs ($)</label>
+                <input type="number" [value]="form().repairs || ''" (input)="updateForm('repairs', +$any($event.target).value)" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Repair Reserve ($)</label>
+                <input type="number" [value]="form().repairReserve || ''" (input)="updateForm('repairReserve', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>CapEx Reserve ($)</label>
+                <input type="number" [value]="form().capExReserve || ''" (input)="updateForm('capExReserve', +$any($event.target).value)" placeholder="0" />
+                <span class="field-hint">Roof, HVAC, appliances — typically 1–2% of value/yr</span>
+              </div>
+              <div class="field-group">
+                <label>HOA Fees ($)</label>
+                <input type="number" [value]="form().hoaFees || ''" (input)="updateForm('hoaFees', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Utilities ($)</label>
+                <input type="number" [value]="form().utilities || ''" (input)="updateForm('utilities', +$any($event.target).value)" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Legal Fees ($)</label>
+                <input type="number" [value]="form().legalFees || ''" (input)="updateForm('legalFees', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Cleaning &amp; Maintenance ($)</label>
+                <input type="number" [value]="form().cleaning || ''" (input)="updateForm('cleaning', +$any($event.target).value)" placeholder="0" />
+              </div>
+              <div class="field-group">
+                <label>Other Expenses ($)</label>
+                <input type="number" [value]="form().otherExpenses || ''" (input)="updateForm('otherExpenses', +$any($event.target).value)" placeholder="0" />
+              </div>
+            </div>
+
+            <!-- Debt -->
+            <div class="form-section-title">Debt Structure</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Loan Amount ($)</label>
+                <input type="number" [value]="form().loanAmount || ''" (input)="updateForm('loanAmount', +$any($event.target).value)" placeholder="0" />
+                <span class="field-hint">Typically 80% of purchase price (20% down)</span>
+              </div>
+              <div class="field-group">
+                <label>Interest Rate (%)</label>
+                <input type="number" step="0.125" [value]="form().interestRate" (input)="updateForm('interestRate', +$any($event.target).value)" placeholder="7.0" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Amortization (years)</label>
+              <select [value]="form().amortizationYears" (change)="updateForm('amortizationYears', +$any($event.target).value)">
+                <option value="10">10 years</option>
+                <option value="15">15 years</option>
+                <option value="20">20 years</option>
+                <option value="25">25 years</option>
+                <option value="30">30 years</option>
+              </select>
+            </div>
+
+            <!-- Projection Assumptions -->
+            <div class="form-section-title">5-Year Projection Assumptions</div>
+            <div class="field-row">
+              <div class="field-group">
+                <label>Annual Rent Growth (%)</label>
+                <input type="number" step="0.5" [value]="form().annualRentGrowthPct" (input)="updateForm('annualRentGrowthPct', +$any($event.target).value)" placeholder="3" />
+              </div>
+              <div class="field-group">
+                <label>Annual Appreciation (%)</label>
+                <input type="number" step="0.5" [value]="form().annualAppreciationPct" (input)="updateForm('annualAppreciationPct', +$any($event.target).value)" placeholder="3" />
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" (click)="closeForm()">Cancel</button>
+            <button class="btn-save" (click)="save()" [disabled]="saving()">
+              {{ saving() ? 'Saving…' : editingId() ? 'Save Changes' : 'Add Property' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+  } <!-- end hasAccess -->
+</div>

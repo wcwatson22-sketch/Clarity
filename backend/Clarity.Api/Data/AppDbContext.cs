@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserPushSubscription> PushSubscriptions => Set<UserPushSubscription>();
     public DbSet<Lesson>    Lessons    => Set<Lesson>();
     public DbSet<EmailLog>  EmailLogs  => Set<EmailLog>();
+    public DbSet<RealEstateProperty> RealEstateProperties => Set<RealEstateProperty>();
 
     private static readonly JsonSerializerOptions _json = new();
 
@@ -103,6 +104,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasKey(l => l.Id);
             e.Property(l => l.Id).ValueGeneratedNever(); // string slug IDs, not auto-generated
+        });
+
+        // ── RealEstateProperty ────────────────────────────────────────────────
+        mb.Entity<RealEstateProperty>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Id).ValueGeneratedNever();
+            e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId);
         });
     }
 }
