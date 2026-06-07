@@ -1,7 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PlanAccessService } from '../../services/plan-access.service';
-import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
+import { AuthService } from '../../services/auth.service';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface DocItem { text: string; sub?: string[]; }
 interface ChecklistItem { text: string; detail?: string; }
@@ -420,10 +421,12 @@ export const LOAN_GUIDES: LoanGuide[] = [
 })
 export class LoanPrepComponent {
   private plans = inject(PlanAccessService);
+  private auth  = inject(AuthService);
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_loanprep';
-  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly scopedTutorialKey = tutorialKey(this.TUTORIAL_KEY, this.auth.currentUser()?.id);
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '🏦', title: 'Loan Preparation Guide', body: 'Select a loan type to see a complete checklist of documents to gather, what lenders look for, and do\'s & don\'ts.' },
     { icon: '📋', title: 'Check Off Documents', body: 'Use the interactive checklist to track which documents you\'ve gathered. Your progress is saved automatically.' },

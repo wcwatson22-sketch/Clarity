@@ -26,10 +26,17 @@
 
     @if (!loading() && properties().length === 0) {
       <div class="empty-state">
-        <div class="empty-icon">🏠</div>
+        <svg class="empty-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="28" width="48" height="30" rx="3" stroke="#D1D5DB" stroke-width="2.5" fill="#F9FAFB"/>
+          <path d="M4 30L32 8L60 30" stroke="#D1D5DB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="24" y="40" width="16" height="18" rx="2" fill="#E5E7EB"/>
+          <rect x="14" y="34" width="10" height="10" rx="1.5" fill="#E5E7EB"/>
+          <rect x="40" y="34" width="10" height="10" rx="1.5" fill="#E5E7EB"/>
+          <path d="M20 52v-4a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v4" stroke="#9CA3AF" stroke-width="1.5"/>
+        </svg>
         <h3>No properties yet</h3>
-        <p>Add your first rental property to analyze its cash flow and returns.</p>
-        <button class="btn-add" (click)="openAdd()">Add Property</button>
+        <p>Add a rental property to analyze DSCR, cap rate, cash-on-cash return, and 5-year projections.</p>
+        <button class="btn-add" (click)="openAdd()">+ Add Your First Property</button>
       </div>
     }
 

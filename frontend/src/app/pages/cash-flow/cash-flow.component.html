@@ -4,7 +4,7 @@
   @if (showTutorial()) {
     <app-tab-tutorial
       [steps]="tutorialSteps"
-      [storageKey]="TUTORIAL_KEY"
+      [storageKey]="scopedTutorialKey"
       (dismissed)="showTutorial.set(false)" />
   }
 
@@ -431,18 +431,6 @@
           </div>
         </div>
       }
-    </div>
-  }
-
-  <!-- ── Empty State ───────────────────────────────────────────────── -->
-  @if (!netIncome()) {
-    <div class="empty-state">
-      <p class="empty-title">Start with your income.</p>
-      <ol class="empty-steps">
-        <li>Enter your gross monthly income above.</li>
-        <li>Enter your take-home pay.</li>
-        <li>Fill in your monthly expenses below.</li>
-      </ol>
     </div>
   }
 

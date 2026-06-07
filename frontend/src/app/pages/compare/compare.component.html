@@ -4,7 +4,7 @@
   @if (showTutorial()) {
     <app-tab-tutorial
       [steps]="tutorialSteps"
-      [storageKey]="TUTORIAL_KEY"
+      [storageKey]="scopedTutorialKey"
       (dismissed)="showTutorial.set(false)" />
   }
 
@@ -41,11 +41,30 @@
     </div>
   }
 
-  <!-- ── Error ──────────────────────────────────────────────────────── -->
+  <!-- ── Error / no account data ──────────────────────────────────── -->
   @else if (error()) {
-    <div class="state-card">
-      <span class="state-icon">⚠️</span>
-      <p class="state-msg">{{ error() }}</p>
+    <div class="locked-card">
+      <div class="locked-icon">📊</div>
+      <h2 class="locked-title">Set up your dashboard first</h2>
+      <p class="locked-body">
+        Comparisons are built from your account data — assets, debts, and income.
+        Add a few accounts on your <strong>Dashboard</strong> and income in <strong>Cash Flow</strong>,
+        then come back and your comparison will appear automatically.
+      </p>
+      <div class="locked-steps">
+        <div class="locked-step">
+          <span class="step-pending">1</span>
+          <span>Add assets &amp; debts on your <a routerLink="/dashboard" class="inline-link">Dashboard</a></span>
+        </div>
+        <div class="locked-step">
+          <span class="step-pending">2</span>
+          <span>Add income in <a routerLink="/cash-flow" class="inline-link">Cash Flow</a></span>
+        </div>
+        <div class="locked-step">
+          <span class="step-pending">3</span>
+          <span>Save a snapshot — comparison updates automatically</span>
+        </div>
+      </div>
     </div>
   }
 

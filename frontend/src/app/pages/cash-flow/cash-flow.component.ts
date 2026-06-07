@@ -5,7 +5,8 @@ import { FinanceService } from '../../services/finance.service';
 import { ToastService } from '../../services/toast.service';
 import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models';
 import { NumericDirective } from '../../directives/numeric.directive';
-import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
+import { AuthService } from '../../services/auth.service';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 
 const TARGETS_KEY        = 'clarity_budget_targets';
 const K401_KEY           = 'clarity_401k_pct';
@@ -23,10 +24,12 @@ const K401_2_KEY         = 'clarity_401k_pct_2';
 export class CashFlowComponent implements OnInit {
   private svc   = inject(FinanceService);
   private toast = inject(ToastService);
+  private auth  = inject(AuthService);
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_cashflow';
-  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly scopedTutorialKey = tutorialKey(this.TUTORIAL_KEY, this.auth.currentUser()?.id);
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '💸', title: 'Cash Flow at a Glance', body: 'Enter your income and expenses to see your free cash flow, DTI ratio, savings rate, and a personalized budget breakdown.' },
     { icon: '📋', title: 'Budget by Category', body: 'Expenses are grouped into Debt, Fixed, Variable, and Savings. Expand each to add line items and set monthly budget targets.' },

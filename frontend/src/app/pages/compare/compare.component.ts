@@ -1,7 +1,8 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
+import { AuthService } from '../../services/auth.service';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 import { HttpClient } from '@angular/common/http';
 import { PlanAccessService } from '../../services/plan-access.service';
 import { environment } from '../../../environments/environment';
@@ -32,11 +33,13 @@ interface CompareResponse {
 export class CompareComponent implements OnInit {
   private http    = inject(HttpClient);
   private plans   = inject(PlanAccessService);
+  private auth    = inject(AuthService);
   private base    = environment.apiUrl;
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_compare';
-  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly scopedTutorialKey = tutorialKey(this.TUTORIAL_KEY, this.auth.currentUser()?.id);
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '📊', title: 'See How You Compare', body: 'Compare your net worth, savings, and debt against others in your age bracket — completely anonymously.' },
     { icon: '🔒', title: 'Private by Design', body: 'Clarity requires at least 30 users in your age bracket before showing any comparison data, so no individual can ever be identified.' },

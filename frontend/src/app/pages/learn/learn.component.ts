@@ -5,7 +5,7 @@ import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { Lesson, EducationProgress } from '../../models/finance.models';
-import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 
 const CATEGORIES = ['All', 'Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
 const LESSON_CATEGORIES = ['Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
@@ -46,7 +46,8 @@ export class LearnComponent implements OnInit {
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_learn';
-  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly scopedTutorialKey = tutorialKey(this.TUTORIAL_KEY, this.auth.currentUser()?.id);
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '📚', title: 'Bite-Sized Financial Lessons', body: 'Explore lessons on budgeting, debt, credit scores, investing, mortgages, and retirement — written to explain the numbers you\'re tracking.' },
     { icon: '🔖', title: 'Save Lessons for Later', body: 'Bookmark any lesson to find it quickly later. Completed lessons move to the bottom so your reading list stays clean.' },
@@ -63,7 +64,8 @@ export class LearnComponent implements OnInit {
   adminError  = signal('');
 
   // ── Core state ──────────────────────────────────────────────────────────────
-  lessons  = signal<Lesson[]>([]);
+  lessons       = signal<Lesson[]>([]);
+  lessonsLoaded = signal(false);
   progress = signal<EducationProgress[]>([]);
   search   = signal('');
   activeCategory = signal('All');
@@ -118,7 +120,10 @@ export class LearnComponent implements OnInit {
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
   ngOnInit() {
-    this.svc.getLessons().subscribe(l => this.lessons.set(l));
+    this.svc.getLessons().subscribe({
+      next: l => { this.lessons.set(l); this.lessonsLoaded.set(true); },
+      error: () => this.lessonsLoaded.set(true),
+    });
     this.svc.getProgress().subscribe(p => this.progress.set(p));
   }
 

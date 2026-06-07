@@ -116,7 +116,13 @@ export class TabTutorialComponent implements OnInit {
   }
 }
 
-/** Returns true when a tab tutorial should be shown (first visit only). */
-export function shouldShowTutorial(key: string): boolean {
-  return !localStorage.getItem(key);
+/** Returns true when a tab tutorial should be shown (first visit only, per user). */
+export function shouldShowTutorial(key: string, userId?: number | null): boolean {
+  const scoped = userId != null ? `${key}_u${userId}` : key;
+  return !localStorage.getItem(scoped);
+}
+
+/** Returns the user-scoped storage key. */
+export function tutorialKey(key: string, userId?: number | null): string {
+  return userId != null ? `${key}_u${userId}` : key;
 }

@@ -1,6 +1,9 @@
 <!-- Screen-only print button -->
 <div class="pfs-toolbar no-print">
   <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
+  @if (hasAccess() && totalAssets() === 0 && totalLiabilities() === 0) {
+    <span class="pfs-empty-hint">Add accounts on the <a routerLink="/dashboard">Dashboard</a> to populate this statement</span>
+  }
   @if (hasAccess()) {
     <div class="toolbar-actions">
       @if (hasInvestProps()) {

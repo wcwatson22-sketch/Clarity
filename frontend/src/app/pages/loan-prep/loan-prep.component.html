@@ -4,7 +4,7 @@
   @if (showTutorial()) {
     <app-tab-tutorial
       [steps]="tutorialSteps"
-      [storageKey]="TUTORIAL_KEY"
+      [storageKey]="scopedTutorialKey"
       (dismissed)="showTutorial.set(false)" />
   }
 

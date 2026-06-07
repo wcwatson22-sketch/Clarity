@@ -477,6 +477,37 @@
 .last-snapshot { font-size: 12px; color: #9CA3AF; margin: 0; }
 .last-snapshot.muted { font-style: italic; }
 
+/* ── Getting started prompt (inside NW card, fresh accounts) ─────────── */
+.getting-started {
+  margin-top: 4px;
+  border-top: 1px solid #F3F4F6;
+  padding-top: 14px;
+}
+.gs-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #9CA3AF; margin: 0 0 10px;
+}
+.gs-steps { display: flex; flex-direction: column; gap: 8px; }
+.gs-step {
+  display: flex; align-items: center; gap: 10px;
+  background: #F9FAFB; border: 1px solid #E5E7EB;
+  border-radius: 10px; padding: 10px 14px;
+  text-decoration: none; color: #374151;
+  font-size: 13px; transition: background 0.15s, border-color 0.15s;
+  &:hover { background: #F0FBF7; border-color: #A7F3D0; }
+  &.gs-step-here { cursor: default; }
+  &.gs-step-here:hover { background: #F9FAFB; border-color: #E5E7EB; }
+}
+.gs-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #1D9E75; color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.gs-text { flex: 1; line-height: 1.4; strong { color: #111827; } }
+.gs-arrow { font-size: 14px; color: #9CA3AF; flex-shrink: 0; }
+
 .snapshot-btn-group {
   display: flex;
   flex-direction: column;

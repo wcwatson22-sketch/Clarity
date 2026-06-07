@@ -12,7 +12,7 @@ import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
 import { NumericDirective } from '../../directives/numeric.directive';
-import { TabTutorialComponent, TutorialStep, shouldShowTutorial } from '../../components/tab-tutorial/tab-tutorial.component';
+import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 
 interface AccountGroup { name: string; accounts: Account[]; total: number; }
 
@@ -42,7 +42,8 @@ export class DashboardComponent implements OnInit {
 
   // ── Tab tutorial ─────────────────────────────────────────────────────────
   readonly TUTORIAL_KEY = 'clarity_tutorial_dashboard';
-  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY));
+  readonly scopedTutorialKey = tutorialKey(this.TUTORIAL_KEY, this.auth.currentUser()?.id);
+  showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '📊', title: 'Your Financial Dashboard', body: 'Add assets (savings, investments, property) and liabilities (loans, credit cards) to see your net worth in real time.' },
     { icon: '📸', title: 'Save Snapshots', body: 'Hit "Save Snapshot" whenever your balances change. Snapshots power your month-over-month and year-to-date movement cards below.' },

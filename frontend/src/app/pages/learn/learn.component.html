@@ -4,7 +4,7 @@
   @if (showTutorial()) {
     <app-tab-tutorial
       [steps]="tutorialSteps"
-      [storageKey]="TUTORIAL_KEY"
+      [storageKey]="scopedTutorialKey"
       (dismissed)="showTutorial.set(false)" />
   }
 
@@ -293,7 +293,13 @@
 
     @if (filteredLessons().length === 0) {
       <div class="no-results">
-        <p>No lessons found. Try a different search or category.</p>
+        @if (!lessonsLoaded()) {
+          <p>Loading lessons…</p>
+        } @else if (lessons().length === 0) {
+          <p>Lessons couldn't be loaded right now. Try refreshing the page.</p>
+        } @else {
+          <p>No lessons match your search. Try a different term or category.</p>
+        }
       </div>
     }
   </div>

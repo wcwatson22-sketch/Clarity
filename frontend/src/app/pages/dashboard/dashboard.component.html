@@ -4,7 +4,7 @@
   @if (showTutorial()) {
     <app-tab-tutorial
       [steps]="tutorialSteps"
-      [storageKey]="TUTORIAL_KEY"
+      [storageKey]="scopedTutorialKey"
       (dismissed)="showTutorial.set(false)" />
   }
 
@@ -292,12 +292,29 @@
     </div>
     @if (lastSnapshot()) {
       <p class="last-snapshot">Last snapshot {{ lastSnapshot()!.createdAt | date:'mediumDate' }}</p>
+    } @else if (itemsTracked() === 0) {
+      <div class="getting-started">
+        <p class="gs-label">Get started in two steps</p>
+        <div class="gs-steps">
+          <a routerLink="/cash-flow" class="gs-step">
+            <span class="gs-num">1</span>
+            <span class="gs-text">Add income &amp; expenses in <strong>Cash Flow</strong></span>
+            <span class="gs-arrow">→</span>
+          </a>
+          <a routerLink="/dashboard" class="gs-step gs-step-here">
+            <span class="gs-num">2</span>
+            <span class="gs-text">Add assets &amp; debts below, then save a snapshot</span>
+            <span class="gs-arrow">↓</span>
+          </a>
+        </div>
+      </div>
     } @else {
       <p class="last-snapshot muted">Save your first snapshot to start tracking progress.</p>
     }
   </div>
 
   <!-- ── Metric Cards ──────────────────────────────────────────────── -->
+  @if (itemsTracked() > 0) {
   <div class="metrics-grid">
     <div class="metric-card">
       <span class="metric-label metric-label-bold">Debt-to-Income (DTI)</span>
@@ -326,10 +343,12 @@
       <span class="metric-sub">Everything you owe</span>
     </div>
   </div>
+  } <!-- end @if itemsTracked > 0 -->
 
   <!-- ── Movement Cards ───────────────────────────────────────────────── -->
   <!-- Both MoM and YTD compare snapshots to snapshots — live edits are     -->
   <!-- never reflected until the user saves a new snapshot.                  -->
+  @if (momDeltas() || ytdDeltas()) {
   <div class="movement-section">
     <h3 class="movement-title">Snapshot Movement</h3>
     <div class="movement-grid">
@@ -433,6 +452,7 @@
 
     </div>
   </div>
+  } <!-- end @if momDeltas || ytdDeltas -->
 
   <!-- ── Real Estate / LTV ──────────────────────────────────────────── -->
   @if (showLtv() || re.hasProperties()) {
