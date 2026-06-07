@@ -24,6 +24,7 @@
   &.chip-green { border-color: #A7F3D0; background: #F0FBF7; .chip-val { color: #1D9E75; } }
   &.chip-blue  { border-color: #A7F3D0; background: #F0FBF7; .chip-val { color: #1E40AF; } }
   &.chip-red   { border-color: #FECACA; background: #FEF2F2; .chip-val { color: #B91C1C; } }
+  &.chip-gold  { border-color: #FDE68A; background: #FFFBEB; .chip-val { color: #92400E; } }
 }
 .chip-val { display: block; font-size: 24px; font-weight: 700; color: #111827; }
 .chip-label { font-size: 11px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; }

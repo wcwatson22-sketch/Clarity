@@ -33,6 +33,18 @@
           <span class="chip-val">{{ s.expired }}</span>
           <span class="chip-label">Expired</span>
         </div>
+        <div class="chip chip-gold">
+          <span class="chip-val">${{ grossMrr().toFixed(2) }}</span>
+          <span class="chip-label">Gross MRR</span>
+        </div>
+        <div class="chip">
+          <span class="chip-val">{{ basePaidCount() }}</span>
+          <span class="chip-label">Base ($0.99)</span>
+        </div>
+        <div class="chip chip-blue">
+          <span class="chip-val">{{ premiumPaidCount() }}</span>
+          <span class="chip-label">Premium ($4.99)</span>
+        </div>
       </div>
     }
 

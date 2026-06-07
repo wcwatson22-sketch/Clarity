@@ -35,6 +35,10 @@ export class AdminComponent implements OnInit {
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.isAdmin === true);
 
+  readonly basePaidCount    = computed(() => this.users().filter(u => u.isPaid && u.tier !== 'Premium').length);
+  readonly premiumPaidCount = computed(() => this.users().filter(u => u.isPaid && u.tier === 'Premium').length);
+  readonly grossMrr         = computed(() => this.basePaidCount() * 0.99 + this.premiumPaidCount() * 4.99);
+
   filteredUsers = computed(() => {
     const q = this.search().toLowerCase();
     const col = this.sortCol();
