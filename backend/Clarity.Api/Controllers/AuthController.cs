@@ -33,7 +33,7 @@ public class AuthController(
             return BadRequest(new { error = "Password must be at least 6 characters." });
         if (req.Age < 18 || req.Age > 120)
             return BadRequest(new { error = "Age must be between 18 and 120." });
-        if (await db.Users.AnyAsync(u => u.Username == req.Username))
+        if (await db.Users.AnyAsync(u => u.Username.ToLower() == req.Username.Trim().ToLower()))
             return Conflict(new { error = "Username is already taken." });
         if (await db.Users.AnyAsync(u => u.Email == req.Email.ToLowerInvariant()))
             return Conflict(new { error = "Email is already registered." });
