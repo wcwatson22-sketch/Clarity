@@ -279,6 +279,18 @@ public class AuthController(
         return Ok(ToMe(user));
     }
 
+    // ── Reset Onboarding (user-triggered replay from Settings) ────────────────
+    [Authorize]
+    [HttpPost("reset-onboarding")]
+    public async Task<IActionResult> ResetOnboarding()
+    {
+        var user = await GetUser();
+        if (user is null) return Unauthorized();
+        user.HasSeenOnboarding = false;
+        await db.SaveChangesAsync();
+        return Ok(ToMe(user));
+    }
+
     private static MeResponse ToMe(User u) =>
         new(u.Id, u.Username, u.FirstName, u.Email, u.State, u.City, u.Age, u.Tier.ToString(),
             u.EmailVerified, u.HasSeenOnboarding, u.IsAdmin, u.AnonymousId, u.TrialEndsAt,

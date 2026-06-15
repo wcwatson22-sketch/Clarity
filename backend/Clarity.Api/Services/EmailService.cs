@@ -72,7 +72,7 @@ public class EmailService(
               </div>
 
               <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
-                After your trial, continue with a <strong>Compare plan ($0.99/month)</strong> or
+                After your trial, continue with a <strong>Base plan ($0.99/month)</strong> or
                 unlock everything with <strong>Premium ($4.99/month)</strong>.
               </p>
 
@@ -292,7 +292,7 @@ public class EmailService(
                   Base Plan — $0.99/month
                 </p>
                 <p style="color:#6B7280;font-size:13px;margin:0 0 12px;line-height:1.6;">
-                  Unlock financial comparison tools to help you review options before making decisions.
+                  Unlock the core Clarity tools, including Dashboard, Cash Flow, snapshots, and Compare tools.
                 </p>
               </div>
 
@@ -301,7 +301,7 @@ public class EmailService(
                   Premium Plan — $4.99/month
                 </p>
                 <p style="color:#374151;font-size:13px;margin:0 0 12px;line-height:1.6;">
-                  Includes Compare, plus Loan Prep guides, Personal Financial Statement tools,
+                  Includes Base, plus Loan Prep guides, Personal Financial Statement tools,
                   and banker-style financial readiness features.
                 </p>
               </div>
@@ -442,6 +442,55 @@ public class EmailService(
             </div>
             """;
         return await SendAsync(notifyAddress, $"Clarity feedback from {userEmail}", html, "admin-survey-notification");
+    }
+
+    /// <summary>
+    /// Sends a support/feedback message to the configured support inbox.
+    /// No financial data is included — only the user's typed message plus
+    /// identity context the user already provided at signup.
+    /// </summary>
+    public async Task<bool> SendSupportMessageAsync(
+        string toEmail, string message,
+        string userName, string userEmail,
+        string userId,  DateTime timestamp)
+    {
+        // Sanitize display values for HTML rendering
+        static string Esc(string s) => System.Web.HttpUtility.HtmlEncode(s);
+
+        var html = $"""
+            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+                <div style="width:12px;height:12px;border-radius:50%;background:#1D9E75;"></div>
+                <span style="font-size:18px;font-weight:700;color:#111827;">Clarity — Support Message</span>
+              </div>
+
+              <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;
+                          padding:16px 20px;margin-bottom:20px;font-size:13px;color:#374151;">
+                <table style="border-collapse:collapse;width:100%;">
+                  <tr><td style="padding:3px 0;font-weight:600;width:100px;">Name</td><td>{Esc(userName)}</td></tr>
+                  <tr><td style="padding:3px 0;font-weight:600;">Email</td><td>{Esc(userEmail)}</td></tr>
+                  <tr><td style="padding:3px 0;font-weight:600;">User ID</td><td>{Esc(userId)}</td></tr>
+                  <tr><td style="padding:3px 0;font-weight:600;">Sent at</td><td>{timestamp:yyyy-MM-dd HH:mm} UTC</td></tr>
+                </table>
+              </div>
+
+              <h3 style="font-size:14px;font-weight:700;color:#374151;margin:0 0 8px;">Message</h3>
+              <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;
+                          padding:16px 20px;font-size:14px;color:#111827;white-space:pre-wrap;
+                          line-height:1.6;">{Esc(message)}</div>
+
+              <p style="color:#9CA3AF;font-size:11px;margin-top:24px;">
+                This message was submitted from within the Clarity app or website.
+              </p>
+            </div>
+            """;
+
+        return await SendAsync(
+            toEmail,
+            subject:   "New Clarity Support Message",
+            html:      html,
+            emailType: "support-message"
+        );
     }
 
     private async Task<bool> SendAsync(string toEmail, string subject, string html,

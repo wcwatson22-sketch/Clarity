@@ -11,6 +11,14 @@ EnvironmentFile=/etc/clarity/env
 Restart=always
 RestartSec=5
 
+# ── Memory tuning for small (512MB) droplet ──────────────────────────────────
+# Workstation GC (gcServer=0) uses a single, smaller heap instead of per-core
+# server heaps — far lighter on a 1-vCPU/512MB box. ConserveMemory trades a bit
+# of CPU for a smaller managed footprint, smoothing the GC pauses that were
+# causing multi-second request spikes under memory pressure.
+Environment=DOTNET_gcServer=0
+Environment=DOTNET_GCConserveMemory=5
+
 # Security hardening
 PrivateTmp=true
 NoNewPrivileges=true

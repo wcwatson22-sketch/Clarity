@@ -186,6 +186,11 @@ export class OnboardingComponent {
 
   finish() {
     this.saving.set(true);
+    // Optimistically mark hasSeenOnboarding=true in localStorage immediately so the
+    // onboarding never re-fires even if the API call fails (e.g. network error).
+    const cached = this.auth.currentUser();
+    if (cached) this.auth.updateCachedUser({ ...cached, hasSeenOnboarding: true });
+
     this.http.post<MeResponse>(`${environment.apiUrl}/auth/complete-onboarding`, {}).subscribe({
       next: user => {
         this.auth.updateCachedUser(user);
@@ -193,7 +198,7 @@ export class OnboardingComponent {
         this.done.emit();
       },
       error: () => {
-        // Even on error, dismiss the modal so it's not blocking
+        // Already marked locally — just dismiss. Will sync next successful refresh.
         this.saving.set(false);
         this.done.emit();
       }

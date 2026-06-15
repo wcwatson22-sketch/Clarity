@@ -179,6 +179,10 @@ try
             "ALTER TABLE Users ADD COLUMN AnonymousId TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE Users ADD COLUMN HasAcceptedTerms INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE Users ADD COLUMN TermsAcceptedAt TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN LastLoginAt TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN DeletionNoticeSentAt TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN StripeCustomerId TEXT NULL",
+            "ALTER TABLE Users ADD COLUMN StripeSubscriptionId TEXT NULL",
         };
         foreach (var sql in additiveMigrations)
         {
@@ -345,6 +349,79 @@ try
             Log.Information("Seeded {Count} lessons into database.", LessonStore.All.Count);
         }
 
+        // ── RealEstateProperties table (added after initial schema) ─────────────
+        try
+        {
+            using var createRE = conn.CreateCommand();
+            createRE.CommandText = """
+                CREATE TABLE IF NOT EXISTS "RealEstateProperties" (
+                    "Id"                     TEXT NOT NULL CONSTRAINT "PK_RealEstateProperties" PRIMARY KEY,
+                    "UserId"                 INTEGER NOT NULL,
+                    "Address"                TEXT NOT NULL DEFAULT '',
+                    "PropertyType"           TEXT NOT NULL DEFAULT 'ltr',
+                    "SquareFeet"             INTEGER NULL,
+                    "Bedrooms"               INTEGER NULL,
+                    "Bathrooms"              TEXT NULL,
+                    "YearBuilt"              INTEGER NULL,
+                    "PurchasePrice"          TEXT NOT NULL DEFAULT '0',
+                    "AppraisedValue"         TEXT NOT NULL DEFAULT '0',
+                    "GrossMonthlyRent"       TEXT NOT NULL DEFAULT '0',
+                    "VacancyRate"            TEXT NOT NULL DEFAULT '0.05',
+                    "OtherMonthlyIncome"     TEXT NOT NULL DEFAULT '0',
+                    "ManagementFee"          TEXT NOT NULL DEFAULT '0',
+                    "ManagementFeeIsPercent" INTEGER NOT NULL DEFAULT 1,
+                    "Repairs"                TEXT NOT NULL DEFAULT '0',
+                    "RepairReserve"          TEXT NOT NULL DEFAULT '0',
+                    "CapExReserve"           TEXT NOT NULL DEFAULT '0',
+                    "PropertyTaxes"          TEXT NOT NULL DEFAULT '0',
+                    "Insurance"              TEXT NOT NULL DEFAULT '0',
+                    "HoaFees"               TEXT NOT NULL DEFAULT '0',
+                    "Utilities"              TEXT NOT NULL DEFAULT '0',
+                    "LegalFees"              TEXT NOT NULL DEFAULT '0',
+                    "Cleaning"               TEXT NOT NULL DEFAULT '0',
+                    "OtherExpenses"          TEXT NOT NULL DEFAULT '0',
+                    "LoanAmount"             TEXT NOT NULL DEFAULT '0',
+                    "InterestRate"           TEXT NOT NULL DEFAULT '7.0',
+                    "AmortizationYears"      INTEGER NOT NULL DEFAULT 30,
+                    "AnnualRentGrowthPct"    TEXT NOT NULL DEFAULT '3.0',
+                    "AnnualAppreciationPct"  TEXT NOT NULL DEFAULT '3.0',
+                    "CreatedAt"              TEXT NOT NULL DEFAULT '0001-01-01 00:00:00',
+                    "UpdatedAt"              TEXT NOT NULL DEFAULT '0001-01-01 00:00:00'
+                )
+                """;
+            await createRE.ExecuteNonQueryAsync();
+        }
+        catch { /* table already exists */ }
+
+        // ── Database indexes (CREATE INDEX IF NOT EXISTS is always safe to re-run) ──
+        // These prevent full table scans on every dashboard load. Added 2026-06.
+        var indexStatements = new[]
+        {
+            // Per-user queries: accounts, budget, snapshots, real estate
+            "CREATE INDEX IF NOT EXISTS \"IX_Accounts_UserId\"           ON \"Accounts\"           (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_BudgetItems_UserId\"         ON \"BudgetItems\"         (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_RealEstateProperties_UserId\" ON \"RealEstateProperties\" (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_PasswordResetTokens_UserId\" ON \"PasswordResetTokens\" (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_PushSubscriptions_UserId\"   ON \"UserPushSubscription\" (\"UserId\")",
+            // Snapshots: simple and composite (dashboard loads ordered by date DESC)
+            "CREATE INDEX IF NOT EXISTS \"IX_Snapshots_UserId\"           ON \"Snapshots\"           (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_Snapshots_UserId_CreatedAt\" ON \"Snapshots\"           (\"UserId\", \"CreatedAt\")",
+            // EmailLog: admin view filters by UserId and sorts by SentAt
+            "CREATE INDEX IF NOT EXISTS \"IX_EmailLogs_UserId\"           ON \"EmailLogs\"           (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_EmailLogs_SentAt\"           ON \"EmailLogs\"           (\"SentAt\")",
+        };
+        foreach (var sql in indexStatements)
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch { /* table may not exist yet on this DB — safe to skip */ }
+        }
+        Log.Information("Database indexes verified/created.");
+
         await conn.CloseAsync();
     }
 
@@ -356,6 +433,7 @@ try
     }
 
     app.UseSerilogRequestLogging();
+    app.UseMiddleware<Clarity.Api.Middleware.SlowRequestMiddleware>(); // warns on requests >500ms
     app.UseRateLimiter();
     app.UseCors();
     app.UseAuthentication();

@@ -156,11 +156,11 @@
 
     <div class="plan-grid">
 
-      <!-- Base plan — only show when NOT already on Base or higher -->
+      <!-- Base plan (backend tier "Base") — only show when NOT already subscribed -->
       @if (!isBasePaid() && !isPremium()) {
         <div class="plan-card">
           <div class="plan-header">
-            <span class="plan-name">Base</span>
+            <span class="plan-name">Base Plan</span>
             <span class="plan-price">
               @if (isNative && iap.getProduct(IAP_PRODUCTS.BASE_MONTHLY); as prod) {
                 {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
@@ -169,6 +169,8 @@
               }
             </span>
           </div>
+          <p class="plan-duration">Monthly subscription · auto-renews until cancelled</p>
+          <p class="plan-unlocks">Unlocks the Compare tab and financial scenario comparison tools.</p>
           <ul class="plan-features">
             <li>✓ Dashboard &amp; net worth tracking</li>
             <li>✓ Cash flow &amp; DTI</li>
@@ -197,7 +199,7 @@
       <div class="plan-card premium" [class.active]="isPremium()">
         <div class="plan-badge">Best Value</div>
         <div class="plan-header">
-          <span class="plan-name">Premium ✦</span>
+          <span class="plan-name">Premium Plan ✦</span>
           <span class="plan-price">
             @if (isNative && iap.getProduct(IAP_PRODUCTS.PREMIUM_MONTHLY); as prod) {
               {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
@@ -206,6 +208,8 @@
             }
           </span>
         </div>
+        <p class="plan-duration">Monthly subscription · auto-renews until cancelled</p>
+        <p class="plan-unlocks">Unlocks Compare, Loan Prep, Personal Financial Statement tools, and banker-style readiness features.</p>
         <ul class="plan-features">
           <li>✓ Everything in Base (incl. Compare)</li>
           <li>✓ Unlimited snapshots</li>
@@ -223,12 +227,27 @@
             </button>
           } @else {
             <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium — $4.99/mo' : 'Get Premium — $4.99/mo' }}
+              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium Plan — $4.99/mo' : 'Get Premium Plan — $4.99/mo' }}
             </button>
           }
         } @else {
           <span class="plan-current">✓ Current Plan</span>
         }
+      </div>
+    </div>
+
+    <!-- Subscription terms + required legal links (visible before purchase) -->
+    <div class="sub-legal">
+      <p class="sub-legal-text">
+        Subscriptions are billed monthly and renew automatically until cancelled.
+        You can manage or cancel anytime
+        @if (isNative) { in iPhone Settings → Apple ID → Subscriptions. }
+        @else { from this Settings page. }
+      </p>
+      <div class="sub-legal-links">
+        <a href="https://clarityfinancialtools.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
+        <span class="dot">·</span>
+        <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener">Terms of Use (EULA)</a>
       </div>
     </div>
 
@@ -266,8 +285,8 @@
       </div>
     }
 
-    <!-- Restore purchases (native only) -->
-    @if (isNative && !isPaid()) {
+    <!-- Restore purchases (native only) — always visible for App Review + reinstalls -->
+    @if (isNative) {
       <button class="restore-btn" (click)="restoreIap()" [disabled]="iap.purchasing()">
         {{ iap.purchasing() ? 'Restoring…' : 'Restore Purchases' }}
       </button>
@@ -275,7 +294,7 @@
 
     <p class="plan-note">
       @if (isNative) {
-        Payments processed securely via Apple App Store.
+        Payments are processed securely through the Apple App Store.
       } @else {
         Payments processed securely via Stripe.
       }
@@ -384,6 +403,31 @@
     }
   </div>
 
+  <!-- ── Tutorial / Walkthrough ───────────────────────────────────── -->
+  <div class="settings-card">
+    <h2 class="card-title">App Walkthrough</h2>
+    <p class="card-sub">Walk through Clarity's features again at any time.</p>
+    <div class="tutorial-row">
+      <div>
+        <p class="tutorial-label">Replay Tutorial</p>
+        <p class="tutorial-desc">Restarts the app tour and tab walkthroughs. You'll be guided through each section again the next time you visit it.</p>
+      </div>
+      <button class="btn-replay" (click)="showReplayConfirm.set(true)">Replay Tutorial</button>
+    </div>
+
+    @if (showReplayConfirm()) {
+      <div class="replay-confirm-box">
+        <p class="replay-confirm-text">
+          This will walk you through Clarity again — the overview tour and each tab's walkthrough will restart. Continue?
+        </p>
+        <div class="replay-confirm-actions">
+          <button class="btn-replay-cancel" (click)="showReplayConfirm.set(false)">Cancel</button>
+          <button class="btn-replay-confirm" (click)="replayTutorial()">Yes, Replay Tutorial</button>
+        </div>
+      </div>
+    }
+  </div>
+
   <!-- ── Danger Zone ────────────────────────────────────────────────── -->
   <div class="settings-card danger-zone">
     <h2 class="card-title danger-title">Danger Zone</h2>
@@ -435,8 +479,8 @@
       [(ngModel)]="helpMessage"
       rows="4">
     </textarea>
-    <button class="btn-help-send" (click)="submitHelp()" [disabled]="!helpMessage.trim()">
-      ✉️ Send to Support
+    <button class="btn-help-send" (click)="submitHelp()" [disabled]="!helpMessage.trim() || helpSending()">
+      {{ helpSending() ? 'Sending…' : '✉️ Send to Support' }}
     </button>
   </div>
 

@@ -51,7 +51,8 @@ fi
 echo "[pre-flight] Checking server secrets..."
 UNFILLED=$(($SSH_CMD "grep -c 'REPLACE_ME' $REMOTE_ENV_FILE 2>/dev/null" | tr -d '[:space:]') || echo "0")
 UNFILLED="${UNFILLED:-0}"
-if [ "${UNFILLED//[!0-9]/}" != "0" ] && [ -n "${UNFILLED//[!0-9]/}" ]; then
+# Use arithmetic comparison so "00", "0", "" all treated as zero
+if [ $(( UNFILLED + 0 )) -gt 0 ]; then
   echo ""
   echo "  ⚠️  WARNING: $UNFILLED value(s) in $REMOTE_ENV_FILE still say REPLACE_ME."
   echo "  The app will fail to start until all secrets are filled in."

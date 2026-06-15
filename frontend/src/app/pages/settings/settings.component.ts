@@ -11,6 +11,7 @@ import { PushNotificationService } from '../../services/push-notification.servic
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
 import { NumericDirective } from '../../directives/numeric.directive';
+import { clearAllTutorials } from '../../components/tab-tutorial/tab-tutorial.component';
 
 @Component({
   selector: 'app-settings',
@@ -80,18 +81,47 @@ export class SettingsComponent implements OnInit {
   cancelling     = signal(false);
   showCancelConfirm = signal(false);
 
+  // Tutorial replay
+  showReplayConfirm = signal(false);
+
+  replayTutorial() {
+    const userId = this.auth.currentUser()?.id;
+    // Clear all tab-tutorial localStorage keys for this user
+    clearAllTutorials(userId);
+    // Reset hasSeenOnboarding on backend so the app overview tour fires again
+    const cached = this.auth.currentUser();
+    if (cached) this.auth.updateCachedUser({ ...cached, hasSeenOnboarding: false });
+    this.http.post<MeResponse>(`${this.base}/auth/reset-onboarding`, {}).subscribe({
+      next: user => this.auth.updateCachedUser(user),
+      error: () => {} // local state already reset — non-fatal
+    });
+    this.showReplayConfirm.set(false);
+    this.toast.success('Tutorial reset — navigate to each tab to walk through it again.');
+    this.router.navigate(['/dashboard']);
+  }
+
   // Display preferences
   expandDefault = signal(localStorage.getItem('clarity-expand-default') === 'true');
 
-  // Help & Feedback
+  // Help & Feedback — submits server-side (no email client redirect)
   helpMessage = '';
+  helpSending = signal(false);
   submitHelp() {
-    const msg  = this.helpMessage.trim();
-    const user = this.auth.currentUser()?.username ?? 'User';
-    const subj = encodeURIComponent(`Clarity App Feedback — ${user}`);
-    const body = encodeURIComponent(msg);
-    window.open(`mailto:clarityfinancialtools@gmail.com?subject=${subj}&body=${body}`, '_blank');
-    this.helpMessage = '';
+    const msg = this.helpMessage.trim();
+    if (!msg || this.helpSending()) return;
+    this.helpSending.set(true);
+    this.http.post(`${this.base}/support/message`, { message: msg }).subscribe({
+      next: () => {
+        this.helpSending.set(false);
+        this.helpMessage = '';
+        this.toast.success('Thanks — your message was sent.');
+      },
+      error: (err) => {
+        this.helpSending.set(false);
+        const m = err?.error?.error ?? 'Something went wrong. Please try again.';
+        this.toast.error(m);
+      }
+    });
   }
 
   toggleExpandDefault() {

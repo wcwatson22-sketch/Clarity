@@ -112,19 +112,33 @@ import { environment } from '../environments/environment';
               <h3>Help & Feedback</h3>
               <button class="help-close" (click)="closeHelp()">✕</button>
             </div>
-            <p class="help-subtitle">Have a question or found a bug? Send us a message and we'll get back to you.</p>
-            <textarea
-              class="help-textarea"
-              placeholder="Describe your question or issue..."
-              [(ngModel)]="helpMessage"
-              rows="5">
-            </textarea>
-            <div class="help-actions">
-              <button class="help-cancel" (click)="closeHelp()">Cancel</button>
-              <button class="help-send" (click)="submitHelp()" [disabled]="!helpMessage().trim()">
-                Send Email
-              </button>
-            </div>
+
+            @if (helpSent()) {
+              <!-- Success state -->
+              <div class="help-success">
+                <span class="help-success-icon">✓</span>
+                <p>Thanks — your message was sent.</p>
+              </div>
+            } @else {
+              <p class="help-subtitle">Have a question or found a bug? Send us a message and we'll get back to you.</p>
+              <textarea
+                class="help-textarea"
+                placeholder="Describe your question or issue..."
+                [(ngModel)]="helpMessage"
+                rows="5">
+              </textarea>
+              @if (helpError()) {
+                <p class="help-error">{{ helpError() }}</p>
+              }
+              <div class="help-actions">
+                <button class="help-cancel" (click)="closeHelp()">Cancel</button>
+                <button class="help-send" (click)="submitHelp()"
+                  [disabled]="!helpMessage().trim() || helpSubmitting()">
+                  @if (helpSubmitting()) { Sending… } @else { Send }
+                </button>
+              </div>
+            }
+
           </div>
         </div>
       }
@@ -146,13 +160,49 @@ import { environment } from '../environments/environment';
       </main>
 
       @if (!isAuthPage()) {
-        <!-- Bottom nav (mobile) -->
+        <!-- Bottom nav (mobile) — 4 primary tabs + More -->
         <nav class="bottom-nav">
-          <a *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="bottom-active" class="bottom-item">
+          <a *ngFor="let item of primaryNavItems" [routerLink]="item.path" routerLinkActive="bottom-active" class="bottom-item">
             <span class="nav-icon" [innerHTML]="item.icon"></span>
             <span class="bottom-label">{{ item.label }}</span>
           </a>
+          <button class="bottom-item more-tab" [class.bottom-active]="moreActive()" (click)="showMoreSheet.set(true)">
+            <span class="nav-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+              </svg>
+            </span>
+            <span class="bottom-label">More</span>
+          </button>
         </nav>
+
+        <!-- More bottom sheet (mobile) -->
+        @if (showMoreSheet()) {
+          <div class="more-backdrop" (click)="showMoreSheet.set(false)">
+            <div class="more-sheet" (click)="$event.stopPropagation()">
+              <div class="more-handle"></div>
+              <h3 class="more-title">More</h3>
+              <div class="more-grid">
+                @for (item of moreNavItems; track item.path) {
+                  <a class="more-cell" [routerLink]="item.path" routerLinkActive="more-cell-active" (click)="showMoreSheet.set(false)">
+                    <span class="more-cell-icon" [innerHTML]="item.icon"></span>
+                    <span class="more-cell-label">{{ item.label }}</span>
+                  </a>
+                }
+                @if (isAdmin()) {
+                  <a class="more-cell" routerLink="/admin" routerLinkActive="more-cell-active" (click)="showMoreSheet.set(false)">
+                    <span class="more-cell-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                    <span class="more-cell-label">Admin</span>
+                  </a>
+                }
+                <button class="more-cell" (click)="showMoreSheet.set(false); openHelp()">
+                  <span class="more-cell-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                  <span class="more-cell-label">Support</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       }
 
       <!-- Install to home screen banner (mobile only) -->
@@ -304,6 +354,24 @@ import { environment } from '../environments/environment';
       &:hover { background: #F3F4F6; color: #374151; }
     }
     .help-subtitle { margin: 0 0 16px; font-size: 13px; color: #6B7280; line-height: 1.5; }
+    .help-success {
+      display: flex; align-items: center; gap: 12px;
+      background: #F0FDF4; border: 1px solid #BBF7D0;
+      border-radius: 10px; padding: 18px 16px;
+      margin: 4px 0 8px;
+    }
+    .help-success-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #1D9E75; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .help-success p { margin: 0; font-size: 14px; font-weight: 500; color: #065F46; }
+    .help-error {
+      margin: 6px 0 0; font-size: 12.5px; color: #B91C1C;
+      background: #FEF2F2; border: 1px solid #FECACA;
+      border-radius: 8px; padding: 8px 12px;
+    }
     .help-textarea {
       width: 100%; box-sizing: border-box;
       border: 1px solid #E5E7EB; border-radius: 10px;
@@ -394,6 +462,40 @@ import { environment } from '../environments/environment';
     }
     .bottom-active { color: #1D9E75 !important; }
     .bottom-label { font-size: 10px; font-weight: 500; }
+    .more-tab {
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; color: #9CA3AF;
+    }
+
+    /* More bottom sheet */
+    .more-backdrop {
+      position: fixed; inset: 0; z-index: 700;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: backdrop-in 0.2s ease;
+    }
+    @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+    .more-sheet {
+      background: #fff; width: 100%; max-width: 520px;
+      border-radius: 20px 20px 0 0; padding: 10px 18px 28px;
+      animation: sheet-up 0.26s cubic-bezier(0.32,0.72,0,1);
+      padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    }
+    @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .more-handle { width: 36px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 0 auto 14px; }
+    .more-title { font-size: 13px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 14px; }
+    .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .more-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      padding: 16px 8px; border-radius: 14px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      color: #374151; text-decoration: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s, border-color 0.15s;
+    }
+    .more-cell:hover { background: #F0FBF7; border-color: #A7F3D0; }
+    .more-cell-active { background: #E1F5EE; border-color: #1D9E75; color: #1D9E75; }
+    .more-cell-icon { display: flex; align-items: center; justify-content: center; }
+    .more-cell-label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.2; }
 
     /* Email verification banner */
     .verify-banner {
@@ -630,19 +732,50 @@ export class AppComponent {
   showSplash = signal(Capacitor.isNativePlatform());
 
   // Help & Feedback modal
-  showHelpModal = signal(false);
-  helpMessage   = signal('');
+  showHelpModal  = signal(false);
+  helpMessage    = signal('');
+  helpSubmitting = signal(false);
+  helpSent       = signal(false);
+  helpError      = signal('');
 
-  openHelp()  { this.showHelpModal.set(true); }
-  closeHelp() { this.showHelpModal.set(false); this.helpMessage.set(''); }
+  openHelp() {
+    this.helpSent.set(false);
+    this.helpError.set('');
+    this.showHelpModal.set(true);
+  }
+
+  closeHelp() {
+    this.showHelpModal.set(false);
+    // Reset after modal closes so next open starts fresh
+    setTimeout(() => {
+      this.helpMessage.set('');
+      this.helpSent.set(false);
+      this.helpError.set('');
+      this.helpSubmitting.set(false);
+    }, 250);
+  }
 
   submitHelp() {
-    const msg  = this.helpMessage().trim();
-    const user = this.currentUser()?.username ?? 'User';
-    const subj = encodeURIComponent(`Clarity App Feedback — ${user}`);
-    const body = encodeURIComponent(msg);
-    window.open(`mailto:clarityfinancialtools@gmail.com?subject=${subj}&body=${body}`, '_blank');
-    this.closeHelp();
+    const msg = this.helpMessage().trim();
+    if (!msg || this.helpSubmitting()) return;
+
+    this.helpSubmitting.set(true);
+    this.helpError.set('');
+
+    this.http.post(`${this.base}/support/message`, { message: msg }).subscribe({
+      next: () => {
+        this.helpSubmitting.set(false);
+        this.helpSent.set(true);
+        this.helpMessage.set('');
+        // Auto-close after 2.5 s
+        setTimeout(() => this.closeHelp(), 2500);
+      },
+      error: (err) => {
+        this.helpSubmitting.set(false);
+        const serverMsg = err?.error?.error;
+        this.helpError.set(serverMsg ?? 'Something went wrong. Please try again.');
+      }
+    });
   }
 
   private _rawNavItems = [
@@ -657,11 +790,37 @@ export class AppComponent {
 
   navItems: { path: string; label: string; icon: SafeHtml }[] = [];
 
+  // Mobile navigation: 4 primary bottom tabs + a "More" sheet for the rest.
+  primaryNavItems: { path: string; label: string; icon: SafeHtml }[] = [];
+  moreNavItems:    { path: string; label: string; icon: SafeHtml }[] = [];
+  showMoreSheet = signal(false);
+
+  /** Highlight the "More" tab when the current route lives inside the More sheet. */
+  readonly moreActive = computed(() => {
+    const url = this.currentUrl() ?? '';
+    return ['/learn', '/pfs', '/real-estate', '/settings', '/admin'].some(p => url.startsWith(p));
+  });
+
   constructor() {
     this.navItems = this._rawNavItems.map(item => ({
       ...item,
       icon: this.sanitizer.bypassSecurityTrustHtml(item.icon)
     }));
+
+    // Bottom bar: most-used tabs. Order matches the user's mobile priority.
+    const find = (p: string) => this.navItems.find(i => i.path === p)!;
+    this.primaryNavItems = ['/dashboard', '/cash-flow', '/compare', '/loan-prep'].map(find);
+
+    // PFS isn't in the sidebar list — give it its own icon for the More sheet.
+    const pfsIcon = this.sanitizer.bypassSecurityTrustHtml(
+      `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`
+    );
+    this.moreNavItems = [
+      find('/learn'),
+      { path: '/pfs', label: 'PFS', icon: pfsIcon },
+      find('/real-estate'),
+      find('/settings'),
+    ];
 
     // Refresh user data from server on every app load so emailVerified,
     // tier, trialEndsAt etc. are never served from a stale localStorage cache

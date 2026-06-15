@@ -103,7 +103,7 @@ export class DashboardComponent implements OnInit {
     }).length;
   });
 
-  // null = unlimited (Premium or trial); number = remaining for Base/Compare plan
+  // null = unlimited (Premium or trial); number = remaining for Base plan
   readonly snapshotsRemaining = computed(() => {
     if (!this.isBasePaid()) return null;
     return Math.max(0, this.BASE_SNAPSHOT_LIMIT - this.snapshotsThisMonth());

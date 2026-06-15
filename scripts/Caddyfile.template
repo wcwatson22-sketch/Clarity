@@ -1,22 +1,55 @@
 __DOMAIN__ {
-    # Serve the Angular frontend
+
+    # ── Compression ───────────────────────────────────────────────────────────
+    # gzip cuts JS/CSS bundle size ~70%. (Brotli requires a custom Caddy build.)
+    encode gzip
+
+    # ── Security Headers ──────────────────────────────────────────────────────
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options    "nosniff"
+        X-Frame-Options           "DENY"
+        Referrer-Policy           "strict-origin-when-cross-origin"
+        Permissions-Policy        "camera=(), microphone=(), geolocation=()"
+        # Basic CSP: allows the app's own origin + Stripe (for payment forms)
+        Content-Security-Policy   "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com; img-src 'self' data:; object-src 'none'; base-uri 'self'"
+        # Remove server fingerprint
+        -Server
+    }
+
+    # ── Static asset caching ──────────────────────────────────────────────────
+    # Angular hashes all build artifacts — safe to cache for 1 year.
+    @hashed_assets {
+        path_regexp hashed \.[0-9a-f]{8,}\.(js|css|woff2?|ttf|eot|svg|png|webp|avif|ico)$
+    }
+    header @hashed_assets Cache-Control "public, max-age=31536000, immutable"
+
+    # index.html must never be cached (it's the router entry point)
+    @html {
+        path *.html
+        path /
+    }
+    header @html Cache-Control "no-cache, no-store, must-revalidate"
+
+    # ── API proxy ─────────────────────────────────────────────────────────────
+    # Use 127.0.0.1 (not "localhost") to avoid DNS resolution timeouts.
+    handle /api/* {
+        reverse_proxy 127.0.0.1:5000
+    }
+
+    # ── Health checks ─────────────────────────────────────────────────────────
+    handle /healthz {
+        reverse_proxy 127.0.0.1:5000
+    }
+    handle /readyz {
+        reverse_proxy 127.0.0.1:5000
+    }
+
+    # ── Static file serving ───────────────────────────────────────────────────
     root * /var/www/clarity
     file_server
 
-    # Proxy API requests to the .NET backend
-    handle /api/* {
-        reverse_proxy localhost:5000
-    }
-
-    # Proxy health checks
-    handle /healthz {
-        reverse_proxy localhost:5000
-    }
-    handle /readyz {
-        reverse_proxy localhost:5000
-    }
-
-    # Serve privacy policy as a static file
+    # Privacy policy (static)
     handle /privacy* {
         try_files {path} {path}/index.html
         file_server
@@ -26,13 +59,5 @@ __DOMAIN__ {
     handle {
         try_files {path} /index.html
         file_server
-    }
-
-    # Security headers
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        Referrer-Policy "strict-origin-when-cross-origin"
     }
 }

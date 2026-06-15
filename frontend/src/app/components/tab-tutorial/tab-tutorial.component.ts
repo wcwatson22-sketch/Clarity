@@ -116,13 +116,38 @@ export class TabTutorialComponent implements OnInit {
   }
 }
 
-/** Returns true when a tab tutorial should be shown (first visit only, per user). */
+/** Returns true when a tab tutorial should be shown (first visit only, per user).
+ *  Also handles migration: if the old unsuffixed key exists, migrates it to the
+ *  new user-scoped key so existing users don't see tutorials again after the upgrade. */
 export function shouldShowTutorial(key: string, userId?: number | null): boolean {
   const scoped = userId != null ? `${key}_u${userId}` : key;
-  return !localStorage.getItem(scoped);
+  // Already dismissed with the current scoped key — don't show
+  if (localStorage.getItem(scoped)) return false;
+  // Migration: old unsuffixed key exists from before user-scoping was added
+  // Treat it as dismissed and silently migrate to the new scoped key
+  if (userId != null && localStorage.getItem(key)) {
+    localStorage.setItem(scoped, '1');
+    return false;
+  }
+  return true; // genuinely first time for this user on this device
 }
 
 /** Returns the user-scoped storage key. */
 export function tutorialKey(key: string, userId?: number | null): string {
   return userId != null ? `${key}_u${userId}` : key;
+}
+
+/** Clears all tab-tutorial localStorage keys for a given user so tutorials replay. */
+export function clearAllTutorials(userId?: number | null): void {
+  const keys = [
+    'clarity_tutorial_dashboard',
+    'clarity_tutorial_cashflow',
+    'clarity_tutorial_learn',
+    'clarity_tutorial_compare',
+    'clarity_tutorial_loanprep',
+  ];
+  keys.forEach(k => {
+    localStorage.removeItem(k);
+    if (userId != null) localStorage.removeItem(`${k}_u${userId}`);
+  });
 }

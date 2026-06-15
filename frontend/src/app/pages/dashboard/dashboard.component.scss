@@ -697,9 +697,30 @@
   font-size: 13px;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Group wrapper: Monthly / YTD */
+.mv-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mv-group-ytd {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.mv-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9CA3AF;
 }
 
 .movement-grid {
@@ -924,15 +945,17 @@
   .metric-card { padding: 14px 12px; }
   .metric-value { font-size: 17px; }
 
-  /* Movement cards — 2-col on mobile, tighter */
+  /* Movement cards — 3-col on mobile (groups of 3 read cleanly) */
   .movement-section { padding: 12px 14px; }
-  .movement-title { font-size: 11px; margin-bottom: 10px; }
-  .movement-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .mv-card { padding: 9px 10px; }
-  .mv-value { font-size: 15px; }
-  .mv-label { font-size: 9px; }
-  .mv-trend { font-size: 10px; }
-  .mv-empty { font-size: 10px; }
+  .movement-title { font-size: 11px; margin-bottom: 8px; }
+  .mv-group-label { font-size: 9px; }
+  .mv-group-ytd { margin-top: 8px; padding-top: 8px; }
+  .movement-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .mv-card { padding: 8px 9px; }
+  .mv-value { font-size: 13px; }
+  .mv-label { font-size: 8px; }
+  .mv-trend { font-size: 9px; }
+  .mv-empty { font-size: 9px; }
 
   /* Section cards */
   .section-card { padding: 16px 14px; }
