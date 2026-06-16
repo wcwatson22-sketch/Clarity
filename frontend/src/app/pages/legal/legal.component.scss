@@ -58,6 +58,15 @@ a {
 
 strong { color: #111827; }
 
+.legal-entity {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+  font-size: 12px;
+  color: #9CA3AF;
+  line-height: 1.6;
+}
+
 @media (max-width: 640px) {
   .legal-card { padding: 28px 20px; }
 }

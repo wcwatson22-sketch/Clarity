@@ -24,7 +24,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // Face ID scan — which is the bug this fix addresses.
         const isTokenRefresh = req.url.includes('/auth/refresh');
         if (!isTokenRefresh) {
-          auth.logout();
+          // Expired/invalid session → clear state and return to the single login
+          // screen with a clear message. Never a separate unlock screen.
+          auth.logout('expired');
         }
       }
       return throwError(() => err);

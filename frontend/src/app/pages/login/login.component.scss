@@ -1,10 +1,17 @@
 ﻿.auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #F9FAFB;
   padding: 24px;
+}
+
+.auth-legal {
+  text-align: center;
+  margin-top: 24px;
+  p { margin: 0; font-size: 10.5px; color: #9CA3AF; line-height: 1.6; }
 }
 
 .auth-card {
@@ -50,6 +57,15 @@
   padding: 10px 14px;
   font-size: 13px;
   margin-bottom: 20px;
+}
+.auth-notice {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
 }
 
 .auth-form {

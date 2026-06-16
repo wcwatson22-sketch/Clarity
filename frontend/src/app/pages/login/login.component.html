@@ -8,6 +8,9 @@
     <h1 class="auth-title">Welcome back</h1>
     <p class="auth-sub">Sign in to your account to continue</p>
 
+    @if (notice()) {
+      <div class="auth-notice">{{ notice() }}</div>
+    }
     @if (error()) {
       <div class="auth-error">{{ error() }}</div>
     }
@@ -42,4 +45,9 @@
     </p>
 
   </div>
+
+  <footer class="auth-legal">
+    <p>© 2026 Clearpath Digital LLC. All rights reserved.</p>
+    <p>Clarity is owned and operated by Clearpath Digital LLC.</p>
+  </footer>
 </div>

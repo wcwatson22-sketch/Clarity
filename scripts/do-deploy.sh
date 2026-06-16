@@ -14,7 +14,7 @@ BACKEND_PUBLISH="/tmp/clarity-publish"
 echo "[1/4] Uploading frontend..."
 $SSH "sudo rm -rf /var/www/clarity/* && mkdir -p /tmp/clarity-web"
 $SCP -r "$FRONTEND_DIST/." "$SERVER:/tmp/clarity-web/"
-$SSH "sudo cp -r /tmp/clarity-web/. /var/www/clarity/ && sudo chown -R www-data:www-data /var/www/clarity && rm -rf /tmp/clarity-web"
+$SSH "sudo cp -r /tmp/clarity-web/. /var/www/clarity/ && sudo chown -R www-data:www-data /var/www/clarity && sudo chmod -R a+rX /var/www/clarity && rm -rf /tmp/clarity-web"
 echo "  Frontend uploaded."
 
 echo "[2/4] Uploading backend..."

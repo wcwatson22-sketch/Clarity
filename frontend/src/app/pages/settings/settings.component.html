@@ -239,10 +239,14 @@
     <!-- Subscription terms + required legal links (visible before purchase) -->
     <div class="sub-legal">
       <p class="sub-legal-text">
-        Subscriptions are billed monthly and renew automatically until cancelled.
-        You can manage or cancel anytime
-        @if (isNative) { in iPhone Settings → Apple ID → Subscriptions. }
-        @else { from this Settings page. }
+        @if (isNative) {
+          Subscriptions renew automatically unless canceled at least 24 hours before the end of the
+          current billing period. You can manage or cancel your subscription in your Apple ID
+          subscription settings.
+        } @else {
+          Subscriptions are billed monthly and renew automatically unless canceled at least 24 hours
+          before the end of the current billing period. You can manage or cancel anytime from this Settings page.
+        }
       </p>
       <div class="sub-legal-links">
         <a href="https://clarityfinancialtools.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
@@ -513,9 +517,13 @@
 
   <!-- ── Legal ───────────────────────────────────────────────────────── -->
   <div class="legal-links">
-    <a routerLink="/terms">Terms of Service</a>
+    <a routerLink="/terms">Terms of Use</a>
     <span class="dot">·</span>
     <a routerLink="/privacy">Privacy Policy</a>
+  </div>
+  <div class="legal-ownership">
+    <p>© 2026 Clearpath Digital LLC. All rights reserved.</p>
+    <p>Clarity is owned and operated by Clearpath Digital LLC.</p>
   </div>
 
 </div>

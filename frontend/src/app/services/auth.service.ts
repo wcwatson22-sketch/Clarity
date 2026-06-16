@@ -55,7 +55,11 @@ export class AuthService {
   /** Store a fresh AuthResponse (token + user) — used by the lock screen after password verify. */
   storeAuth(res: AuthResponse) { this.store(res); }
 
-  logout() {
+  /**
+   * Clear all auth state and return the user to the single login screen.
+   * Pass reason='expired' to show "Your session expired. Please log in again."
+   */
+  logout(reason?: 'expired') {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('clarity_survey_seen');
@@ -63,7 +67,7 @@ export class AuthService {
     localStorage.removeItem('clarity_celebrated');
     this._token.set(null);
     this._user.set(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], reason ? { queryParams: { reason } } : undefined);
   }
 
   private store(res: AuthResponse) {

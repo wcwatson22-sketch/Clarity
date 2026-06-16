@@ -85,7 +85,7 @@ echo "[3/5] Uploading frontend to server..."
 $SSH_CMD "sudo rm -rf $REMOTE_WEB_DIR/* && sudo mkdir -p $REMOTE_WEB_DIR && mkdir -p /tmp/clarity-web"
 $SCP_CMD -r "$REPO_ROOT/frontend/dist/clarity-frontend/browser/." \
   "$SERVER_USER@$SERVER_IP:/tmp/clarity-web/"
-$SSH_CMD "sudo cp -r /tmp/clarity-web/. $REMOTE_WEB_DIR/ && sudo chown -R www-data:www-data $REMOTE_WEB_DIR && rm -rf /tmp/clarity-web"
+$SSH_CMD "sudo cp -r /tmp/clarity-web/. $REMOTE_WEB_DIR/ && sudo chown -R www-data:www-data $REMOTE_WEB_DIR && sudo chmod -R a+rX $REMOTE_WEB_DIR && rm -rf /tmp/clarity-web"
 echo "  ✅ Frontend uploaded to $REMOTE_WEB_DIR"
 
 # ── Step 4: Ship backend ──────────────────────────────────────────────────────

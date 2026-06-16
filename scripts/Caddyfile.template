@@ -49,9 +49,11 @@ __DOMAIN__ {
     root * /var/www/clarity
     file_server
 
-    # Privacy policy (static)
+    # Privacy policy (static, no-JS page). Rewrite straight to the index file so
+    # a request to /privacy (a directory) serves the page instead of 403-ing on a
+    # directory listing.
     handle /privacy* {
-        try_files {path} {path}/index.html
+        rewrite * /privacy/index.html
         file_server
     }
 

@@ -84,6 +84,7 @@ public class EmailService(
 
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -185,6 +186,7 @@ public class EmailService(
               </div>
               <p style="color:#9CA3AF;font-size:12px;line-height:1.6;">
                 Plans start at just $0.99/month. If you have questions, reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -217,6 +219,7 @@ public class EmailService(
               </a>
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -257,6 +260,7 @@ public class EmailService(
               </a>
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -314,6 +318,7 @@ public class EmailService(
 
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -357,6 +362,7 @@ public class EmailService(
 
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;
@@ -390,6 +396,7 @@ public class EmailService(
               </a>
               <p style="color:#9CA3AF;font-size:12px;margin-top:32px;line-height:1.6;">
                 Questions? Reply to this email anytime.<br/>— The Clarity Team
+                <br/><br/>Clarity is owned and operated by Clearpath Digital LLC.
               </p>
             </div>
             """;

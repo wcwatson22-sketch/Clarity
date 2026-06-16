@@ -112,6 +112,14 @@ p {
   &:hover { text-decoration: underline; }
 }
 
+.doc-entity {
+  margin: 18px 0 0;
+  font-size: 11px;
+  color: #9CA3AF;
+  line-height: 1.6;
+  text-align: center;
+}
+
 /* Accept row */
 .accept-row {
   padding: 14px 24px 10px;
