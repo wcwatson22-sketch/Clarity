@@ -8,36 +8,6 @@
       (dismissed)="showTutorial.set(false)" />
   }
 
-  <!-- ── Upgrade Modal (429 snapshot limit) ────────────────────────────── -->
-  @if (showUpgradeModal()) {
-    <div class="modal-backdrop" (click)="dismissUpgradeModal()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-icon">📈</div>
-        <h2 class="modal-title">Snapshot limit reached</h2>
-        <p class="modal-body">
-          The <strong>Base plan</strong> includes 10 snapshots per month.
-          Upgrade to <strong>Premium</strong> for unlimited snapshots and advanced insights.
-        </p>
-        <div class="modal-plans">
-          <div class="plan-chip base">
-            <span class="plan-name">Base</span>
-            <span class="plan-price">$0.99<span>/mo</span></span>
-            <span class="plan-detail">10 snapshots/month</span>
-          </div>
-          <div class="plan-chip premium">
-            <span class="plan-name">Premium ✦</span>
-            <span class="plan-price">$4.99<span>/mo</span></span>
-            <span class="plan-detail">Unlimited snapshots</span>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <a class="modal-upgrade-btn" routerLink="/settings" (click)="dismissUpgradeModal()">View Plans</a>
-          <button class="modal-dismiss-btn" (click)="dismissUpgradeModal()">Maybe later</button>
-        </div>
-      </div>
-    </div>
-  }
-
   <!-- ── First-name prompt modal ──────────────────────────────────── -->
   @if (showFirstNameModal()) {
     <div class="modal-backdrop">
@@ -58,45 +28,6 @@
             @if (savingFirstName()) { Saving… } @else { Save }
           </button>
           <button class="modal-dismiss-btn" (click)="showFirstNameModal.set(false)">Skip</button>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- ── Trial expired upgrade wall ───────────────────────────────── -->
-  @if (dashboardLocked()) {
-    <div class="upgrade-wall">
-      <div class="upgrade-card">
-        <div class="upgrade-icon">🔒</div>
-        <h2 class="upgrade-title">Your free trial has ended</h2>
-        <p class="upgrade-body">
-          Choose a plan to keep access to your financial dashboard.
-          Your data is safe and waiting for you.
-        </p>
-        <div class="upgrade-plans">
-          <div class="plan-option">
-            <div class="plan-name">Base</div>
-            <div class="plan-price">$0.99<span>/mo</span></div>
-            <ul class="plan-features">
-              <li>✓ Full dashboard</li>
-              <li>✓ Cash flow tracking</li>
-              <li>✓ 10 snapshots/month</li>
-              <li>✓ Compare tab</li>
-            </ul>
-            <a class="plan-btn base-btn" routerLink="/settings">Get Base Plan</a>
-          </div>
-          <div class="plan-option featured">
-            <div class="plan-badge">Most popular</div>
-            <div class="plan-name">Premium ✦</div>
-            <div class="plan-price">$4.99<span>/mo</span></div>
-            <ul class="plan-features">
-              <li>✓ Everything in Base</li>
-              <li>✓ Unlimited snapshots</li>
-              <li>✓ Loan Prep guides</li>
-              <li>✓ Priority support</li>
-            </ul>
-            <a class="plan-btn premium-btn" routerLink="/settings">Get Premium</a>
-          </div>
         </div>
       </div>
     </div>

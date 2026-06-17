@@ -44,15 +44,11 @@ export class SettingsComponent implements OnInit {
 
   user = computed(() => this.auth.currentUser());
 
-  // Subscription state — isPaid comes from the server (StripeSubscriptionId != null)
-  readonly isPaid      = computed(() => this.auth.currentUser()?.isPaid ?? false);
-  readonly isBasePaid  = computed(() => this.isPaid() && this.auth.currentUser()?.tier === 'Base');
-  readonly isPremium   = computed(() => this.isPaid() && this.auth.currentUser()?.tier === 'Premium');
-
-  // Trial — only active when the user has NOT yet subscribed
-  readonly trialEndsAt   = computed(() => { const t = this.auth.currentUser()?.trialEndsAt; return t ? new Date(t) : null; });
-  readonly trialActive   = computed(() => { if (this.isPaid()) return false; const t = this.trialEndsAt(); return t ? t > new Date() : false; });
-  readonly trialDaysLeft = computed(() => { const t = this.trialEndsAt(); if (!t) return 0; return Math.max(0, Math.ceil((t.getTime() - Date.now()) / 86400000)); });
+  // Subscription state — Premium = an active paid subscription (Stripe or Apple).
+  // Everyone else is on the indefinite Free plan. No trial, no Base tier.
+  readonly isPaid    = computed(() => this.auth.currentUser()?.isPaid ?? false);
+  readonly isPremium = computed(() => this.isPaid() || this.auth.currentUser()?.tier === 'Premium');
+  readonly isFree    = computed(() => !this.isPremium());
 
   // Profile form
   firstName = signal(this.auth.currentUser()?.firstName ?? '');
@@ -177,11 +173,8 @@ export class SettingsComponent implements OnInit {
       // Refresh user data to reflect new tier
       this.http.get<MeResponse>(`${this.base}/auth/me`).subscribe(me => {
         this.auth.updateCachedUser(me);
-        const isP = me.tier === 'Premium';
-        this.upgradeSuccess.set(isP
-          ? 'Welcome to Premium! All features unlocked.'
-          : 'Welcome to the Base plan! Subscription active.');
-        this.toast.success(isP ? '🎉 Upgraded to Premium!' : '🎉 Base plan activated!');
+        this.upgradeSuccess.set('Welcome to Premium! Compare, Loan Prep, and Real Estate are now unlocked.');
+        this.toast.success('🎉 Upgraded to Premium!');
       });
     } else if (this.iap.error()) {
       this.upgradeError.set(this.iap.error());
@@ -243,12 +236,9 @@ export class SettingsComponent implements OnInit {
         this.http.get<MeResponse>(`${this.base}/auth/me`).subscribe({
           next: user => {
             this.auth.updateCachedUser(user);
-            if (user.tier === 'Premium') {
-              this.upgradeSuccess.set('Welcome to Premium! Unlimited snapshots and more are now unlocked.');
+            if (user.tier === 'Premium' || user.isPaid) {
+              this.upgradeSuccess.set('Welcome to Premium! Compare, Loan Prep, and Real Estate are now unlocked.');
               this.toast.success('🎉 Upgraded to Premium!');
-            } else if (user.isPaid) {
-              this.upgradeSuccess.set('Welcome to the Base plan! Your subscription is now active.');
-              this.toast.success('🎉 Subscribed to Base plan!');
             }
           }
         });
@@ -258,11 +248,11 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  startUpgrade(plan: 'base' | 'premium' = 'premium') {
+  startUpgrade() {
     this.upgradeError.set('');
     this.upgrading.set(true);
     this.http.post<{ url?: string; devMode?: boolean; mockUpgradeUrl?: string; message?: string }>(
-      `${this.base}/payments/create-checkout`, { plan }
+      `${this.base}/payments/create-checkout`, { plan: 'premium' }
     ).subscribe({
       next: res => {
         this.upgrading.set(false);

@@ -1,6 +1,8 @@
 namespace Clarity.Api.Models;
 
-public enum UserTier { Base = 0, Premium = 1 }
+// Base is retained only for backward compatibility with existing rows; it is
+// treated as Free for access control. New users default to Free.
+public enum UserTier { Base = 0, Premium = 1, Free = 2 }
 
 public class User
 {
@@ -14,7 +16,7 @@ public class User
     public string State { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public int Age { get; set; }
-    public UserTier Tier { get; set; } = UserTier.Base;
+    public UserTier Tier { get; set; } = UserTier.Free;
     public bool HasSeenOnboarding { get; set; } = false;
     public bool IsAdmin { get; set; } = false;
     public string AnonymousId { get; set; } = string.Empty;

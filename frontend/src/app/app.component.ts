@@ -10,6 +10,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './services/auth.service';
+import { PlanAccessService } from './services/plan-access.service';
 import { LockService } from './services/lock.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { ToastComponent } from './components/toast/toast.component';
@@ -61,16 +62,6 @@ import { environment } from '../environments/environment';
               </li>
             }
           </ul>
-
-          <!-- Trial countdown -->
-          @if (trialDaysLeft() !== null) {
-            <a routerLink="/settings" class="trial-chip" [class.trial-urgent]="trialDaysLeft()! <= 7">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
-              {{ trialDaysLeft() }} day{{ trialDaysLeft() === 1 ? '' : 's' }} left in trial
-            </a>
-          }
 
           <!-- Disclaimer -->
           <div class="sidebar-disclaimer">
@@ -160,7 +151,7 @@ import { environment } from '../environments/environment';
       </main>
 
       @if (!isAuthPage()) {
-        <!-- Bottom nav (mobile) — 4 primary tabs + More -->
+        <!-- Bottom nav (mobile) — 4 primary free tabs + Premium Tools -->
         <nav class="bottom-nav">
           <a *ngFor="let item of primaryNavItems" [routerLink]="item.path" routerLinkActive="bottom-active" class="bottom-item">
             <span class="nav-icon" [innerHTML]="item.icon"></span>
@@ -169,19 +160,19 @@ import { environment } from '../environments/environment';
           <button class="bottom-item more-tab" [class.bottom-active]="moreActive()" (click)="showMoreSheet.set(true)">
             <span class="nav-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+                <path d="M12 3l2.09 4.26L18.8 8l-3.4 3.32.8 4.68L12 13.77 7.8 16l.8-4.68L5.2 8l4.71-.74L12 3z"/>
               </svg>
             </span>
-            <span class="bottom-label">More</span>
+            <span class="bottom-label">Premium</span>
           </button>
         </nav>
 
-        <!-- More bottom sheet (mobile) -->
+        <!-- Premium Tools bottom sheet (mobile) -->
         @if (showMoreSheet()) {
           <div class="more-backdrop" (click)="showMoreSheet.set(false)">
             <div class="more-sheet" (click)="$event.stopPropagation()">
               <div class="more-handle"></div>
-              <h3 class="more-title">More</h3>
+              <h3 class="more-title">Premium Tools @if (!plan.isPremium()) { <span class="more-lock">🔒 $2.99/mo</span> }</h3>
               <div class="more-grid">
                 @for (item of moreNavItems; track item.path) {
                   <a class="more-cell" [routerLink]="item.path" routerLinkActive="more-cell-active" (click)="showMoreSheet.set(false)">
@@ -484,6 +475,7 @@ import { environment } from '../environments/environment';
     @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .more-handle { width: 36px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 0 auto 14px; }
     .more-title { font-size: 13px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 14px; }
+    .more-lock { font-size: 11px; font-weight: 600; color: #1D9E75; text-transform: none; letter-spacing: 0; margin-left: 6px; }
     .more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .more-cell {
       display: flex; flex-direction: column; align-items: center; gap: 7px;
@@ -600,6 +592,7 @@ import { environment } from '../environments/environment';
 export class AppComponent {
   private sanitizer = inject(DomSanitizer);
   readonly auth     = inject(AuthService);
+  readonly plan     = inject(PlanAccessService);
   readonly lockSvc  = inject(LockService);
   private push      = inject(PushNotificationService);
   private router    = inject(Router);
@@ -625,14 +618,6 @@ export class AppComponent {
     ),
     { initialValue: this.router.url }
   );
-
-  readonly trialDaysLeft = computed(() => {
-    if (this.currentUser()?.isPaid) return null; // paid subscriber — hide trial chip
-    const t = this.currentUser()?.trialEndsAt;
-    if (!t) return null;
-    const days = Math.ceil((new Date(t).getTime() - Date.now()) / 86400000);
-    return days > 0 ? days : null;
-  });
 
   readonly isAdmin = computed(() => this.auth.currentUser()?.isAdmin === true);
 
@@ -795,10 +780,10 @@ export class AppComponent {
   moreNavItems:    { path: string; label: string; icon: SafeHtml }[] = [];
   showMoreSheet = signal(false);
 
-  /** Highlight the "More" tab when the current route lives inside the More sheet. */
+  /** Highlight the "Premium" tab when the current route is a Premium tool. */
   readonly moreActive = computed(() => {
     const url = this.currentUrl() ?? '';
-    return ['/learn', '/pfs', '/real-estate', '/settings', '/admin'].some(p => url.startsWith(p));
+    return ['/compare', '/loan-prep', '/real-estate', '/pfs', '/admin'].some(p => url.startsWith(p));
   });
 
   constructor() {
@@ -807,19 +792,21 @@ export class AppComponent {
       icon: this.sanitizer.bypassSecurityTrustHtml(item.icon)
     }));
 
-    // Bottom bar: most-used tabs. Order matches the user's mobile priority.
+    // Bottom bar: the four free tabs. The Premium button is appended in the template.
     const find = (p: string) => this.navItems.find(i => i.path === p)!;
-    this.primaryNavItems = ['/dashboard', '/cash-flow', '/compare', '/loan-prep'].map(find);
+    this.primaryNavItems = ['/dashboard', '/cash-flow', '/learn', '/settings'].map(find);
 
-    // PFS isn't in the sidebar list — give it its own icon for the More sheet.
+    // PFS isn't in the sidebar list — give it its own icon for the Premium sheet.
     const pfsIcon = this.sanitizer.bypassSecurityTrustHtml(
       `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`
     );
+    // Premium Tools sheet — the gated features. Each page shows its own upgrade
+    // prompt for free users, so navigation is allowed; the tool itself gates.
     this.moreNavItems = [
-      find('/learn'),
-      { path: '/pfs', label: 'PFS', icon: pfsIcon },
+      find('/compare'),
+      find('/loan-prep'),
       find('/real-estate'),
-      find('/settings'),
+      { path: '/pfs', label: 'PFS', icon: pfsIcon },
     ];
 
     // Refresh user data from server on every app load so emailVerified,

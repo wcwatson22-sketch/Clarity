@@ -14,8 +14,6 @@ public class SnapshotsController(AppDbContext db) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    private const int BaseMonthlyLimit = 10;
-
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
         Ok(await db.Snapshots
@@ -29,22 +27,7 @@ public class SnapshotsController(AppDbContext db) : ControllerBase
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return Unauthorized();
 
-        // Enforce monthly snapshot limit for Base tier
-        if (user.Tier == UserTier.Base)
-        {
-            var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var countThisMonth = await db.Snapshots
-                .CountAsync(s => s.UserId == UserId && s.CreatedAt >= monthStart);
-
-            if (countThisMonth >= BaseMonthlyLimit)
-                return StatusCode(429, new
-                {
-                    error = $"Base plan allows {BaseMonthlyLimit} snapshots per month. Upgrade to Premium for unlimited snapshots.",
-                    limitReached = true,
-                    tier = "Base"
-                });
-        }
-
+        // Snapshots are part of the Free plan — no per-tier limit.
         snapshot.Id = Guid.NewGuid().ToString();
         snapshot.UserId = UserId;
         snapshot.CreatedAt = DateTime.UtcNow;

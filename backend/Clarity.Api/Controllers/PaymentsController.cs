@@ -33,11 +33,10 @@ public class PaymentsController(
     [HttpPost("create-checkout")]
     public async Task<IActionResult> CreateCheckout([FromBody] CreateCheckoutRequest? req)
     {
-        var plan      = req?.Plan?.ToLower() == "base" ? "base" : "premium";
+        // Single paid tier: Premium ($2.99/mo). The old Base plan is retired.
+        var plan      = "premium";
         var secretKey = config["Stripe:SecretKey"];
-        var priceId   = plan == "base"
-            ? config["Stripe:BasePriceId"]
-            : config["Stripe:PremiumPriceId"];
+        var priceId   = config["Stripe:PremiumPriceId"];
         var appUrl    = config["AppUrl"] ?? "http://localhost:4200";
 
         // Graceful degradation: if Stripe not configured, return a helpful dev message
@@ -123,13 +122,12 @@ public class PaymentsController(
                 var user = await db.Users.FindAsync(userId);
                 if (user is not null)
                 {
-                    var plan = session.Metadata.TryGetValue("plan", out var p) ? p : "premium";
-                    user.Tier = plan == "base" ? UserTier.Base : UserTier.Premium;
+                    user.Tier = UserTier.Premium;
                     user.StripeCustomerId     = session.CustomerId;
                     user.StripeSubscriptionId = session.SubscriptionId;
                     await db.SaveChangesAsync();
-                    _ = emailService.SendSubscriptionConfirmationAsync(user.Email, user.FirstName, plan);
-                    _ = emailService.SendAdminSubscriptionNotificationAsync(user.Email, user.FirstName, plan);
+                    _ = emailService.SendSubscriptionConfirmationAsync(user.Email, user.FirstName, "premium");
+                    _ = emailService.SendAdminSubscriptionNotificationAsync(user.Email, user.FirstName, "premium");
                 }
             }
         }
@@ -142,7 +140,7 @@ public class PaymentsController(
             var user = await db.Users.FirstOrDefaultAsync(u => u.StripeSubscriptionId == sub!.Id);
             if (user is not null)
             {
-                user.Tier = UserTier.Base;
+                user.Tier = UserTier.Free;
                 user.StripeSubscriptionId = null;
                 await db.SaveChangesAsync();
             }
@@ -158,7 +156,7 @@ public class PaymentsController(
     {
         var user = await db.Users.FindAsync(UserId);
         if (user is null) return Unauthorized();
-        if (user.Tier == UserTier.Base)
+        if (user.Tier != UserTier.Premium)
             return BadRequest(new { error = "No active subscription to cancel." });
 
         var secretKey = config["Stripe:SecretKey"];
@@ -172,7 +170,7 @@ public class PaymentsController(
         }
 
         // Immediately reflect cancellation in our DB
-        user.Tier = UserTier.Base;
+        user.Tier = UserTier.Free;
         user.StripeSubscriptionId = null;
         await db.SaveChangesAsync();
 
@@ -296,7 +294,9 @@ public class PaymentsController(
     private static UserTier? MapProductToTier(string? productId) => productId switch
     {
         "com.clarityfinancialtools.app.premium"  => UserTier.Premium,
-        "com.clarityfinancialtools.app.baseplan" => UserTier.Base,
+        // Legacy Base product still recognized so any historical receipt resolves
+        // to Premium access rather than erroring; it is no longer sold.
+        "com.clarityfinancialtools.app.baseplan" => UserTier.Premium,
         _                                        => null
     };
 

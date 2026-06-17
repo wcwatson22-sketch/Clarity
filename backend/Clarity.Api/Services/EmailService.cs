@@ -43,7 +43,6 @@ public class EmailService(
     public async Task<bool> SendWelcomeAsync(string toEmail, string firstName, DateTime trialEndsAt)
     {
         var name = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
-        var trialDate = trialEndsAt.ToString("MMMM d, yyyy");
         var html = $"""
             <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
@@ -55,25 +54,23 @@ public class EmailService(
                 Welcome, {name}! 🎉
               </h1>
               <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
-                Congratulations on taking the first step toward financial clarity. You now have a
-                <strong>30-day free trial</strong> with access to everything Clarity has to offer —
-                no credit card required.
+                Congratulations on taking the first step toward financial clarity. Your
+                <strong>Free plan</strong> is ready to go — no credit card, no time limit.
               </p>
 
               <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
-                <p style="color:#065F46;font-weight:600;margin:0 0 12px;">Your trial is active until <strong>{trialDate}</strong></p>
+                <p style="color:#065F46;font-weight:600;margin:0 0 12px;">Included free, forever:</p>
                 <ul style="color:#374151;margin:0;padding-left:20px;line-height:1.9;">
                   <li>📊 <strong>Dashboard</strong> — track your full net worth in one place</li>
                   <li>💵 <strong>Cash Flow</strong> — manage income, expenses &amp; savings</li>
                   <li>📸 <strong>Snapshots</strong> — capture your financial position over time</li>
                   <li>📚 <strong>Learn</strong> — bite-sized financial education lessons</li>
-                  <li>📄 <strong>PFS</strong> — generate a Personal Financial Statement</li>
                 </ul>
               </div>
 
               <p style="color:#374151;line-height:1.7;margin:0 0 24px;">
-                After your trial, continue with a <strong>Base plan ($0.99/month)</strong> or
-                unlock everything with <strong>Premium ($4.99/month)</strong>.
+                Upgrade to <strong>Premium ($2.99/month)</strong> any time to unlock
+                Compare, Loan Prep, and Real Estate tools.
               </p>
 
               <a href="https://clarityfinancialtools.com/dashboard"
@@ -229,10 +226,8 @@ public class EmailService(
     public async Task<bool> SendSubscriptionConfirmationAsync(string toEmail, string firstName, string plan)
     {
         var name      = string.IsNullOrWhiteSpace(firstName) ? "there" : firstName;
-        var planLabel = plan == "base" ? "Base ($0.99/month)" : "Premium ($4.99/month)";
-        var features  = plan == "base"
-            ? "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 10 snapshots per month</li><li>📈 Compare tab — see how you stack up</li>"
-            : "<li>📊 Full dashboard &amp; net worth tracking</li><li>💵 Cash flow budget &amp; DTI</li><li>📸 Unlimited snapshots</li><li>📈 Compare tab</li><li>🏦 Loan Prep guides</li><li>📄 Personal Financial Statement (PFS)</li>";
+        var planLabel = "Premium ($2.99/month)";
+        var features  = "<li>📈 Compare — weigh financial decisions side by side</li><li>🏦 Loan Prep — banker-style readiness &amp; PFS tools</li><li>🏠 Real Estate — track &amp; analyze investment properties</li><li>📊 Everything in Free (Dashboard, Cash Flow, Learn)</li>";
 
         var html = $"""
             <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;">

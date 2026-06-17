@@ -17,7 +17,7 @@ export class RealEstateService {
 
   load() {
     if (this.loaded()) return;
-    if (!this.plans.isPremium() && !this.plans.trialActive()) {
+    if (!this.plans.canRealEstate()) {
       this.loaded.set(true);
       return;
     }

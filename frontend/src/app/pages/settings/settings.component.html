@@ -11,10 +11,9 @@
     <div class="info-text">
       <p class="info-username">{{ user()?.username }}</p>
       <p class="info-meta">User ID #{{ user()?.id }} &nbsp;·&nbsp;
-        <span class="tier-chip" [class.premium]="isPremium()" [class.paid]="isBasePaid()">
+        <span class="tier-chip" [class.premium]="isPremium()">
           @if (isPremium()) { Premium Plan }
-          @else if (isBasePaid()) { Base Plan }
-          @else { Free Trial }
+          @else { Free Plan }
         </span>
       </p>
       <p class="info-verify">
@@ -127,107 +126,49 @@
     <h2 class="card-title">Subscription</h2>
     <p class="card-sub">Your current plan and available upgrades</p>
 
-    <!-- Active subscription banner -->
-    @if (isBasePaid()) {
-      <div class="trial-banner active-plan-banner">
-        <span class="trial-icon">✅</span>
-        <div>
-          <strong>Base plan active</strong> — your subscription is current.
-          Upgrade to Premium below to unlock unlimited snapshots and more.
-        </div>
-      </div>
-    } @else if (isPremium()) {
+    <!-- Active plan banner -->
+    @if (isPremium()) {
       <div class="trial-banner active-plan-banner">
         <span class="trial-icon">⭐</span>
-        <div><strong>Premium plan active</strong> — you have full access to everything Clarity offers.</div>
+        <div><strong>Premium plan active</strong> — Compare, Loan Prep, and Real Estate are unlocked.</div>
       </div>
-    } @else if (trialActive()) {
-      <div class="trial-banner">
-        <span class="trial-icon">🎉</span>
-        <div>
-          <strong>Free trial active</strong> — you have full access to all features.
-          @if (trialDaysLeft() <= 30) {
-            <span class="trial-days">{{ trialDaysLeft() }} day{{ trialDaysLeft() === 1 ? '' : 's' }} remaining.</span>
-          }
-          Pick a plan below before your trial ends to keep access.
-        </div>
+    } @else {
+      <div class="trial-banner active-plan-banner">
+        <span class="trial-icon">✅</span>
+        <div><strong>You're on the Free plan</strong> — Dashboard, Cash Flow, and Learn, free forever.</div>
       </div>
     }
 
     <div class="plan-grid">
-
-      <!-- Base plan (backend tier "Base") — only show when NOT already subscribed -->
-      @if (!isBasePaid() && !isPremium()) {
-        <div class="plan-card">
-          <div class="plan-header">
-            <span class="plan-name">Base Plan</span>
-            <span class="plan-price">
-              @if (isNative && iap.getProduct(IAP_PRODUCTS.BASE_MONTHLY); as prod) {
-                {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
-              } @else {
-                $0.99<span class="plan-period">/mo</span>
-              }
-            </span>
-          </div>
-          <p class="plan-duration">Monthly subscription · auto-renews until cancelled</p>
-          <p class="plan-unlocks">Unlocks the Compare tab and financial scenario comparison tools.</p>
-          <ul class="plan-features">
-            <li>✓ Dashboard &amp; net worth tracking</li>
-            <li>✓ Cash flow &amp; DTI</li>
-            <li>✓ Financial learning center</li>
-            <li>✓ Compare tab — see how you stack up</li>
-            <li>✓ 10 snapshots per month</li>
-            <li>✓ 90-day snapshot history</li>
-            <li class="muted">✗ Unlimited snapshots</li>
-            <li class="muted">✗ PFS one-pager PDF</li>
-            <li class="muted">✗ CSV data export</li>
-            <li class="muted">✗ Loan Prep guides</li>
-          </ul>
-          @if (isNative) {
-            <button class="btn-upgrade btn-base" (click)="purchaseIap(IAP_PRODUCTS.BASE_MONTHLY)" [disabled]="iap.purchasing()">
-              {{ iap.purchasing() ? 'Processing…' : 'Subscribe via App Store' }}
-            </button>
-          } @else {
-            <button class="btn-upgrade btn-base" (click)="startUpgrade('base')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : 'Get Base Plan — $0.99/mo' }}
-            </button>
-          }
-        </div>
-      }
-
-      <!-- Premium plan -->
+      <!-- Premium plan — the only paid tier ($2.99/mo). Hidden once subscribed. -->
       <div class="plan-card premium" [class.active]="isPremium()">
-        <div class="plan-badge">Best Value</div>
+        <div class="plan-badge">Premium</div>
         <div class="plan-header">
           <span class="plan-name">Premium Plan ✦</span>
           <span class="plan-price">
             @if (isNative && iap.getProduct(IAP_PRODUCTS.PREMIUM_MONTHLY); as prod) {
               {{ prod.localizedPriceString }}<span class="plan-period">/mo</span>
             } @else {
-              $4.99<span class="plan-period">/mo</span>
+              $2.99<span class="plan-period">/mo</span>
             }
           </span>
         </div>
         <p class="plan-duration">Monthly subscription · auto-renews until cancelled</p>
-        <p class="plan-unlocks">Unlocks Compare, Loan Prep, Personal Financial Statement tools, and banker-style readiness features.</p>
+        <p class="plan-unlocks">Everything in Free, plus the Premium tools below.</p>
         <ul class="plan-features">
-          <li>✓ Everything in Base (incl. Compare)</li>
-          <li>✓ Unlimited snapshots</li>
-          <li>✓ Full snapshot history</li>
-          <li>✓ PFS one-pager PDF (unlimited)</li>
-          <li>✓ CSV data export</li>
-          <li>✓ Loan Prep guides — all loan types</li>
-          <li>✓ Real Estate cash flow analyzer</li>
-          <li>✓ Priority support</li>
+          <li>✓ Everything in Free (Dashboard, Cash Flow, Learn)</li>
+          <li>✓ Compare — weigh financial scenarios side by side</li>
+          <li>✓ Loan Prep — banker-style readiness &amp; PFS tools</li>
+          <li>✓ Real Estate — track &amp; analyze investment properties</li>
         </ul>
         @if (!isPremium()) {
           @if (isNative) {
             <button class="btn-upgrade" (click)="purchaseIap(IAP_PRODUCTS.PREMIUM_MONTHLY)" [disabled]="iap.purchasing()">
-              {{ iap.purchasing() ? 'Processing…' : isBasePaid() ? 'Upgrade via App Store' : 'Subscribe via App Store' }}
+              {{ iap.purchasing() ? 'Processing…' : 'Subscribe via App Store' }}
             </button>
           } @else {
-            <button class="btn-upgrade" (click)="startUpgrade('premium')" [disabled]="upgrading()">
-              {{ upgrading() ? 'Redirecting…' : isBasePaid() ? 'Upgrade to Premium Plan — $4.99/mo' : 'Get Premium Plan — $4.99/mo' }}
+            <button class="btn-upgrade" (click)="startUpgrade()" [disabled]="upgrading()">
+              {{ upgrading() ? 'Redirecting…' : 'Get Premium — $2.99/mo' }}
             </button>
           }
         } @else {

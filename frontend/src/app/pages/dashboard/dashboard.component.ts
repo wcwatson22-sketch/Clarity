@@ -71,43 +71,9 @@ export class DashboardComponent implements OnInit {
     return `Good ${period}, ${name}`;
   });
 
-  // ── Trial status ─────────────────────────────────────────────────────────
-  readonly trialEndsAt = computed(() => {
-    const t = this.auth.currentUser()?.trialEndsAt;
-    return t ? new Date(t) : null;
-  });
-  readonly trialActive = computed(() => {
-    if (this.auth.currentUser()?.isPaid) return false;
-    const t = this.trialEndsAt();
-    return t ? t > new Date() : false;
-  });
-  readonly trialDaysLeft = computed(() => {
-    const t = this.trialEndsAt();
-    if (!t) return 0;
-    return Math.max(0, Math.ceil((t.getTime() - Date.now()) / 86400000));
-  });
-  readonly dashboardLocked = computed(() =>
-    !this.trialActive() && !(this.auth.currentUser()?.isPaid ?? false)
-  );
-
-  // ── Snapshot quota ────────────────────────────────────────────────────────
-  private readonly BASE_SNAPSHOT_LIMIT = 10;
-  readonly isPremium  = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Premium');
-  readonly isBasePaid = computed(() => this.auth.currentUser()?.isPaid === true && this.auth.currentUser()?.tier === 'Base');
-
-  readonly snapshotsThisMonth = computed(() => {
-    const now = new Date();
-    return this.snapshots().filter(s => {
-      const d = new Date(s.createdAt);
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    }).length;
-  });
-
-  // null = unlimited (Premium or trial); number = remaining for Base plan
-  readonly snapshotsRemaining = computed(() => {
-    if (!this.isBasePaid()) return null;
-    return Math.max(0, this.BASE_SNAPSHOT_LIMIT - this.snapshotsThisMonth());
-  });
+  // Free plan is indefinite — the dashboard is never locked, and snapshots are
+  // unlimited for everyone. (Trial and Base-tier quota logic removed.)
+  readonly snapshotsRemaining = computed(() => null);
 
   // ── First-name modal (shown for existing users who don't have one yet) ────
   showFirstNameModal = signal(false);
@@ -588,12 +554,8 @@ export class DashboardComponent implements OnInit {
         this.toast.success('Snapshot saved!');
         setTimeout(() => this.snapshotSaved.set(false), 3000);
       },
-      error: (err: HttpErrorResponse) => {
-        if (err.status === 429) {
-          this.showUpgradeModal.set(true);
-        } else {
-          this.showError('Could not save snapshot. Please try again.');
-        }
+      error: (_err: HttpErrorResponse) => {
+        this.showError('Could not save snapshot. Please try again.');
       }
     });
   }

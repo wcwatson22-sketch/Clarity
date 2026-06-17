@@ -306,6 +306,22 @@ try
         if (usersWithoutId.Count > 0)
             await ctx.SaveChangesAsync();
 
+        // ── Freemium migration: retire the legacy paid "Base" tier ───────────────
+        // Convert UNPAID legacy Base users to Free. Paid subscribers (Stripe/Apple)
+        // and Premium users are never touched. Idempotent and non-destructive — it
+        // only relabels the tier; no financial data, onboarding, or snapshots change.
+        try
+        {
+            using var migrateTier = conn.CreateCommand();
+            migrateTier.CommandText =
+                "UPDATE Users SET Tier = 'Free' WHERE Tier = 'Base' " +
+                "AND (StripeSubscriptionId IS NULL OR StripeSubscriptionId = '') " +
+                "AND (AppleOriginalTransactionId IS NULL OR AppleOriginalTransactionId = '')";
+            var migrated = await migrateTier.ExecuteNonQueryAsync();
+            if (migrated > 0) Log.Information("Freemium migration: {Count} legacy Base users moved to Free", migrated);
+        }
+        catch (Exception ex) { Log.Warning(ex, "Freemium tier migration skipped"); }
+
         // Grant admin rights to the configured admin username (if set)
         var adminUsername = app.Configuration["Admin:Username"];
         if (!string.IsNullOrWhiteSpace(adminUsername))

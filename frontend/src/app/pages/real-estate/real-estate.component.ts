@@ -87,7 +87,7 @@ export class RealEstateComponent implements OnInit {
   private toast = inject(ToastService);
   private base  = environment.apiUrl;
 
-  readonly hasAccess = computed(() => this.plans.isPremium() || this.plans.trialActive());
+  readonly hasAccess = this.plans.canRealEstate;
   readonly Math = Math;
 
   properties   = signal<(RealEstateProperty & { id: string })[]>([]);

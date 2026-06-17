@@ -47,7 +47,7 @@ export class CompareComponent implements OnInit {
   ];
 
   // ── Plan access ──────────────────────────────────────────────────────────
-  /** Compare requires Base Plan ($0.99), Premium ($4.99), or an active trial. */
+  /** Compare is a Premium ($2.99/mo) tool. */
   readonly hasAccess = this.plans.canCompare;
 
   loading     = signal(true);

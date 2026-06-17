@@ -21,8 +21,8 @@ export class PfsComponent implements OnInit {
   private plans = inject(PlanAccessService);
   readonly re   = inject(RealEstateService);
 
-  /** PFS requires Premium ($4.99/mo). Trial users can access during trial period. */
-  readonly hasAccess = computed(() => this.plans.isPremium() || this.plans.trialActive());
+  /** PFS is a Premium ($2.99/mo) banker-readiness tool. */
+  readonly hasAccess = this.plans.canPfs;
 
   accounts    = signal<Account[]>([]);
   budgetItems = signal<BudgetItem[]>([]);

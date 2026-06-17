@@ -6,11 +6,11 @@ namespace Clarity.Api.Services;
 
 /// <summary>
 /// Runs once per day.
-/// - Sends a push notification to users whose trial expires within 3 days.
-/// - Sends a trial-ended email to unpaid users whose trial just expired (once only).
-/// - Sends a re-engagement email to paid users inactive for 15+ days (30-day cooldown).
-/// Accounts are NOT deleted — expired-trial users are simply locked out by the frontend.
-/// Admins and paid users are never touched by expiry logic.
+/// - Sends a re-engagement email to active Premium subscribers inactive for 15+ days
+///   (30-day cooldown).
+/// No trial logic: the Free plan is indefinite, so there are no trial-expiry pushes,
+/// no trial-ended emails, and no account lockout/deletion based on account age.
+/// Admins and free users are never sent paid-user reminders.
 /// </summary>
 public class CleanupHostedService(
     IServiceScopeFactory scopeFactory,
@@ -42,59 +42,8 @@ public class CleanupHostedService(
         using var scope = scopeFactory.CreateScope();
         var db    = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var email = scope.ServiceProvider.GetRequiredService<EmailService>();
-        var push  = scope.ServiceProvider.GetRequiredService<PushService>();
 
         var now = DateTime.UtcNow;
-
-        // Send push notification to users whose trial expires in exactly 3 days
-        var trialExpiringSoon = await db.Users
-            .Where(u => !u.IsAdmin
-                     && u.StripeSubscriptionId == null
-                     && u.TrialEndsAt > now
-                     && u.TrialEndsAt <= now.AddDays(3).AddHours(1))
-            .ToListAsync(ct);
-
-        foreach (var u in trialExpiringSoon)
-        {
-            var daysLeft = (int)Math.Ceiling((u.TrialEndsAt - now).TotalDays);
-            _ = push.SendToUserAsync(u.Id,
-                "Your trial is ending soon",
-                $"You have {daysLeft} day{(daysLeft == 1 ? "" : "s")} left in your Clarity free trial. Choose a plan to keep access.",
-                "/settings");
-        }
-
-        logger.LogInformation("[Cleanup] Daily run complete");
-
-        // ── Trial-ended email ──────────────────────────────────────────────────
-        // Sent once, as soon as the trial expires, for unpaid users who haven't
-        // upgraded. Separate from the deletion-warning (which fires 7+ days later).
-        var trialEndedCandidates = await db.Users
-            .Where(u => !u.IsAdmin
-                     && u.Tier == UserTier.Base
-                     && u.StripeSubscriptionId == null
-                     && u.AppleOriginalTransactionId == null
-                     && u.TrialEndsAt < now
-                     && u.TrialEndedEmailSentAt == null)
-            .ToListAsync(ct);
-
-        int trialEndedSent = 0;
-        foreach (var user in trialEndedCandidates)
-        {
-            var ok = await email.SendTrialEndedAsync(user.Email, user.FirstName);
-            if (ok)
-            {
-                user.TrialEndedEmailSentAt = now;
-                trialEndedSent++;
-                logger.LogInformation("[Cleanup] Trial-ended email sent to user #{Id}", user.Id);
-            }
-            else
-            {
-                logger.LogWarning("[Cleanup] Trial-ended email FAILED for user #{Id}", user.Id);
-            }
-        }
-
-        if (trialEndedSent > 0)
-            await db.SaveChangesAsync(ct);
 
         // ── Inactive paid-user email ────────────────────────────────────────────
         // Sent to paying subscribers who haven't been active for 15+ days.
@@ -133,8 +82,6 @@ public class CleanupHostedService(
         if (inactiveSent > 0)
             await db.SaveChangesAsync(ct);
 
-        logger.LogInformation(
-            "[Cleanup] Lifecycle emails — trial-ended: {TrialEnded}, inactive-paid: {Inactive}",
-            trialEndedSent, inactiveSent);
+        logger.LogInformation("[Cleanup] Lifecycle emails — inactive-paid: {Inactive}", inactiveSent);
     }
 }

@@ -430,11 +430,11 @@ export class LoanPrepComponent {
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '🏦', title: 'Loan Preparation Guide', body: 'Select a loan type to see a complete checklist of documents to gather, what lenders look for, and do\'s & don\'ts.' },
     { icon: '📋', title: 'Check Off Documents', body: 'Use the interactive checklist to track which documents you\'ve gathered. Your progress is saved automatically.' },
-    { icon: '🔓', title: 'Premium Content', body: 'The full guides — including key stats, checklists, and do\'s & don\'ts — are available with Premium ($4.99/mo). The overview is free for everyone.' },
+    { icon: '🔓', title: 'Premium Content', body: 'The full guides — including key stats, checklists, and do\'s & don\'ts — are available with Premium ($2.99/mo). The overview is free for everyone.' },
   ];
 
-  // Loan Prep detail requires the Premium plan ($4.99/mo). Trial and Base plan users
-  // can see the loan type grid but cannot open individual guides.
+  // Loan Prep detail requires the Premium plan ($2.99/mo). Free users can see the
+  // loan type grid but cannot open individual guides.
   readonly hasAccess = this.plans.canLoanPrep;
 
   readonly guides = LOAN_GUIDES;
