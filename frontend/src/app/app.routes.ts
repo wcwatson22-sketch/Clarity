@@ -68,6 +68,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/loan-prep/loan-prep.component').then(m => m.LoanPrepComponent)
   },
   {
+    path: 'loan-impact',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/loan-impact/loan-impact.component').then(m => m.LoanImpactComponent)
+  },
+  {
     path: 'real-estate',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/real-estate/real-estate.component').then(m => m.RealEstateComponent)

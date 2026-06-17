@@ -18,6 +18,18 @@
     <span>This is organizational guidance, not financial advice. Every lender and situation is different — always confirm specific requirements directly with your lender.</span>
   </div>
 
+  <!-- ── Loan Impact Calculator (Premium subcategory) ─────────────────── -->
+  @if (!selected()) {
+    <a routerLink="/loan-impact" class="impact-card print-hide">
+      <span class="impact-emoji">🧮</span>
+      <span class="impact-text">
+        <span class="impact-title">Loan Impact Calculator</span>
+        <span class="impact-desc">Estimate how a proposed loan payment could change your monthly debt obligations and DTI.</span>
+      </span>
+      <span class="impact-arrow">{{ hasAccess() ? '→' : '🔒' }}</span>
+    </a>
+  }
+
   <!-- ── Loan Type Grid (visible to all) ──────────────────────────────── -->
   @if (!selected()) {
     <div class="loan-grid">

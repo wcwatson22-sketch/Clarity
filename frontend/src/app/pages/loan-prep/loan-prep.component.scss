@@ -4,6 +4,20 @@
 .page-title  { font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 4px; }
 .page-sub    { font-size: 14px; color: #6B7280; margin: 0; }
 
+// ── Loan Impact Calculator entry card ──────────────────────────────────────────
+.impact-card {
+  display: flex; align-items: center; gap: 14px;
+  background: #F0FBF7; border: 1px solid #A7F3D0; border-radius: 16px;
+  padding: 16px 18px; margin-bottom: 20px; text-decoration: none;
+  transition: border-color .15s, background .15s;
+  &:hover { border-color: #1D9E75; }
+}
+.impact-emoji { font-size: 26px; flex-shrink: 0; }
+.impact-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.impact-title { font-size: 15px; font-weight: 700; color: #085041; }
+.impact-desc { font-size: 12.5px; color: #047857; line-height: 1.45; }
+.impact-arrow { font-size: 16px; color: #1D9E75; flex-shrink: 0; }
+
 // ── Guidance note ─────────────────────────────────────────────────────────────
 .guidance-note {
   display: flex;

@@ -1,0 +1,193 @@
+<div class="page">
+
+  <div class="li-header">
+    <a routerLink="/loan-prep" class="back-link">← Loan Prep</a>
+    <h1 class="li-title">Loan Impact Calculator</h1>
+    <p class="li-sub">Estimate how a proposed loan payment could change your monthly debt obligations and DTI.</p>
+  </div>
+
+  <!-- ── Premium gate ─────────────────────────────────────────────────────── -->
+  @if (!hasAccess()) {
+    <div class="gate-card">
+      <div class="gate-icon">🔒</div>
+      <h2 class="gate-title">A Premium feature</h2>
+      <p class="gate-desc">
+        See how a new loan could affect your debt-to-income ratio using the financial information
+        already saved in Clarity. Unlock Loan Impact Calculator with Premium for <strong>$2.99/month</strong>.
+      </p>
+      <a routerLink="/settings" class="btn-upgrade-gate">Get Premium — $2.99/mo</a>
+    </div>
+  } @else if (loading()) {
+    <div class="li-card"><p class="muted">Loading your financial picture…</p></div>
+  } @else if (!hasIncome()) {
+    <!-- ── Missing income ─────────────────────────────────────────────────── -->
+    <div class="li-card li-warn">
+      <p>Add your gross monthly income in Cash Flow before calculating projected DTI.</p>
+      <a routerLink="/cash-flow" class="btn-link">Go to Cash Flow →</a>
+    </div>
+  } @else {
+
+    <!-- ── Current financial picture (read-only) ──────────────────────────── -->
+    <div class="li-card li-current">
+      <div class="li-card-head">
+        <h2 class="li-h2">Your Current Financial Picture</h2>
+        <a routerLink="/cash-flow" class="btn-link sm">Edit in Cash Flow</a>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-label">Gross Monthly Income</span><span class="stat-val">{{ fmt(grossIncome()) }}</span></div>
+        <div class="stat"><span class="stat-label">Existing Monthly Debt</span><span class="stat-val">{{ fmt(existingDebt()) }}</span></div>
+        <div class="stat"><span class="stat-label">Current DTI</span><span class="stat-val">{{ pct(currentDtiVal()) }}</span></div>
+      </div>
+    </div>
+
+    <!-- ── Loan type ──────────────────────────────────────────────────────── -->
+    <div class="li-card">
+      <h2 class="li-h2">Loan Type</h2>
+      <div class="type-grid">
+        @for (t of loanTypes; track t.id) {
+          <button class="type-btn" [class.active]="category() === t.id" (click)="selectType(t.id)">
+            <span class="type-emoji">{{ t.emoji }}</span><span>{{ t.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ── Proposed loan inputs ───────────────────────────────────────────── -->
+    <div class="li-card">
+      <h2 class="li-h2">Proposed Loan</h2>
+      <div class="field-grid">
+        <label class="field"><span>Loan amount</span>
+          <input appNumeric inputmode="decimal" [value]="amount() || ''" (input)="amount.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+        <label class="field"><span>Interest rate (%)</span>
+          <input appNumeric="decimal" inputmode="decimal" [value]="rate() || ''" (input)="rate.set(+$any($event.target).value || 0)" placeholder="0.0" /></label>
+        <label class="field"><span>Term (months)</span>
+          <input appNumeric="integer" inputmode="numeric" [value]="term() || ''" (input)="term.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+      </div>
+
+      <div class="calc-payment">
+        <span>Estimated principal &amp; interest</span>
+        <strong>{{ fmt(piPayment()) }}/mo</strong>
+      </div>
+
+      <label class="check-line">
+        <input type="checkbox" [checked]="overridePayment()" (change)="overridePayment.set($any($event.target).checked)" />
+        <span>I have a lender quote — enter the monthly payment myself</span>
+      </label>
+      @if (overridePayment()) {
+        <label class="field"><span>User-entered estimated payment</span>
+          <input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="manualPayment.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+        <p class="hint">Labeled as a user-entered estimated payment in your results.</p>
+      }
+
+      <!-- Mortgage housing extras -->
+      @if (isMortgage()) {
+        <h3 class="li-h3">Additional monthly housing costs (optional)</h3>
+        <div class="field-grid">
+          <label class="field"><span>Property taxes</span><input appNumeric inputmode="decimal" [value]="taxes() || ''" (input)="taxes.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <label class="field"><span>Homeowners insurance</span><input appNumeric inputmode="decimal" [value]="insurance() || ''" (input)="insurance.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <label class="field"><span>HOA dues</span><input appNumeric inputmode="decimal" [value]="hoa() || ''" (input)="hoa.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <label class="field"><span>Mortgage insurance</span><input appNumeric inputmode="decimal" [value]="mortgageIns() || ''" (input)="mortgageIns.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <label class="field"><span>Other housing costs</span><input appNumeric inputmode="decimal" [value]="otherHousing() || ''" (input)="otherHousing.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+        </div>
+      }
+    </div>
+
+    <!-- ── Debt replacement ───────────────────────────────────────────────── -->
+    <div class="li-card">
+      <h2 class="li-h2">Will this loan pay off or replace an existing debt?</h2>
+      <label class="check-line">
+        <input type="checkbox" [checked]="replaces()" (change)="replaces.set($any($event.target).checked)" />
+        <span>Yes — this replaces a debt I'm already paying</span>
+      </label>
+      @if (replaces()) {
+        <label class="field"><span>Monthly payment being eliminated</span>
+          <input appNumeric inputmode="decimal" [value]="replacedPayment() || ''" (input)="replacedPayment.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+        @if (replacementWarning()) { <p class="warn-text">⚠️ {{ replacementWarning() }}</p> }
+        <p class="hint">This is a scenario only — your saved Cash Flow debts are never changed.</p>
+      }
+    </div>
+
+    <!-- ── Results ────────────────────────────────────────────────────────── -->
+    <div class="li-card results">
+      <h2 class="li-h2">Estimated Impact</h2>
+      <div class="result-grid">
+        <div class="rcard">
+          <span class="rcard-h">Current</span>
+          <span class="rcard-line">Monthly debt <b>{{ fmt(existingDebt()) }}</b></span>
+          <span class="rcard-line">DTI <b>{{ pct(currentDtiVal()) }}</b></span>
+        </div>
+        <div class="rcard">
+          <span class="rcard-h">With Proposed Loan</span>
+          <span class="rcard-line">Monthly debt <b>{{ fmt(projectedDebtVal()) }}</b></span>
+          <span class="rcard-line">DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
+        </div>
+        <div class="rcard">
+          <span class="rcard-h">Impact</span>
+          <span class="rcard-line">New payment <b>{{ fmt(proposedPayment()) }}</b></span>
+          @if (effectiveReplaced() > 0) { <span class="rcard-line">Payment removed <b>{{ fmt(effectiveReplaced()) }}</b></span> }
+          <span class="rcard-line">DTI change <b>{{ pts(dtiChangePts()) }}</b></span>
+        </div>
+        @if (isMortgage()) {
+          <div class="rcard">
+            <span class="rcard-h">Housing (mortgage)</span>
+            <span class="rcard-line">Total housing payment <b>{{ fmt(totalHousingPayment()) }}</b></span>
+            <span class="rcard-line">Housing ratio <b>{{ pct(housingRatioVal()) }}</b></span>
+            <span class="rcard-line">Projected total DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
+          </div>
+        }
+      </div>
+
+      <!-- Plain-language summary -->
+      @if (dtiChangePts() !== null) {
+        <p class="summary">
+          This proposed payment would change your estimated DTI from
+          <strong>{{ pct(currentDtiVal()) }}</strong> to <strong>{{ pct(projectedDtiVal()) }}</strong>
+          ({{ pts(dtiChangePts()) }}).
+        </p>
+        @if (dtiBand(); as b) { <p class="band band-{{ b.tone }}">{{ b.label }}.</p> }
+        @if (isMortgage() && housingBand(); as hb) { <p class="band band-{{ hb.tone }}">Housing ratio: {{ hb.label }}.</p> }
+      }
+
+      <!-- Required disclaimer (always visible on results) -->
+      <p class="disclaimer">
+        Clarity provides educational estimates based on information you enter and commonly referenced
+        industry ranges. This is not a loan approval, prequalification, preapproval, credit decision,
+        or lending commitment. Actual underwriting standards, calculations, and approval requirements
+        vary by lender and loan program.
+      </p>
+      <button class="how-link" (click)="showHow.set(!showHow())">How this works</button>
+      @if (showHow()) {
+        <p class="how-text">
+          Results are estimates only and may not match a lender's calculations. Lenders may treat income,
+          debts, housing expenses, taxes, insurance, variable income, and other obligations differently.
+          Credit history, collateral, loan-to-value, reserves, income documentation, and additional
+          underwriting requirements may affect a lending decision. DTI is only one part of a lending
+          decision. Consult the applicable lender for actual qualification and approval requirements.
+        </p>
+      }
+
+      @if (canCompute()) {
+        <button class="btn-save" (click)="saveScenario()">＋ Save this scenario</button>
+      }
+    </div>
+
+    <!-- ── Saved scenarios ────────────────────────────────────────────────── -->
+    @if (scenarios().length) {
+      <div class="li-card">
+        <h2 class="li-h2">Saved Scenarios</h2>
+        @for (s of scenarios(); track $index) {
+          <div class="scenario-row">
+            <span class="sc-name">{{ s.name }}</span>
+            <span class="sc-meta">{{ fmt(s.payment) }}/mo · DTI {{ s.projectedDtiPct }}%</span>
+            <button class="sc-del" (click)="deleteScenario($index)" aria-label="Delete">✕</button>
+          </div>
+        }
+        <p class="hint">Saved scenarios store inputs and estimates only — they do not create a debt in Cash Flow.</p>
+      </div>
+    }
+
+    <div class="legal-links">
+      <a routerLink="/privacy">Privacy Policy</a><span class="dot">·</span><a routerLink="/terms">Terms of Use</a>
+    </div>
+  }
+</div>
