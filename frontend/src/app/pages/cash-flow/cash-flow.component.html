@@ -59,23 +59,6 @@
             </div>
           </div>
         </div>
-        @if (primaryGrossIncome() > 0) {
-          <div class="k401-inline-row">
-            <div class="k401-field-wrap">
-              <label class="field-label">401(k) <span class="field-hint">informational</span></label>
-              <div class="input-suffix k401-input-suffix">
-                <input appNumeric="decimal" class="pct-input" placeholder="0"
-                  [value]="retirement401kPct() || ''"
-                  (change)="update401k($any($event.target).value)" />
-                <span class="suffix">%</span>
-              </div>
-            </div>
-            @if (retirement401kAmt() > 0) {
-              <span class="k401-hint">≈ {{ fmt(retirement401kAmt()) }}/mo · pre-tax, already deducted</span>
-            }
-          </div>
-        }
-
       } @else {
         <!-- ── Dual income: compact side-by-side blocks ───────────────── -->
         <div class="dual-income-grid">
@@ -100,18 +83,6 @@
                     (change)="updateNet($any($event.target).value)" class="dollar-input" />
                 </div>
               </div>
-              <div class="field-group">
-                <label class="field-label">401k %</label>
-                <div class="input-suffix">
-                  <input appNumeric="decimal" class="pct-input" placeholder="0"
-                    [value]="retirement401kPct() || ''"
-                    (change)="update401k($any($event.target).value)" />
-                  <span class="suffix">%</span>
-                </div>
-                @if (retirement401kAmt() > 0) {
-                  <span class="k401-sub">≈ {{ fmt(retirement401kAmt()) }}/mo</span>
-                }
-              </div>
             </div>
           </div>
 
@@ -134,18 +105,6 @@
                   <input appNumeric [value]="secondIncome().net"
                     (change)="updateSecondNet($any($event.target).value)" class="dollar-input" />
                 </div>
-              </div>
-              <div class="field-group">
-                <label class="field-label">401k %</label>
-                <div class="input-suffix">
-                  <input appNumeric="decimal" class="pct-input" placeholder="0"
-                    [value]="retirement401kPct2() || ''"
-                    (change)="update401k2($any($event.target).value)" />
-                  <span class="suffix">%</span>
-                </div>
-                @if (retirement401kAmt2() > 0) {
-                  <span class="k401-sub">≈ {{ fmt(retirement401kAmt2()) }}/mo</span>
-                }
               </div>
             </div>
           </div>
@@ -183,6 +142,54 @@
           <span class="muted">Est. take-home: {{ fmt(primaryNetIncome()) }}/mo</span>
         </div>
       }
+    }
+  </div>
+
+  <!-- ── Retirement Contributions ──────────────────────────────────── -->
+  <div class="income-card retirement-card">
+    <div class="income-header">
+      <h2 class="card-title">Retirement Contributions</h2>
+      <span class="ret-sub">Monthly $ · informational</span>
+    </div>
+    <div class="ret-grid">
+      <div class="field-group">
+        <label class="field-label">Traditional 401(k)</label>
+        <div class="input-prefix"><span class="prefix">$</span>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().trad401k || ''"
+            (change)="updateRetirement('trad401k', $any($event.target).value)" /></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Roth 401(k)</label>
+        <div class="input-prefix"><span class="prefix">$</span>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().roth401k || ''"
+            (change)="updateRetirement('roth401k', $any($event.target).value)" /></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Traditional IRA</label>
+        <div class="input-prefix"><span class="prefix">$</span>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().tradIra || ''"
+            (change)="updateRetirement('tradIra', $any($event.target).value)" /></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Roth IRA</label>
+        <div class="input-prefix"><span class="prefix">$</span>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().rothIra || ''"
+            (change)="updateRetirement('rothIra', $any($event.target).value)" /></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Employer Match</label>
+        <div class="input-prefix"><span class="prefix">$</span>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().employerMatch || ''"
+            (change)="updateRetirement('employerMatch', $any($event.target).value)" /></div>
+      </div>
+    </div>
+    <p class="ret-note">Employer match increases retirement savings but does not reduce your take-home pay.</p>
+    @if (totalRetirementSavings() > 0) {
+      <div class="ret-totals">
+        <span>Your contributions <strong>{{ fmt(employeeRetirement()) }}/mo</strong></span>
+        <span>Employer match <strong>{{ fmt(retirement().employerMatch) }}/mo</strong></span>
+        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(totalRetirementSavings()) }}/mo</strong></span>
+      </div>
     }
   </div>
 
@@ -286,7 +293,7 @@
         <span class="metric-val" [class.green]="annualSavingsTotal() > 0">
           {{ fmt(annualSavingsTotal()) }}
         </span>
-        <span class="metric-sub">per year{{ (retirement401kPct() > 0 || retirement401kPct2() > 0) ? ' (incl. 401k)' : '' }}</span>
+        <span class="metric-sub">per year{{ totalRetirementSavings() > 0 ? ' (incl. retirement)' : '' }}</span>
       </div>
     </div>
   }
@@ -377,57 +384,55 @@
           <span class="group-sub">{{ group.sub }}</span>
         </span>
         <div class="group-right">
-          <span class="group-total" [class.over-budget]="targetOver(group.key)">
+          <span class="group-total">
             {{ fmt(showAnnual() ? sumGroup(group.key) * 12 : sumGroup(group.key)) }}
           </span>
-          @if (getTarget(group.key) > 0) {
-            <span class="group-budget-label" [class.over]="targetOver(group.key)">
-              / {{ fmt(showAnnual() ? getTarget(group.key) * 12 : getTarget(group.key)) }} budget
-            </span>
-          }
         </div>
         <span class="chevron" [class.open]="isExpanded(group.key)">▾</span>
       </button>
 
-      <!-- Budget target progress bar (when set) -->
-      @if (getTarget(group.key) > 0) {
-        <div class="budget-progress">
-          <div class="budget-bar-fill"
-            [style.width]="(targetProgress(group.key) * 100) + '%'"
-            [class.over]="targetOver(group.key)"></div>
-        </div>
-      }
-
       @if (isExpanded(group.key)) {
         <div class="group-rows">
           @for (item of itemsForGroup(group.key); track item.id) {
-            <div class="expense-row">
+            <div class="expense-row" [class.variable-row]="group.key === 'Variable'">
               <input class="item-name" [value]="item.name"
                 (blur)="updateItem(item, 'name', $any($event.target).value)" />
               <div class="input-prefix small">
                 <span class="prefix">$</span>
                 <input appNumeric class="dollar-input" [value]="item.amount"
-                  (change)="updateItem(item, 'amount', $any($event.target).value)" />
+                  (change)="updateItem(item, 'amount', $any($event.target).value)" title="Actual" />
               </div>
+              <!-- Per-item budget (Variable expenses only) -->
+              @if (group.key === 'Variable') {
+                <div class="input-prefix small budget-input">
+                  <span class="prefix">$</span>
+                  <input appNumeric class="dollar-input" placeholder="Budget" [value]="item.budget ?? ''"
+                    (change)="updateItem(item, 'budget', $any($event.target).value)" title="Monthly budget" />
+                </div>
+              }
               <button class="delete-btn" (click)="deleteItem(item.id, item.name)">✕</button>
             </div>
+            <!-- Variable budget status line -->
+            @if (group.key === 'Variable') {
+              <div class="budget-status">
+                @if (itemHasBudget(item)) {
+                  @if (itemOver(item)) {
+                    <span class="bs-over">{{ fmt(-itemRemaining(item)) }} over budget · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
+                  } @else {
+                    <span class="bs-ok">{{ fmt(itemRemaining(item)) }} remaining · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
+                  }
+                  <span class="bs-bar"><span class="bs-bar-fill" [class.over]="itemOver(item)" [style.width]="(itemPctUsed(item) > 1 ? 100 : itemPctUsed(item) * 100) + '%'"></span></span>
+                } @else {
+                  <span class="bs-none">No budget set</span>
+                }
+              </div>
+            }
           }
           <div class="group-footer">
             <button class="add-row-btn" (click)="addItem(group.key)">+ Add item</button>
-            <!-- Budget target setter -->
-            <div class="target-setter">
-              @if (editingTarget() === group.key) {
-                <input class="target-input" appNumeric placeholder="Monthly budget…" autofocus
-                  (blur)="setTarget(group.key, $any($event.target).value)"
-                  (keydown.enter)="setTarget(group.key, $any($event.target).value)"
-                  (keydown.escape)="editingTarget.set(null)"
-                  [value]="getTarget(group.key) || ''" />
-              } @else {
-                <button class="target-btn" (click)="editingTarget.set(group.key)">
-                  {{ getTarget(group.key) ? '✏ Budget: ' + fmt(getTarget(group.key)) : '+ Set budget' }}
-                </button>
-              }
-            </div>
+            @if (group.key === 'Variable') {
+              <span class="budget-hint">Set a monthly budget per item — planning only, not counted as spending.</span>
+            }
           </div>
         </div>
       }

@@ -189,6 +189,19 @@
     </div>
   } @else {
 
+  <!-- ── Setup Complete prompt ──────────────────────────────────────── -->
+  @if (showSetupPrompt()) {
+    <div class="setup-banner">
+      <div class="setup-banner-text">
+        <strong>Finish setting up</strong>
+        <span>Save your starting financial picture as a baseline. Future snapshots measure progress from here — your initial values won't show as growth.</span>
+      </div>
+      <button class="setup-banner-btn" (click)="completeSetup()" [disabled]="completingSetup()">
+        {{ completingSetup() ? 'Saving…' : 'Complete Financial Setup' }}
+      </button>
+    </div>
+  }
+
   <!-- ── Net Worth Card ─────────────────────────────────────────────── -->
   <div class="nw-card">
     <div class="nw-header">

@@ -310,24 +310,6 @@ export class DashboardComponent implements OnInit {
   });
 
   /**
-   * Earliest meaningful snapshot in the current year — the YTD starting point.
-   * Null when fewer than 2 meaningful this-year snapshots exist.
-   */
-  private readonly _ytdBaseSnapshot = computed(() => {
-    const snaps = this._ytdCandidates();
-    return snaps.length >= 2 ? snaps[snaps.length - 1] : null; // oldest = last in newest-first list
-  });
-
-  /**
-   * Most recent meaningful snapshot in the current year — the YTD endpoint.
-   * Null when fewer than 2 meaningful this-year snapshots exist.
-   */
-  private readonly _ytdEndSnapshot = computed(() => {
-    const snaps = this._ytdCandidates();
-    return snaps.length >= 2 ? snaps[0] : null; // newest = first in newest-first list
-  });
-
-  /**
    * Month-over-month deltas: latest snapshot vs the most recent pre-current-month snapshot.
    * Both sides are snapshot values — live account edits are not reflected until a snapshot is saved.
    * Null when no prior-month snapshot exists.
@@ -344,14 +326,18 @@ export class DashboardComponent implements OnInit {
   });
 
   /**
-   * Year-to-date deltas: most recent this-year snapshot vs earliest this-year snapshot.
-   * Both sides are snapshot values. Null when fewer than 2 snapshots exist this year —
-   * the first snapshot of the year is always the baseline, never counted as movement.
+   * Year-to-date deltas measured FROM the baseline (earliest meaningful this-year
+   * snapshot) — never from zero. Behavior:
+   *   • 0 snapshots  → null (insufficient data / setup prompt)
+   *   • baseline only → $0.00 (no measured change since setup)
+   *   • 2+ snapshots → latest minus baseline
    */
   ytdDeltas = computed<MovementDeltas | null>(() => {
-    const base = this._ytdBaseSnapshot();
-    const end  = this._ytdEndSnapshot();
-    if (!base || !end) return null;
+    const snaps = this._ytdCandidates();           // newest-first, meaningful this year
+    if (snaps.length === 0) return null;
+    if (snaps.length === 1) return { nw: 0, assets: 0, liabs: 0 };
+    const end  = snaps[0];
+    const base = snaps[snaps.length - 1];
     return {
       nw:     end.netWorth          - base.netWorth,
       assets: end.totalAssets       - base.totalAssets,
@@ -561,6 +547,44 @@ export class DashboardComponent implements OnInit {
   }
 
   dismissUpgradeModal() { this.showUpgradeModal.set(false); }
+
+  // ── Setup Complete workflow ────────────────────────────────────────────────
+  readonly setupComplete = computed(() => !!this.auth.currentUser()?.setupCompletedAt);
+  /** Prompt to finish setup: not yet completed, but the user has entered some data. */
+  readonly showSetupPrompt = computed(() =>
+    !this.setupComplete() && this.itemsTracked() > 0 && !this.loading()
+  );
+  completingSetup = signal(false);
+
+  completeSetup() {
+    if (this.completingSetup()) return;
+    this.completingSetup.set(true);
+    const finish = () => {
+      this.http.post<MeResponse>(`${this.base}/profile/complete-setup`, {}).subscribe({
+        next: me => {
+          this.auth.updateCachedUser(me);
+          this.completingSetup.set(false);
+          this.toast.success('Your starting financial picture has been saved. Future snapshots will measure your progress from this baseline.');
+        },
+        error: () => { this.completingSetup.set(false); this.showError('Could not complete setup. Please try again.'); }
+      });
+    };
+    // Ensure a baseline snapshot exists (the backend marks the first one as baseline).
+    if (this.snapshots().length === 0) {
+      const lineItems = this.accounts().map(a => ({
+        accountId: a.id, name: a.name, category: a.category, group: a.group, type: a.type, value: a.value,
+      }));
+      this.svc.createSnapshot({
+        netWorth: this.netWorth(), totalAssets: this.totalAssets(),
+        totalLiabilities: this.totalLiabilities(), cashPosition: this.liquidityPosition(), lineItems,
+      }).subscribe({
+        next: s => { this.snapshots.update(list => [s, ...list]); finish(); },
+        error: () => { this.completingSetup.set(false); this.showError('Could not create your baseline snapshot. Please try again.'); }
+      });
+    } else {
+      finish();
+    }
+  }
 
   // ── Formatting ───────────────────────────────────────────────────────────
   formatCurrency(v: number) {

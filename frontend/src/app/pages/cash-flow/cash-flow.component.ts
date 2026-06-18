@@ -8,11 +8,16 @@ import { NumericDirective } from '../../directives/numeric.directive';
 import { AuthService } from '../../services/auth.service';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
 
-const TARGETS_KEY        = 'clarity_budget_targets';
-const K401_KEY           = 'clarity_401k_pct';
 const SECOND_INC_KEY     = 'clarity_second_income';
 const SECOND_INC_EN_KEY  = 'clarity_second_income_enabled';
-const K401_2_KEY         = 'clarity_401k_pct_2';
+const RETIREMENT_KEY     = 'clarity_retirement';      // monthly $ amounts
+const LEGACY_401K_KEY    = 'clarity_401k_pct';        // old % of primary gross
+const LEGACY_401K_2_KEY  = 'clarity_401k_pct_2';      // old % of second gross
+
+interface RetirementContributions {
+  trad401k: number; roth401k: number; tradIra: number; rothIra: number; employerMatch: number;
+}
+const EMPTY_RETIREMENT: RetirementContributions = { trad401k: 0, roth401k: 0, tradIra: 0, rothIra: 0, employerMatch: 0 };
 
 @Component({
   selector: 'app-cash-flow',
@@ -40,26 +45,25 @@ export class CashFlowComponent implements OnInit {
   budgetItems = signal<BudgetItem[]>([]);
   loading     = signal(true);
   showAnnual  = signal(false);    // monthly ↔ annual toggle
-  editingTarget = signal<string | null>(null);  // which group target is being edited
 
-  // 401(k) — informational only, stored in localStorage, NOT subtracted from FCF
-  retirement401kPct = signal(parseFloat(localStorage.getItem(K401_KEY) ?? '0') || 0);
-  retirement401kAmt = computed(() => this.primaryGrossIncome() * this.retirement401kPct() / 100);
+  // ── Retirement contributions (monthly $; informational, NOT subtracted from FCF) ──
+  retirement = signal<RetirementContributions>(this._loadRetirement());
+  /** Employee contributions only (excludes employer match) — these are the user's own savings. */
+  employeeRetirement = computed(() => {
+    const r = this.retirement();
+    return r.trad401k + r.roth401k + r.tradIra + r.rothIra;
+  });
+  /** Total retirement savings = employee contributions + employer match. */
+  totalRetirementSavings = computed(() => this.employeeRetirement() + this.retirement().employerMatch);
 
   // ── Second Income (spousal / partner) ─────────────────────────────────────
   secondIncomeEnabled = signal<boolean>(localStorage.getItem(SECOND_INC_EN_KEY) === '1');
   secondIncome        = signal<{ gross: number; net: number }>(
     JSON.parse(localStorage.getItem(SECOND_INC_KEY) ?? '{"gross":0,"net":0}')
   );
-  retirement401kPct2 = signal(parseFloat(localStorage.getItem(K401_2_KEY) ?? '0') || 0);
-  retirement401kAmt2 = computed(() => this.secondIncome().gross * this.retirement401kPct2() / 100);
 
   // 50/30/20 — collapsed by default
   show503020 = signal(false);
-
-  // Per-group budget targets stored in localStorage
-  private _savedTargets: Record<string, number> = JSON.parse(localStorage.getItem(TARGETS_KEY) ?? '{}');
-  groupTargets = signal<Record<string, number>>(this._savedTargets);
 
   expandedGroups = signal<Set<string>>(this._loadGroupState());
 
@@ -117,11 +121,8 @@ export class CashFlowComponent implements OnInit {
   dispVariable = computed(() => this.totalVariable() * this.mult());
   dispDebt     = computed(() => this.totalDebt() * this.mult());
 
-  // Annual savings total — always annualized, includes 401k estimate(s) when entered
-  annualSavingsTotal = computed(() => {
-    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
-    return (this.totalSavings() + k401Total) * 12;
-  });
+  // Annual savings total — always annualized, includes retirement contributions + match
+  annualSavingsTotal = computed(() => (this.totalSavings() + this.totalRetirementSavings()) * 12);
 
   // Insights collapse toggle — show first item by default
   showAllInsights = signal(false);
@@ -131,9 +132,9 @@ export class CashFlowComponent implements OnInit {
   // When 401k is entered: include it and compare against gross (pre-tax basis).
   // When no 401k entered: compare budget savings against net income (take-home basis).
   savingsRate = computed(() => {
-    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
-    if (k401Total > 0 && this.grossIncome() > 0) {
-      return (this.totalSavings() + k401Total) / this.grossIncome();
+    const ret = this.totalRetirementSavings();
+    if (ret > 0 && this.grossIncome() > 0) {
+      return (this.totalSavings() + ret) / this.grossIncome();
     }
     return this.netIncome() > 0 ? this.totalSavings() / this.netIncome() : 0;
   });
@@ -152,12 +153,11 @@ export class CashFlowComponent implements OnInit {
   wantsRatio  = computed(() => this.grossIncome() > 0 ? this.totalVariable() / this.grossIncome() : 0);
   savingsPct = computed(() => {
     if (this.grossIncome() === 0) return 0;
-    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
-    return (this.totalSavings() + k401Total) / this.grossIncome();
+    return (this.totalSavings() + this.totalRetirementSavings()) / this.grossIncome();
   });
 
   benchmark503020 = computed(() => {
-    const k401Total = this.retirement401kAmt() + (this.secondIncomeEnabled() ? this.retirement401kAmt2() : 0);
+    const k401Total = this.totalRetirementSavings();
     return [
       {
         label: 'Needs', actual: this.needsRatio(), target: 0.50,
@@ -175,7 +175,7 @@ export class CashFlowComponent implements OnInit {
         label: 'Savings', actual: this.savingsPct(), target: 0.20,
         value: this.totalSavings(), color: '#1D9E75',
         status: this.savingsPct() >= 0.20 ? 'good' : this.savingsPct() >= 0.10 ? 'caution' : 'over',
-        detail: k401Total > 0 ? 'Savings + 401(k) contributions' : 'Savings & investments'
+        detail: k401Total > 0 ? 'Savings + retirement (incl. match)' : 'Savings & investments'
       },
     ];
   });
@@ -228,33 +228,55 @@ export class CashFlowComponent implements OnInit {
     return msgs;
   });
 
-  // ── Budget targets ────────────────────────────────────────────────────────
-  getTarget(group: string): number { return this.groupTargets()[group] ?? 0; }
+  // ── Per-item Variable budgets ───────────────────────────────────────────────
+  // Budgets are planning values for Variable expenses only. Never an actual expense.
+  itemHasBudget(item: BudgetItem): boolean { return item.budget != null && item.budget > 0; }
+  /** Remaining (positive) or over-budget (negative) for an item with a budget. */
+  itemRemaining(item: BudgetItem): number { return (item.budget ?? 0) - item.amount; }
+  itemOver(item: BudgetItem): boolean { return this.itemHasBudget(item) && item.amount > (item.budget ?? 0); }
+  /** Percentage of budget used (0–…); guarded against divide-by-zero. */
+  itemPctUsed(item: BudgetItem): number {
+    if (!this.itemHasBudget(item)) return 0;
+    return item.amount / (item.budget ?? 1);
+  }
 
-  setTarget(group: string, val: string) {
+  // ── Retirement helpers ────────────────────────────────────────────────────
+  private _loadRetirement(): RetirementContributions {
+    try {
+      const raw = localStorage.getItem(RETIREMENT_KEY);
+      if (raw) return { ...EMPTY_RETIREMENT, ...JSON.parse(raw) };
+    } catch { /* ignore */ }
+    return { ...EMPTY_RETIREMENT };
+  }
+  updateRetirement(field: keyof RetirementContributions, val: string) {
     const n = Math.max(0, parseFloat(val) || 0);
-    const updated = { ...this.groupTargets(), [group]: n };
-    this.groupTargets.set(updated);
-    localStorage.setItem(TARGETS_KEY, JSON.stringify(updated));
-    this.editingTarget.set(null);
+    const updated = { ...this.retirement(), [field]: n };
+    this.retirement.set(updated);
+    localStorage.setItem(RETIREMENT_KEY, JSON.stringify(updated));
   }
-
-  targetProgress(group: string): number {
-    const target = this.getTarget(group);
-    if (!target) return 0;
-    return Math.min(this.sumGroup(group as BudgetGroup) / target, 1);
-  }
-
-  targetOver(group: string): boolean {
-    const t = this.getTarget(group);
-    return t > 0 && this.sumGroup(group as BudgetGroup) > t;
+  /** One-time migration: convert legacy 401k % (primary + second) into a monthly $ Traditional 401(k). */
+  private _migrateLegacyRetirement() {
+    if (localStorage.getItem(RETIREMENT_KEY)) return;             // already on new model
+    const pct1 = parseFloat(localStorage.getItem(LEGACY_401K_KEY) ?? '0') || 0;
+    const pct2 = parseFloat(localStorage.getItem(LEGACY_401K_2_KEY) ?? '0') || 0;
+    if (pct1 === 0 && pct2 === 0) return;
+    const dollars = this.primaryGrossIncome() * pct1 / 100
+                  + (this.secondIncomeEnabled() ? this.secondIncome().gross * pct2 / 100 : 0);
+    const migrated = { ...EMPTY_RETIREMENT, trad401k: Math.round(dollars) };
+    this.retirement.set(migrated);
+    localStorage.setItem(RETIREMENT_KEY, JSON.stringify(migrated));
+    localStorage.removeItem(LEGACY_401K_KEY);
+    localStorage.removeItem(LEGACY_401K_2_KEY);
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
     let pending = 2;
     const done = () => { if (--pending === 0) this.loading.set(false); };
-    this.svc.getIncome().subscribe({ next: i => { this.income.set(i); done(); }, error: done });
+    this.svc.getIncome().subscribe({
+      next: i => { this.income.set(i); this._migrateLegacyRetirement(); done(); },
+      error: done,
+    });
     this.svc.getBudget().subscribe({ next: b => { this.budgetItems.set(b); done(); }, error: done });
   }
 
@@ -312,12 +334,6 @@ export class CashFlowComponent implements OnInit {
   }
   saveIncome() { this.svc.updateIncome(this.income()).subscribe(); }
 
-  update401k(val: string) {
-    const pct = Math.max(0, Math.min(100, parseFloat(val) || 0));
-    this.retirement401kPct.set(pct);
-    localStorage.setItem(K401_KEY, String(pct));
-  }
-
   // ── Second Income ────────────────────────────────────────────────────────
   toggleSecondIncome() {
     const enabled = !this.secondIncomeEnabled();
@@ -334,17 +350,19 @@ export class CashFlowComponent implements OnInit {
     this.secondIncome.update(i => ({ ...i, net }));
     localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
   }
-  update401k2(val: string) {
-    const pct = Math.max(0, Math.min(100, parseFloat(val) || 0));
-    this.retirement401kPct2.set(pct);
-    localStorage.setItem(K401_2_KEY, String(pct));
-  }
 
   // ── Budget item CRUD ──────────────────────────────────────────────────────
-  updateItem(item: BudgetItem, field: 'name' | 'amount', val: string) {
+  updateItem(item: BudgetItem, field: 'name' | 'amount' | 'budget', val: string) {
     const latest = this.budgetItems().find(b => b.id === item.id) ?? item;
-    const amount = field === 'amount' ? Math.max(0, parseFloat(val) || 0) : latest.amount;
-    const updated = { ...latest, [field]: field === 'amount' ? amount : val.trim() || latest.name };
+    let updated: BudgetItem;
+    if (field === 'amount') {
+      updated = { ...latest, amount: Math.max(0, parseFloat(val) || 0) };
+    } else if (field === 'budget') {
+      const trimmed = val.trim();
+      updated = { ...latest, budget: trimmed === '' ? null : Math.max(0, parseFloat(trimmed) || 0) };
+    } else {
+      updated = { ...latest, name: val.trim() || latest.name };
+    }
     this.svc.updateBudgetItem(item.id, updated).subscribe(res =>
       this.budgetItems.update(list => list.map(b => b.id === res.id ? res : b))
     );
