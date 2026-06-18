@@ -6,6 +6,15 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    # Auto-build + upload to TestFlight on every push to main.
+    # (Requires the repo's webhook to be connected in the Codemagic UI.)
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
     environment:
       ios_signing:
         distribution_type: app_store
