@@ -50,8 +50,22 @@
 .field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #6B7280; font-weight: 600; }
 .field input {
   border: 1px solid #D1D5DB; border-radius: 8px; padding: 9px 11px; font-size: 14px; color: #111827;
-  outline: none; &:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,.1); }
+  outline: none; width: 100%; box-sizing: border-box;
+  &:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,.1); }
 }
+
+/* In-cell unit adornments ($ prefix, % / mo suffix) */
+.adorn { position: relative; display: block; }
+.adorn::before, .adorn::after {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  color: #6B7280; font-size: 14px; font-weight: 600; pointer-events: none;
+}
+.adorn-money input { padding-left: 24px; }
+.adorn-money::before { content: '$'; left: 11px; }
+.adorn-pct input { padding-right: 28px; text-align: left; }
+.adorn-pct::after { content: '%'; right: 11px; }
+.adorn-mo input { padding-right: 34px; }
+.adorn-mo::after { content: 'mo'; right: 11px; font-size: 13px; }
 .calc-payment {
   display: flex; align-items: center; justify-content: space-between;
   background: #F9FAFB; border-radius: 10px; padding: 12px 14px; margin: 14px 0 8px;

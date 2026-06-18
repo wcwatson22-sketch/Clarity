@@ -57,11 +57,16 @@
       <h2 class="li-h2">Proposed Loan</h2>
       <div class="field-grid">
         <label class="field"><span>Loan amount</span>
-          <input appNumeric inputmode="decimal" [value]="amount() || ''" (input)="amount.set(+$any($event.target).value || 0)" placeholder="0" /></label>
-        <label class="field"><span>Interest rate (%)</span>
-          <input appNumeric="decimal" inputmode="decimal" [value]="rate() || ''" (input)="rate.set(+$any($event.target).value || 0)" placeholder="0.0" /></label>
-        <label class="field"><span>Term (months)</span>
-          <input appNumeric="integer" inputmode="numeric" [value]="term() || ''" (input)="term.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <span class="adorn adorn-money">
+            <input appNumeric inputmode="decimal" [value]="amountDisplay()"
+              (input)="onAmountInput($any($event.target).value)" (focus)="onAmountFocus()" (blur)="onAmountBlur()"
+              placeholder="0" /></span></label>
+        <label class="field"><span>Interest rate</span>
+          <span class="adorn adorn-pct">
+            <input appNumeric="decimal" inputmode="decimal" [value]="rate() || ''" (input)="rate.set(+$any($event.target).value || 0)" placeholder="0.0" /></span></label>
+        <label class="field"><span>Term</span>
+          <span class="adorn adorn-mo">
+            <input appNumeric="integer" inputmode="numeric" [value]="term() || ''" (input)="term.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
       </div>
 
       <div class="calc-payment">
@@ -75,19 +80,19 @@
       </label>
       @if (overridePayment()) {
         <label class="field"><span>User-entered estimated payment</span>
-          <input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="manualPayment.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="manualPayment.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
         <p class="hint">Labeled as a user-entered estimated payment in your results.</p>
       }
 
-      <!-- Mortgage housing extras -->
-      @if (isMortgage()) {
+      <!-- Housing extras (mortgage + rental property) -->
+      @if (isHousing()) {
         <h3 class="li-h3">Additional monthly housing costs (optional)</h3>
         <div class="field-grid">
-          <label class="field"><span>Property taxes</span><input appNumeric inputmode="decimal" [value]="taxes() || ''" (input)="taxes.set(+$any($event.target).value || 0)" placeholder="0" /></label>
-          <label class="field"><span>Homeowners insurance</span><input appNumeric inputmode="decimal" [value]="insurance() || ''" (input)="insurance.set(+$any($event.target).value || 0)" placeholder="0" /></label>
-          <label class="field"><span>HOA dues</span><input appNumeric inputmode="decimal" [value]="hoa() || ''" (input)="hoa.set(+$any($event.target).value || 0)" placeholder="0" /></label>
-          <label class="field"><span>Mortgage insurance</span><input appNumeric inputmode="decimal" [value]="mortgageIns() || ''" (input)="mortgageIns.set(+$any($event.target).value || 0)" placeholder="0" /></label>
-          <label class="field"><span>Other housing costs</span><input appNumeric inputmode="decimal" [value]="otherHousing() || ''" (input)="otherHousing.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <label class="field"><span>Property taxes</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="taxes() || ''" (input)="taxes.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          <label class="field"><span>{{ category() === 'rental' ? 'Landlord insurance' : 'Homeowners insurance' }}</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="insurance() || ''" (input)="insurance.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          <label class="field"><span>HOA dues</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="hoa() || ''" (input)="hoa.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          <label class="field"><span>Mortgage insurance</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="mortgageIns() || ''" (input)="mortgageIns.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          <label class="field"><span>Other housing costs</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="otherHousing() || ''" (input)="otherHousing.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
         </div>
       }
     </div>
@@ -101,7 +106,7 @@
       </label>
       @if (replaces()) {
         <label class="field"><span>Monthly payment being eliminated</span>
-          <input appNumeric inputmode="decimal" [value]="replacedPayment() || ''" (input)="replacedPayment.set(+$any($event.target).value || 0)" placeholder="0" /></label>
+          <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="replacedPayment() || ''" (input)="replacedPayment.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
         @if (replacementWarning()) { <p class="warn-text">⚠️ {{ replacementWarning() }}</p> }
         <p class="hint">This is a scenario only — your saved Cash Flow debts are never changed.</p>
       }
@@ -127,9 +132,9 @@
           @if (effectiveReplaced() > 0) { <span class="rcard-line">Payment removed <b>{{ fmt(effectiveReplaced()) }}</b></span> }
           <span class="rcard-line">DTI change <b>{{ pts(dtiChangePts()) }}</b></span>
         </div>
-        @if (isMortgage()) {
+        @if (isHousing()) {
           <div class="rcard">
-            <span class="rcard-h">Housing (mortgage)</span>
+            <span class="rcard-h">{{ category() === 'rental' ? 'Housing (rental)' : 'Housing (mortgage)' }}</span>
             <span class="rcard-line">Total housing payment <b>{{ fmt(totalHousingPayment()) }}</b></span>
             <span class="rcard-line">Housing ratio <b>{{ pct(housingRatioVal()) }}</b></span>
             <span class="rcard-line">Projected total DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
@@ -145,7 +150,7 @@
           ({{ pts(dtiChangePts()) }}).
         </p>
         @if (dtiBand(); as b) { <p class="band band-{{ b.tone }}">{{ b.label }}.</p> }
-        @if (isMortgage() && housingBand(); as hb) { <p class="band band-{{ hb.tone }}">Housing ratio: {{ hb.label }}.</p> }
+        @if (isHousing() && housingBand(); as hb) { <p class="band band-{{ hb.tone }}">Housing ratio: {{ hb.label }}.</p> }
       }
 
       <!-- Required disclaimer (always visible on results) -->

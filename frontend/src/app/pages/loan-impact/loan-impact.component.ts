@@ -56,6 +56,7 @@ export class LoanImpactComponent implements OnInit {
   // ── Proposed-loan inputs ────────────────────────────────────────────────────
   readonly loanTypes: { id: LoanCategory; label: string; emoji: string }[] = [
     { id: 'mortgage', label: 'Mortgage',        emoji: '🏠' },
+    { id: 'rental',   label: 'Rental Property', emoji: '🏘️' },
     { id: 'auto',     label: 'Auto Loan',       emoji: '🚗' },
     { id: 'personal', label: 'Personal Loan',   emoji: '💼' },
     { id: 'student',  label: 'Student Loan',    emoji: '🎓' },
@@ -78,7 +79,8 @@ export class LoanImpactComponent implements OnInit {
   replaces        = signal(false);
   replacedPayment = signal(0);
 
-  readonly isMortgage = computed(() => this.category() === 'mortgage');
+  /** Mortgage and Rental Property both use housing extras + a housing ratio. */
+  readonly isHousing = computed(() => this.category() === 'mortgage' || this.category() === 'rental');
 
   /** Calculated principal & interest (or the user override). */
   readonly piPayment = computed(() =>
@@ -92,7 +94,7 @@ export class LoanImpactComponent implements OnInit {
 
   /** Total proposed payment added to debt: P&I (+ housing extras for a mortgage). */
   readonly proposedPayment = computed(() =>
-    this.piPayment() + (this.isMortgage() ? housingExtrasTotal(this.housingExtras()) : 0));
+    this.piPayment() + (this.isHousing() ? housingExtrasTotal(this.housingExtras()) : 0));
 
   readonly totalHousingPayment = this.proposedPayment; // for mortgage display
 
@@ -113,7 +115,7 @@ export class LoanImpactComponent implements OnInit {
   });
 
   readonly housingRatioVal = computed(() =>
-    this.isMortgage() ? housingRatio(this.totalHousingPayment(), this.grossIncome()) : null);
+    this.isHousing() ? housingRatio(this.totalHousingPayment(), this.grossIncome()) : null);
 
   readonly dtiBand = computed(() => {
     const p = this.projectedDtiVal();
@@ -151,8 +153,18 @@ export class LoanImpactComponent implements OnInit {
   selectType(c: LoanCategory) {
     this.category.set(c);
     // Sensible default terms per category (months)
-    this.term.set(c === 'mortgage' ? 360 : c === 'auto' ? 60 : c === 'student' ? 120 : 60);
+    this.term.set(c === 'mortgage' || c === 'rental' ? 360 : c === 'auto' ? 60 : c === 'student' ? 120 : 60);
   }
+
+  // ── Loan-amount display: grouped with commas when not being edited ──────────
+  amountDisplay = signal('');
+  onAmountInput(v: string) {
+    const raw = v.replace(/[^0-9.]/g, '');
+    this.amount.set(+raw || 0);
+    this.amountDisplay.set(raw);                 // no commas while typing
+  }
+  onAmountFocus() { this.amountDisplay.set(this.amount() ? String(this.amount()) : ''); }
+  onAmountBlur()  { this.amountDisplay.set(this.amount() ? this.amount().toLocaleString('en-US', { maximumFractionDigits: 0 }) : ''); }
 
   saveScenario() {
     if (!this.canCompute() || this.projectedDtiVal() === null) return;

@@ -9,7 +9,7 @@
 // credit decision, or lending commitment.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type LoanCategory = 'mortgage' | 'auto' | 'personal' | 'student' | 'other';
+export type LoanCategory = 'mortgage' | 'rental' | 'auto' | 'personal' | 'student' | 'other';
 
 /** Standard amortized monthly principal & interest payment. */
 export function monthlyPayment(principal: number, annualRatePct: number, termMonths: number): number {
@@ -73,6 +73,11 @@ export const REFERENCE_RANGES: Record<LoanCategory, RangeBand[]> = {
   mortgage: [
     { upTo: 0.36, label: 'Within a commonly referenced range (lower debt burden)', tone: 'lower' },
     { upTo: 0.43, label: 'Within a commonly referenced range', tone: 'moderate' },
+    { upTo: null, label: 'Above a commonly referenced range — review with a lender', tone: 'higher' },
+  ],
+  rental: [
+    { upTo: 0.36, label: 'Within a commonly referenced range (lower debt burden)', tone: 'lower' },
+    { upTo: 0.45, label: 'Within a commonly referenced range', tone: 'moderate' },
     { upTo: null, label: 'Above a commonly referenced range — review with a lender', tone: 'higher' },
   ],
   auto: [
