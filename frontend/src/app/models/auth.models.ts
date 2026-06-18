@@ -21,14 +21,15 @@ export interface MeResponse {
   state: string;
   city: string;
   age: number;
-  tier: 'Base' | 'Premium';
+  tier: 'Free' | 'Base' | 'Premium';
   emailVerified: boolean;
   hasSeenOnboarding: boolean;
   isAdmin: boolean;
   anonymousId: string;
-  trialEndsAt: string;       // ISO date string
-  isPaid: boolean;           // true when an active Stripe subscription exists
+  trialEndsAt: string;       // ISO date string (legacy; no longer gates access)
+  isPaid: boolean;           // true when an active Stripe or Apple subscription exists
   hasAcceptedTerms: boolean; // true once user has accepted Privacy Policy + ToS
+  setupCompletedAt?: string | null; // ISO date; set once initial financial setup is done
 }
 
 export interface AuthResponse {

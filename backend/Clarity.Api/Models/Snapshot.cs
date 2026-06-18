@@ -21,5 +21,9 @@ public class Snapshot
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<SnapshotLineItem> LineItems { get; set; } = [];
 
+    // True for the user's starting-baseline snapshot. YTD/MoM movement is measured
+    // FROM this point — never from zero. The first snapshot a user saves is the baseline.
+    public bool IsInitialBaseline { get; set; }
+
     public User? User { get; set; }
 }

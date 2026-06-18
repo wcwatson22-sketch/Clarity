@@ -295,7 +295,8 @@ public class AuthController(
         new(u.Id, u.Username, u.FirstName, u.Email, u.State, u.City, u.Age, u.Tier.ToString(),
             u.EmailVerified, u.HasSeenOnboarding, u.IsAdmin, u.AnonymousId, u.TrialEndsAt,
             IsPaid: u.StripeSubscriptionId != null || u.AppleOriginalTransactionId != null,
-            HasAcceptedTerms: u.HasAcceptedTerms);
+            HasAcceptedTerms: u.HasAcceptedTerms,
+            SetupCompletedAt: u.SetupCompletedAt);
 
     private static string GenerateToken(int bytes) =>
         Convert.ToHexString(RandomNumberGenerator.GetBytes(bytes)).ToLowerInvariant();

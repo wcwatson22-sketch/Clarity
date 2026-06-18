@@ -31,6 +31,10 @@ public class SnapshotsController(AppDbContext db) : ControllerBase
         snapshot.Id = Guid.NewGuid().ToString();
         snapshot.UserId = UserId;
         snapshot.CreatedAt = DateTime.UtcNow;
+        // The user's very first snapshot is their starting baseline — movement is
+        // measured from here, never from zero.
+        var hasAny = await db.Snapshots.AnyAsync(s => s.UserId == UserId);
+        snapshot.IsInitialBaseline = !hasAny;
         db.Snapshots.Add(snapshot);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), snapshot);

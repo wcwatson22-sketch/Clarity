@@ -288,6 +288,12 @@ try
             "ALTER TABLE Users ADD COLUMN LastActiveAt TEXT NULL",
             "ALTER TABLE Users ADD COLUMN TrialEndedEmailSentAt TEXT NULL",
             "ALTER TABLE Users ADD COLUMN InactiveEmailLastSentAt TEXT NULL",
+            // Phase 1: per-item variable budgets, baseline snapshot, setup completion.
+            // SQLite stores decimal as TEXT. All additive and nullable — non-destructive.
+            "ALTER TABLE BudgetItems ADD COLUMN Budget TEXT NULL",
+            "ALTER TABLE BudgetItems ADD COLUMN Category TEXT NULL",
+            "ALTER TABLE Snapshots ADD COLUMN IsInitialBaseline INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE Users ADD COLUMN SetupCompletedAt TEXT NULL",
         })
         {
             try
@@ -298,6 +304,20 @@ try
             }
             catch { /* column already exists */ }
         }
+
+        // Phase 1: mark each user's earliest snapshot as their baseline if none is set
+        // yet. Non-destructive — only flips a 0 default to 1 for the oldest row per user.
+        try
+        {
+            using var baselineCmd = conn.CreateCommand();
+            baselineCmd.CommandText =
+                "UPDATE Snapshots SET IsInitialBaseline = 1 WHERE Id IN (" +
+                "  SELECT s.Id FROM Snapshots s " +
+                "  WHERE s.CreatedAt = (SELECT MIN(s2.CreatedAt) FROM Snapshots s2 WHERE s2.UserId = s.UserId) " +
+                ") AND UserId NOT IN (SELECT UserId FROM Snapshots WHERE IsInitialBaseline = 1)";
+            await baselineCmd.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex) { Log.Warning(ex, "Baseline snapshot backfill skipped"); }
 
         // Back-fill AnonymousId for existing users who don't have one yet
         var usersWithoutId = ctx.Users.Where(u => u.AnonymousId == "").ToList();

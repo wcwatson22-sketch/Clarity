@@ -28,6 +28,7 @@ export interface Snapshot {
   totalLiabilities: number;
   cashPosition: number;
   createdAt: string;
+  isInitialBaseline?: boolean;
   lineItems?: SnapshotLineItem[];
 }
 
@@ -36,6 +37,9 @@ export interface BudgetItem {
   group: BudgetGroup;
   name: string;
   amount: number;
+  /** Per-item monthly budget (Variable expenses only). null/undefined = no budget set. */
+  budget?: number | null;
+  category?: string | null;
 }
 
 export interface VariableMonth {

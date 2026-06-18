@@ -24,6 +24,8 @@ public class User
     public DateTime TrialEndsAt { get; set; } = DateTime.UtcNow.AddDays(14);
     public DateTime? LastLoginAt { get; set; }
     public DateTime? DeletionNoticeSentAt { get; set; }
+    /// <summary>Set once when the user finishes initial financial setup; their baseline snapshot exists from this point.</summary>
+    public DateTime? SetupCompletedAt { get; set; }
 
     // ── Activity & lifecycle email tracking ───────────────────────────────────
     /// <summary>Updated (max once per hour) on any authenticated API request.</summary>

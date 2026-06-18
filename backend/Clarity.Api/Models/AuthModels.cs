@@ -35,7 +35,8 @@ public record MeResponse(
     string AnonymousId,
     DateTime TrialEndsAt,
     bool IsPaid,             // true when user has an active Stripe or Apple IAP subscription
-    bool HasAcceptedTerms    // true once user has accepted Privacy Policy + ToS
+    bool HasAcceptedTerms,   // true once user has accepted Privacy Policy + ToS
+    DateTime? SetupCompletedAt  // set once the user finishes initial financial setup (null = not yet)
 );
 
 public record ForgotPasswordRequest(string Email);

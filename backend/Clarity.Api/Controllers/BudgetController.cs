@@ -23,6 +23,7 @@ public class BudgetController(AppDbContext db) : ControllerBase
     {
         item.Id = Guid.NewGuid().ToString();
         item.UserId = UserId;
+        if (item.Group != BudgetGroup.Variable) item.Budget = null;  // budgets are Variable-only
         db.BudgetItems.Add(item);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), item);
@@ -36,6 +37,10 @@ public class BudgetController(AppDbContext db) : ControllerBase
         existing.Name = item.Name;
         existing.Amount = item.Amount;
         existing.Group = item.Group;
+        // Per-item budget applies to Variable expenses only; clear it for other groups
+        // so a budget can never linger on a Fixed/Debt/Savings item.
+        existing.Budget = item.Group == BudgetGroup.Variable ? item.Budget : null;
+        existing.Category = item.Category;
         await db.SaveChangesAsync();
         return Ok(existing);
     }

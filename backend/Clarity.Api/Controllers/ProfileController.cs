@@ -37,7 +37,20 @@ public class ProfileController(AppDbContext db, IConfiguration config) : Control
         user.Age = req.Age;
         await db.SaveChangesAsync();
 
-        return Ok(new MeResponse(user.Id, user.Username, user.FirstName, user.Email, user.State, user.City, user.Age, user.Tier.ToString(), user.EmailVerified, user.HasSeenOnboarding, user.IsAdmin, user.AnonymousId, user.TrialEndsAt, IsPaid: user.StripeSubscriptionId != null, HasAcceptedTerms: user.HasAcceptedTerms));
+        return Ok(new MeResponse(user.Id, user.Username, user.FirstName, user.Email, user.State, user.City, user.Age, user.Tier.ToString(), user.EmailVerified, user.HasSeenOnboarding, user.IsAdmin, user.AnonymousId, user.TrialEndsAt, IsPaid: user.StripeSubscriptionId != null || user.AppleOriginalTransactionId != null, HasAcceptedTerms: user.HasAcceptedTerms, SetupCompletedAt: user.SetupCompletedAt));
+    }
+
+    // ── Complete Financial Setup ───────────────────────────────────────────────
+    // Marks the user's starting baseline. Idempotent — does not overwrite an
+    // existing completion timestamp.
+    [HttpPost("complete-setup")]
+    public async Task<IActionResult> CompleteSetup()
+    {
+        var user = await db.Users.FindAsync(UserId);
+        if (user is null) return Unauthorized();
+        user.SetupCompletedAt ??= DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return Ok(new MeResponse(user.Id, user.Username, user.FirstName, user.Email, user.State, user.City, user.Age, user.Tier.ToString(), user.EmailVerified, user.HasSeenOnboarding, user.IsAdmin, user.AnonymousId, user.TrialEndsAt, IsPaid: user.StripeSubscriptionId != null || user.AppleOriginalTransactionId != null, HasAcceptedTerms: user.HasAcceptedTerms, SetupCompletedAt: user.SetupCompletedAt));
     }
 
     [HttpPost("change-password")]
