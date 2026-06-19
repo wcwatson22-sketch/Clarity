@@ -86,7 +86,11 @@
           "options": {
             "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
-            "assets": ["src/favicon.ico", "src/assets"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets",
+              { "glob": "**/*", "input": "src/icons", "output": "icons" }
+            ],
             "styles": ["src/styles.scss"],
             "scripts": []
           }
