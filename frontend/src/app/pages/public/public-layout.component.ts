@@ -13,7 +13,8 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
-    <div class="pub">
+    <div class="pub" (keydown.escape)="menuOpen.set(false)">
+      <a class="skip-link" href="#main-content">Skip to content</a>
       <header class="pub-header">
         <a routerLink="/" class="pub-brand" (click)="menuOpen.set(false)">
           <img src="icons/logo.png" alt="Clarity Financial Tools" class="pub-logo" />
@@ -36,7 +37,7 @@ import { AuthService } from '../../services/auth.service';
         </button>
       </header>
 
-      <main class="pub-main"><router-outlet /></main>
+      <main id="main-content" class="pub-main" tabindex="-1"><router-outlet /></main>
 
       <footer class="pub-footer">
         <div class="pub-footer-inner">
@@ -59,6 +60,16 @@ import { AuthService } from '../../services/auth.service';
   `,
   styles: [`
     .pub { --g: #1D9E75; --ink: #111827; --muted: #6B7280; --line: #E5E7EB; color: var(--ink); }
+    .pub-main:focus { outline: none; }
+    .skip-link {
+      position: absolute; left: 12px; top: -48px; z-index: 100;
+      background: #1D9E75; color: #fff; padding: 10px 16px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; text-decoration: none; transition: top .15s;
+    }
+    .skip-link:focus { top: 12px; }
+    @media (prefers-reduced-motion: reduce) {
+      .pub *, .pub *::before, .pub *::after { transition: none !important; animation: none !important; }
+    }
     .pub-header {
       position: sticky; top: 0; z-index: 50; display: flex; align-items: center;
       justify-content: space-between; gap: 16px; padding: 14px 24px; background: rgba(255,255,255,0.92);

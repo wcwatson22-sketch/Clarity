@@ -11,6 +11,7 @@ import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './services/auth.service';
 import { PlanAccessService } from './services/plan-access.service';
+import { SeoService } from './services/seo.service';
 import { LockService } from './services/lock.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { ToastComponent } from './components/toast/toast.component';
@@ -591,6 +592,7 @@ import { environment } from '../environments/environment';
 })
 export class AppComponent {
   private sanitizer = inject(DomSanitizer);
+  private seo       = inject(SeoService);
   readonly auth     = inject(AuthService);
   readonly plan     = inject(PlanAccessService);
   readonly lockSvc  = inject(LockService);
@@ -819,6 +821,18 @@ export class AppComponent {
       find('/real-estate'),
       { path: '/pfs', label: 'PFS', icon: pfsIcon },
     ];
+
+    // Per-route SEO: update description / canonical / OG on each navigation.
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
+      let r = this.router.routerState.root;
+      while (r.firstChild) r = r.firstChild;
+      const snap = r.snapshot;
+      this.seo.update({
+        title: typeof snap.title === 'string' ? snap.title : undefined,
+        description: snap.data?.['description'],
+        path: (e as NavigationEnd).urlAfterRedirects,
+      });
+    });
 
     // Refresh user data from server on every app load so emailVerified,
     // tier, trialEndsAt etc. are never served from a stale localStorage cache

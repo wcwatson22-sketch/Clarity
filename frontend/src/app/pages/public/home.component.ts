@@ -25,6 +25,7 @@ import { AuthService } from '../../services/auth.service';
     <!-- Core benefits -->
     <section class="band">
       <div class="wrap">
+        <h2 class="sr-only">What you can do with Clarity</h2>
         <div class="grid grid-2">
           <div class="card"><h3>Understand your cash flow</h3><p>Track household income, fixed expenses, variable spending with per-item budgets, debt payments, and savings.</p></div>
           <div class="card"><h3>See your full financial position</h3><p>Monitor assets, liabilities, net worth, and DTI — and watch your progress over time with snapshots.</p></div>
@@ -63,7 +64,7 @@ import { AuthService } from '../../services/auth.service';
             </ul>
           </div>
         </div>
-        <p class="center"><a routerLink="/pricing" class="link">Compare plans in detail →</a></p>
+        <p class="center"><a routerLink="/pricing" class="link">See full plan details →</a></p>
       </div>
     </section>
 
@@ -100,6 +101,7 @@ import { AuthService } from '../../services/auth.service';
   styles: [`
     :host { --g:#1D9E75; --ink:#111827; --muted:#6B7280; --line:#E5E7EB; display:block; }
     h1,h2,h3,h4 { color: var(--ink); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
     .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
     .band { background: #F7FAF9; padding: 64px 0; margin-top: 8px; }
     .grid { display: grid; gap: 18px; }
