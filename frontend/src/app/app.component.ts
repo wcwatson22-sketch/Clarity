@@ -32,13 +32,13 @@ import { environment } from '../environments/environment';
     }
 
     <!-- Lock screen — shown on every native app launch / foreground; never on web -->
-    @if (lockSvc.locked() && auth.isLoggedIn() && !isAuthPage()) {
+    @if (lockSvc.locked() && auth.isLoggedIn() && !chromeless()) {
       <app-lock-screen />
     }
 
-    <div class="app-shell" [class.auth-layout]="isAuthPage()">
+    <div class="app-shell" [class.auth-layout]="chromeless()">
 
-      @if (!isAuthPage()) {
+      @if (!chromeless()) {
         <!-- Sidebar nav (desktop) -->
         <nav class="sidebar">
           <div class="sidebar-brand">
@@ -135,8 +135,8 @@ import { environment } from '../environments/environment';
       }
 
       <!-- Main content -->
-      <main class="main-content" [class.full-width]="isAuthPage()">
-        @if (!isAuthPage() && showVerifyBanner()) {
+      <main class="main-content" [class.full-width]="chromeless()">
+        @if (!chromeless() && showVerifyBanner()) {
           <div class="verify-banner">
             <span>📧</span>
             <span>Please verify your email address to unlock all features.
@@ -150,7 +150,7 @@ import { environment } from '../environments/environment';
         <router-outlet />
       </main>
 
-      @if (!isAuthPage()) {
+      @if (!chromeless()) {
         <!-- Bottom nav (mobile) — 4 primary free tabs + Premium Tools -->
         <nav class="bottom-nav">
           <a *ngFor="let item of primaryNavItems" [routerLink]="item.path" routerLinkActive="bottom-active" class="bottom-item">
@@ -197,7 +197,7 @@ import { environment } from '../environments/environment';
       }
 
       <!-- Install to home screen banner (mobile only) -->
-      @if (!isAuthPage()) {
+      @if (!chromeless()) {
         <app-install-banner />
       }
 
@@ -628,12 +628,23 @@ export class AppComponent {
            url.startsWith('/reset-password') || url.startsWith('/verify-email');
   });
 
+  /** Public marketing routes (home, features, pricing, about) — own header/footer. */
+  readonly isPublicPage = computed(() => {
+    const url = (this.currentUrl() ?? '').split('?')[0];
+    return url === '/' || url === '' ||
+           url.startsWith('/features') || url.startsWith('/pricing') || url.startsWith('/about');
+  });
+
+  /** True when the authenticated app chrome (sidebar, bottom nav, banners, modals)
+   *  should be hidden — i.e. on auth pages and public marketing pages. */
+  readonly chromeless = computed(() => this.isAuthPage() || this.isPublicPage());
+
   // Onboarding — show only for new users who haven't seen it yet
   private _onboardingDismissed = signal(false);
   readonly showOnboarding = computed(() =>
     !this._onboardingDismissed() &&
     this.auth.isLoggedIn() &&
-    !this.isAuthPage() &&
+    !this.chromeless() &&
     this.currentUser()?.hasSeenOnboarding === false
   );
 
@@ -642,7 +653,7 @@ export class AppComponent {
   readonly showTermsModal = computed(() =>
     !this._termsAccepted() &&
     this.auth.isLoggedIn() &&
-    !this.isAuthPage() &&
+    !this.chromeless() &&
     this.currentUser()?.hasAcceptedTerms === false
   );
 
@@ -698,7 +709,7 @@ export class AppComponent {
         !this.lockSvc.faceIdEnabled() &&
         !localStorage.getItem('clarity_faceid_prompted') &&
         this.auth.isLoggedIn() &&
-        !this.isAuthPage() &&
+        !this.chromeless() &&
         this.currentUser()?.hasSeenOnboarding === true) {
       setTimeout(() => this.showFaceIdPrompt.set(true), 1200);
     }

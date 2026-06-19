@@ -1,11 +1,23 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { webOnlyGuard } from './guards/web-only.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // ── Public marketing site (no auth; own header/footer layout) ──────────
+  {
+    path: '',
+    canActivate: [webOnlyGuard],
+    loadComponent: () => import('./pages/public/public-layout.component').then(m => m.PublicLayoutComponent),
+    children: [
+      { path: '', title: 'Clarity Financial Tools | Understand Your Full Financial Picture', loadComponent: () => import('./pages/public/home.component').then(m => m.PublicHomeComponent) },
+      { path: 'features', title: 'Features | Clarity Financial Tools', loadComponent: () => import('./pages/public/features.component').then(m => m.PublicFeaturesComponent) },
+      { path: 'pricing', title: 'Pricing | Clarity Financial Tools', loadComponent: () => import('./pages/public/pricing.component').then(m => m.PublicPricingComponent) },
+      { path: 'about', title: 'About | Clarity Financial Tools', loadComponent: () => import('./pages/public/about.component').then(m => m.PublicAboutComponent) },
+    ],
+  },
 
-  // ── Public (no auth required) ──────────────────────────────────────────
+  // ── Public auth (no auth required) ─────────────────────────────────────
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
@@ -91,5 +103,5 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/legal/privacy.component').then(m => m.PrivacyComponent)
   },
 
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: '' }
 ];
