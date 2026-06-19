@@ -29,7 +29,8 @@
               "src/manifest.webmanifest",
               "src/ngsw-worker.js",
               { "glob": "**/*", "input": "src/icons", "output": "icons" },
-              { "glob": "**/*", "input": "public/privacy", "output": "privacy" }
+              { "glob": "**/*", "input": "public/privacy", "output": "privacy" },
+              { "glob": "**/*.png", "input": "public/images", "output": "images" }
             ],
             "styles": ["src/styles.scss"],
             "scripts": []
