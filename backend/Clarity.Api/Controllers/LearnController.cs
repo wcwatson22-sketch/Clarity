@@ -26,7 +26,7 @@ public class LearnController(
     // No financial data is requested or stored. Submissions are NOT published —
     // they are emailed for manual review only.
     [HttpPost("submissions")]
-    [EnableRateLimiting("auth")]   // 10 requests/min per IP — throttles spam
+    [EnableRateLimiting("learn")]   // 3/10min per IP (+ 10/24h per IP globally)
     public async Task<IActionResult> CreateSubmission([FromBody] LearnSubmissionRequest req)
     {
         // Honeypot: bots fill hidden fields. Pretend success, send nothing.
@@ -51,11 +51,14 @@ public class LearnController(
         var emailAddr = (req.Email ?? string.Empty).Trim();
         if (name.Length > 120) name = name[..120];
         if (emailAddr.Length > 200) emailAddr = emailAddr[..200];
+        // An invalid email must never break the submission — just ignore it (no
+        // Reply-To). The frontend does friendly validation for the common case.
         if (emailAddr.Length > 0 && !new EmailAddressAttribute().IsValid(emailAddr))
-            return BadRequest(new { error = "That email address doesn't look valid. Leave it blank or correct it." });
+            emailAddr = string.Empty;
 
-        var page = (req.Page ?? string.Empty).Trim();
-        if (page.Length > 300) page = page[..300];
+        // Page/source is untrusted text — strip control chars and length-limit to 250.
+        var page = new string((req.Page ?? string.Empty).Where(c => !char.IsControl(c)).ToArray()).Trim();
+        if (page.Length > 250) page = page[..250];
 
         // ── Identity context for logged-in users (don't re-ask) ─────────────
         var rawId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -73,10 +76,18 @@ public class LearnController(
             }
         }
 
+        // Fallback chain: configured support inbox → admin notify → default gmail.
         var supportEmail = config["Support:Email"]
                         ?? config["Admin:NotifyEmail"]
                         ?? "clarityfinancialtools@gmail.com";
 
+        // Reply-To = the visitor's (validated) email when present, so a reply goes
+        // to them — the From stays the authenticated Clarity sending address.
+        var replyTo = emailAddr.Length > 0 && new EmailAddressAttribute().IsValid(emailAddr)
+            ? emailAddr
+            : null;
+
+        // Server-generated authoritative timestamp (frontend never supplies it).
         var sent = await email.SendLearnSubmissionAsync(
             toEmail:   supportEmail,
             type:      type,
@@ -85,16 +96,18 @@ public class LearnController(
             emailAddr: emailAddr.Length > 0 ? emailAddr : "(not provided)",
             userId:    userId,
             page:      page.Length > 0 ? page : "(unknown)",
-            timestamp: DateTime.UtcNow
+            timestamp: DateTime.UtcNow,
+            replyTo:   replyTo
         );
 
         if (!sent)
         {
-            logger.LogError("[Learn] Failed to send Learn submission — type={Type} userId={UserId}", type, userId);
+            // Generic logging — no message/name/email content.
+            logger.LogError("[Learn] Failed to send Learn submission — type={Type} authed={Authed}", type, userId != "Anonymous");
             return StatusCode(500, new { error = "We couldn't send your submission. Please try again." });
         }
 
-        logger.LogInformation("[Learn] Learn submission sent — type={Type} userId={UserId} page={Page}", type, userId, page);
+        logger.LogInformation("[Learn] Learn submission sent — type={Type} authed={Authed}", type, userId != "Anonymous");
         return Ok(new { success = true });
     }
 }

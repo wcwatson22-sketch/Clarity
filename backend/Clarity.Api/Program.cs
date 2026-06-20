@@ -71,21 +71,57 @@ try
                 }
             ));
 
-        // Global fallback: 120 requests per minute per IP
-        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        // Public Learn submission form: conservative burst cap — 3 per 10 minutes
+        // per IP. (A 10-per-24h-per-IP cap is enforced separately in the chained
+        // global limiter below.) Honeypot + the daily cap cover sustained abuse.
+        options.AddPolicy("learn", httpContext =>
             RateLimitPartition.GetFixedWindowLimiter(
-                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                partitionKey: "learn:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 120,
-                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(10),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0,
                 }
             ));
 
+        // Global fallback (applies in addition to any endpoint policy), chained:
+        //  1) 120 requests/min per IP for every request
+        //  2) 10 requests/24h per IP for POSTs to the public Learn submission form
+        options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+            PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 120,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0,
+                    }
+                )),
+            PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var isLearnSubmit = HttpMethods.IsPost(httpContext.Request.Method)
+                    && httpContext.Request.Path.StartsWithSegments("/api/learn/submissions");
+                if (!isLearnSubmit)
+                    return RateLimitPartition.GetNoLimiter("none");
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: "learn-daily:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromHours(24),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0,
+                    });
+            }));
+
         options.OnRejected = async (context, token) =>
         {
+            // Generic message — never reveals limits/windows/configuration.
             context.HttpContext.Response.StatusCode = 429;
             await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", token);
         };

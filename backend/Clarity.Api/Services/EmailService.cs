@@ -454,7 +454,7 @@ public class EmailService(
     public async Task<bool> SendSupportMessageAsync(
         string toEmail, string message,
         string userName, string userEmail,
-        string userId,  DateTime timestamp)
+        string userId,  DateTime timestamp, string? replyTo = null)
     {
         // Sanitize display values for HTML rendering
         static string Esc(string s) => System.Web.HttpUtility.HtmlEncode(s);
@@ -491,7 +491,8 @@ public class EmailService(
             toEmail,
             subject:   "New Clarity Support Message",
             html:      html,
-            emailType: "support-message"
+            emailType: "support-message",
+            replyTo:   replyTo
         );
     }
 
@@ -503,7 +504,7 @@ public class EmailService(
     public async Task<bool> SendLearnSubmissionAsync(
         string toEmail, string type, string message,
         string name, string emailAddr, string userId,
-        string page, DateTime timestamp)
+        string page, DateTime timestamp, string? replyTo = null)
     {
         static string Esc(string s) => System.Web.HttpUtility.HtmlEncode(s);
 
@@ -537,11 +538,11 @@ public class EmailService(
             </div>
             """;
 
-        return await SendAsync(toEmail, "New Clarity Learn Submission", html, "learn-submission");
+        return await SendAsync(toEmail, "New Clarity Learn Submission", html, "learn-submission", replyTo: replyTo);
     }
 
     private async Task<bool> SendAsync(string toEmail, string subject, string html,
-        string emailType = "unknown", int? userId = null)
+        string emailType = "unknown", int? userId = null, string? replyTo = null)
     {
         bool   success           = false;
         string? providerMessageId = null;
@@ -556,13 +557,18 @@ public class EmailService(
         {
             try
             {
-                var payload = new
+                // From always stays the authenticated Clarity sending address.
+                // reply_to is only added when a valid address is supplied, so replies
+                // route to the visitor without ever spoofing the From header.
+                var payload = new Dictionary<string, object?>
                 {
-                    from = $"{_fromName} <{_from}>",
-                    to   = new[] { toEmail },
-                    subject,
-                    html
+                    ["from"]    = $"{_fromName} <{_from}>",
+                    ["to"]      = new[] { toEmail },
+                    ["subject"] = subject,
+                    ["html"]    = html,
                 };
+                if (!string.IsNullOrWhiteSpace(replyTo) && new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(replyTo))
+                    payload["reply_to"] = replyTo;
 
                 var json    = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");

@@ -40,13 +40,21 @@ public class SupportController(
                         ?? config["Admin:NotifyEmail"]
                         ?? "clarityfinancialtools@gmail.com";
 
+        // Reply-To = the user's account email (validated) so replies reach them;
+        // the From header stays the authenticated Clarity sending address.
+        var replyTo = !string.IsNullOrWhiteSpace(user?.Email)
+                      && new EmailAddressAttribute().IsValid(user!.Email)
+            ? user.Email
+            : null;
+
         var sent = await email.SendSupportMessageAsync(
             toEmail:   supportEmail,
             message:   req.Message.Trim(),
             userName:  string.IsNullOrWhiteSpace(user?.FirstName) ? (user?.Username ?? "Unknown") : user.FirstName,
             userEmail: user?.Email ?? "Unknown",
             userId:    user?.Id.ToString() ?? rawId ?? "Unknown",
-            timestamp: DateTime.UtcNow
+            timestamp: DateTime.UtcNow,
+            replyTo:   replyTo
         );
 
         if (!sent)
