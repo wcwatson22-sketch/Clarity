@@ -24,6 +24,7 @@
         </div>
       </div>
     </div>
+    <p class="period-hint">Enter income, expenses &amp; budgets as <strong>{{ periodLabel() }}</strong> amounts. {{ showAnnual() ? 'Annual figures are converted to monthly for all calculations.' : '' }}</p>
 
     <!-- Second income toggle -->
     <div class="second-income-row">
@@ -46,7 +47,7 @@
             <label class="field-label">Gross Income</label>
             <div class="input-prefix">
               <span class="prefix">$</span>
-              <input appNumeric [value]="income().grossMonthlyIncome"
+              <input appNumeric [value]="disp(income().grossMonthlyIncome)"
                 (change)="updateGross($any($event.target).value)" class="dollar-input" />
             </div>
           </div>
@@ -54,7 +55,7 @@
             <label class="field-label">Take-Home Pay</label>
             <div class="input-prefix">
               <span class="prefix">$</span>
-              <input appNumeric [value]="income().netMonthlyIncome"
+              <input appNumeric [value]="disp(income().netMonthlyIncome)"
                 (change)="updateNet($any($event.target).value)" class="dollar-input" />
             </div>
           </div>
@@ -71,7 +72,7 @@
                 <label class="field-label">Gross</label>
                 <div class="input-prefix">
                   <span class="prefix">$</span>
-                  <input appNumeric [value]="income().grossMonthlyIncome"
+                  <input appNumeric [value]="disp(income().grossMonthlyIncome)"
                     (change)="updateGross($any($event.target).value)" class="dollar-input" />
                 </div>
               </div>
@@ -79,7 +80,7 @@
                 <label class="field-label">Take-Home</label>
                 <div class="input-prefix">
                   <span class="prefix">$</span>
-                  <input appNumeric [value]="income().netMonthlyIncome"
+                  <input appNumeric [value]="disp(income().netMonthlyIncome)"
                     (change)="updateNet($any($event.target).value)" class="dollar-input" />
                 </div>
               </div>
@@ -94,7 +95,7 @@
                 <label class="field-label">Gross</label>
                 <div class="input-prefix">
                   <span class="prefix">$</span>
-                  <input appNumeric [value]="secondIncome().gross"
+                  <input appNumeric [value]="disp(secondIncome().gross)"
                     (change)="updateSecondGross($any($event.target).value)" class="dollar-input" />
                 </div>
               </div>
@@ -102,7 +103,7 @@
                 <label class="field-label">Take-Home</label>
                 <div class="input-prefix">
                   <span class="prefix">$</span>
-                  <input appNumeric [value]="secondIncome().net"
+                  <input appNumeric [value]="disp(secondIncome().net)"
                     (change)="updateSecondNet($any($event.target).value)" class="dollar-input" />
                 </div>
               </div>
@@ -149,46 +150,46 @@
   <div class="income-card retirement-card">
     <div class="income-header">
       <h2 class="card-title">Retirement Contributions</h2>
-      <span class="ret-sub">Monthly $ · informational</span>
+      <span class="ret-sub">{{ showAnnual() ? 'Annual' : 'Monthly' }} $ · informational</span>
     </div>
     <div class="ret-grid">
       <div class="field-group">
         <label class="field-label">Traditional 401(k)</label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().trad401k || ''"
+          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().trad401k) || ''"
             (change)="updateRetirement('trad401k', $any($event.target).value)" /></div>
       </div>
       <div class="field-group">
         <label class="field-label">Roth 401(k)</label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().roth401k || ''"
+          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().roth401k) || ''"
             (change)="updateRetirement('roth401k', $any($event.target).value)" /></div>
       </div>
       <div class="field-group">
         <label class="field-label">Traditional IRA</label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().tradIra || ''"
+          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().tradIra) || ''"
             (change)="updateRetirement('tradIra', $any($event.target).value)" /></div>
       </div>
       <div class="field-group">
         <label class="field-label">Roth IRA</label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().rothIra || ''"
+          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().rothIra) || ''"
             (change)="updateRetirement('rothIra', $any($event.target).value)" /></div>
       </div>
       <div class="field-group">
         <label class="field-label">Employer Match</label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().employerMatch || ''"
+          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().employerMatch) || ''"
             (change)="updateRetirement('employerMatch', $any($event.target).value)" /></div>
       </div>
     </div>
     <p class="ret-note">Employer match increases retirement savings but does not reduce your take-home pay.</p>
     @if (totalRetirementSavings() > 0) {
       <div class="ret-totals">
-        <span>Your contributions <strong>{{ fmt(employeeRetirement()) }}/mo</strong></span>
-        <span>Employer match <strong>{{ fmt(retirement().employerMatch) }}/mo</strong></span>
-        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(totalRetirementSavings()) }}/mo</strong></span>
+        <span>Your contributions <strong>{{ fmt(disp(employeeRetirement())) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
+        <span>Employer match <strong>{{ fmt(disp(retirement().employerMatch)) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
+        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(disp(totalRetirementSavings())) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
       </div>
     }
   </div>
@@ -399,14 +400,14 @@
                 (blur)="updateItem(item, 'name', $any($event.target).value)" />
               <div class="input-prefix small">
                 <span class="prefix">$</span>
-                <input appNumeric class="dollar-input" [value]="item.amount"
+                <input appNumeric class="dollar-input" [value]="disp(item.amount)"
                   (change)="updateItem(item, 'amount', $any($event.target).value)" title="Actual" />
               </div>
               <!-- Per-item budget (Variable expenses only) -->
               @if (group.key === 'Variable') {
                 <div class="input-prefix small budget-input">
                   <span class="prefix">$</span>
-                  <input appNumeric class="dollar-input" placeholder="Budget" [value]="item.budget ?? ''"
+                  <input appNumeric class="dollar-input" placeholder="Budget" [value]="item.budget != null ? disp(item.budget) : ''"
                     (change)="updateItem(item, 'budget', $any($event.target).value)" title="Monthly budget" />
                 </div>
               }
@@ -417,9 +418,9 @@
               <div class="budget-status">
                 @if (itemHasBudget(item)) {
                   @if (itemOver(item)) {
-                    <span class="bs-over">{{ fmt(-itemRemaining(item)) }} over budget · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
+                    <span class="bs-over">{{ fmt(disp(-itemRemaining(item))) }} over budget · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
                   } @else {
-                    <span class="bs-ok">{{ fmt(itemRemaining(item)) }} remaining · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
+                    <span class="bs-ok">{{ fmt(disp(itemRemaining(item))) }} remaining · {{ (itemPctUsed(item) * 100).toFixed(0) }}% used</span>
                   }
                   <span class="bs-bar"><span class="bs-bar-fill" [class.over]="itemOver(item)" [style.width]="(itemPctUsed(item) > 1 ? 100 : itemPctUsed(item) * 100) + '%'"></span></span>
                 } @else {

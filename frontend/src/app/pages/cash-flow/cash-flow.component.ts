@@ -112,6 +112,18 @@ export class CashFlowComponent implements OnInit {
 
   // Annual projections
   mult = computed(() => this.showAnnual() ? 12 : 1);
+  readonly periodLabel = computed(() => this.showAnnual() ? 'annual' : 'monthly');
+
+  /** Convert a stored monthly value to the currently-selected input period (for [value]). */
+  disp(monthly: number | null | undefined): number {
+    if (monthly == null) return 0;
+    return Math.round(monthly * this.mult() * 100) / 100;
+  }
+  /** Convert a value typed in the current period back to the canonical monthly value (for storage). */
+  private toMonthly(val: string): number {
+    return Math.max(0, (parseFloat(val) || 0) / this.mult());
+  }
+
   dispGross    = computed(() => this.grossIncome() * this.mult());
   dispNet      = computed(() => this.netIncome() * this.mult());
   dispOutflow  = computed(() => this.totalOutflow() * this.mult());
@@ -249,8 +261,7 @@ export class CashFlowComponent implements OnInit {
     return { ...EMPTY_RETIREMENT };
   }
   updateRetirement(field: keyof RetirementContributions, val: string) {
-    const n = Math.max(0, parseFloat(val) || 0);
-    const updated = { ...this.retirement(), [field]: n };
+    const updated = { ...this.retirement(), [field]: this.toMonthly(val) };
     this.retirement.set(updated);
     localStorage.setItem(RETIREMENT_KEY, JSON.stringify(updated));
   }
@@ -318,12 +329,11 @@ export class CashFlowComponent implements OnInit {
     this.saveIncome();
   }
   updateGross(val: string) {
-    const gross = parseFloat(val) || 0;
-    this.income.update(i => ({ ...i, grossMonthlyIncome: gross }));
+    this.income.update(i => ({ ...i, grossMonthlyIncome: this.toMonthly(val) }));
     this.saveIncome();
   }
   updateNet(val: string) {
-    this.income.update(i => ({ ...i, netMonthlyIncome: parseFloat(val) || 0 }));
+    this.income.update(i => ({ ...i, netMonthlyIncome: this.toMonthly(val) }));
     this.saveIncome();
   }
   updateVariableMonth(idx: number, val: string) {
@@ -341,13 +351,11 @@ export class CashFlowComponent implements OnInit {
     localStorage.setItem(SECOND_INC_EN_KEY, enabled ? '1' : '0');
   }
   updateSecondGross(val: string) {
-    const gross = parseFloat(val) || 0;
-    this.secondIncome.update(i => ({ ...i, gross }));
+    this.secondIncome.update(i => ({ ...i, gross: this.toMonthly(val) }));
     localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
   }
   updateSecondNet(val: string) {
-    const net = parseFloat(val) || 0;
-    this.secondIncome.update(i => ({ ...i, net }));
+    this.secondIncome.update(i => ({ ...i, net: this.toMonthly(val) }));
     localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
   }
 
@@ -356,10 +364,9 @@ export class CashFlowComponent implements OnInit {
     const latest = this.budgetItems().find(b => b.id === item.id) ?? item;
     let updated: BudgetItem;
     if (field === 'amount') {
-      updated = { ...latest, amount: Math.max(0, parseFloat(val) || 0) };
+      updated = { ...latest, amount: this.toMonthly(val) };
     } else if (field === 'budget') {
-      const trimmed = val.trim();
-      updated = { ...latest, budget: trimmed === '' ? null : Math.max(0, parseFloat(trimmed) || 0) };
+      updated = { ...latest, budget: val.trim() === '' ? null : this.toMonthly(val) };
     } else {
       updated = { ...latest, name: val.trim() || latest.name };
     }
