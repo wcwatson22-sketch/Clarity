@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
+import { LearnSubmissionComponent } from '../../components/learn-submission.component';
+import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
 import {
   LEARN_CATEGORIES, publishedArticles, featuredArticles,
   articlesByCategory, LearnArticle,
@@ -15,10 +17,10 @@ import {
 @Component({
   selector: 'app-learn-hub',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, LearnSubmissionComponent, LearnDisclosureComponent],
   template: `
     <div class="lh">
-      <!-- Hero -->
+      <!-- 1. Heading & introduction -->
       <section class="lh-hero">
         <nav class="lh-crumbs" aria-label="Breadcrumb">
           <a routerLink="/">Home</a><span aria-hidden="true">›</span><span>Learn</span>
@@ -28,6 +30,16 @@ import {
           Straightforward guides to help you understand cash flow, debt, DTI, net worth,
           loan preparation, and investment real estate.
         </p>
+      </section>
+
+      <!-- 2. Submission card -->
+      <app-learn-submission page="/learn" />
+
+      <!-- 3. Publisher disclosure -->
+      <app-learn-disclosure variant="publisher" />
+
+      <!-- Search + category filters -->
+      <section class="lh-browse">
         <div class="lh-search">
           <input
             type="search"
@@ -140,6 +152,7 @@ import {
       &:hover { border-color: #A7F3D0; }
       &.active { background: #E1F5EE; border-color: #1D9E75; color: #085041; font-weight: 600; }
     }
+    .lh-browse { margin: 6px 0 2px; }
     .lh-section { margin: 30px 0; }
     .lh-h2 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
     .lh-cat-blurb { font-size: 14px; color: #6B7280; margin: 0 0 16px; }

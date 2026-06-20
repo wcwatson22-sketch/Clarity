@@ -17,7 +17,10 @@ export type LearnEvent =
   | 'learn_cta_clicked'
   | 'learn_account_create_started'
   | 'learn_premium_link_clicked'
-  | 'learn_related_clicked';
+  | 'learn_related_clicked'
+  | 'learn_submission_opened'
+  | 'learn_submission_completed'
+  | 'learn_submission_failed';
 
 interface LearnEventPayload {
   // Only non-sensitive identifiers — never income, assets, DTI, balances, etc.

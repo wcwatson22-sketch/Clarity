@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
 import { LearnAdComponent } from '../../components/learn-ad.component';
+import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
 import {
   getArticle, relatedArticles, categoryName, LearnArticle,
   LEARN_DISCLAIMERS,
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-learn-article',
   standalone: true,
-  imports: [RouterLink, DatePipe, LearnAdComponent],
+  imports: [RouterLink, DatePipe, LearnAdComponent, LearnDisclosureComponent],
   template: `
     @if (article(); as a) {
       <article class="la">
@@ -73,6 +74,8 @@ import {
             </div>
           </section>
         }
+
+        <app-learn-disclosure variant="article" [loan]="loanArticle()" />
 
         <section class="la-cta">
           <h2>See your own numbers</h2>
@@ -186,6 +189,9 @@ export class LearnArticleComponent {
     const t = this.article()?.disclaimerType;
     return t && t !== 'none' ? LEARN_DISCLAIMERS[t] : '';
   });
+
+  /** Loan/DTI/underwriting articles get the extra lending-variability note. */
+  readonly loanArticle = computed(() => this.article()?.disclaimerType === 'standard');
 
   private lastSeoSlug = '';
   private applySeo(a: LearnArticle) {

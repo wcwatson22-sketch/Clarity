@@ -6,6 +6,8 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { Lesson, EducationProgress } from '../../models/finance.models';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
+import { LearnSubmissionComponent } from '../../components/learn-submission.component';
+import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
 
 const CATEGORIES = ['All', 'Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
 const LESSON_CATEGORIES = ['Financial Basics', 'Budgeting', 'Saving', 'Debt & Loans', 'Credit', 'Mortgage', 'Investing', 'Retirement'];
@@ -35,7 +37,7 @@ export interface ConfettiPiece {
 @Component({
   selector: 'app-learn',
   standalone: true,
-  imports: [CommonModule, FormsModule, TabTutorialComponent],
+  imports: [CommonModule, FormsModule, TabTutorialComponent, LearnSubmissionComponent, LearnDisclosureComponent],
   templateUrl: './learn.component.html',
   styleUrl: './learn.component.scss'
 })
