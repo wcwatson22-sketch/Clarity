@@ -32,6 +32,14 @@ describe('PublicLayoutComponent', () => {
     expect(text).toContain('Go to Dashboard');
   });
 
+  it('exposes a public Learn link in the header and footer (keyboard-accessible anchors)', () => {
+    const el = setup(false).nativeElement as HTMLElement;
+    const learnByText = Array.from(el.querySelectorAll('a')).filter(a => a.textContent?.trim() === 'Learn');
+    // Header nav + footer nav both link to /learn; real anchors are keyboard focusable.
+    expect(learnByText.length).toBeGreaterThanOrEqual(2);
+    learnByText.forEach(a => expect(a.tagName).toBe('A'));
+  });
+
   it('does not render the authenticated sidebar or bottom navigation', () => {
     const el = setup(false).nativeElement as HTMLElement;
     expect(el.querySelector('.sidebar')).toBeNull();

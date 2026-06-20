@@ -22,7 +22,7 @@ import { AuthService } from '../../services/auth.service';
           <li>Cash Flow — income, expenses, debt, savings</li>
           <li>Variable expense budgets &amp; snapshots</li>
           <li>Retirement contributions &amp; employer match</li>
-          <li>Learn &amp; Settings</li>
+          <li>Settings &amp; secure account</li>
         </ul>
         @if (auth.isLoggedIn()) { <a routerLink="/dashboard" class="btn-ghost">Go to Dashboard</a> }
         @else { <a routerLink="/signup" class="btn-ghost">Create Free Account</a> }
@@ -44,6 +44,10 @@ import { AuthService } from '../../services/auth.service';
         @else { <a routerLink="/signup" class="btn-primary">Get Started</a> }
       </div>
     </section>
+
+    <p class="note">
+      <a routerLink="/learn">Learn articles</a> are always free — on the Clarity website and inside the Clarity app. No account required to read them.
+    </p>
 
     <p class="note">
       Premium renews monthly and can be canceled anytime — in your Apple ID settings (iOS) or from Settings (web).

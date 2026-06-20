@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Authenticated app screens hold no crawlable content (client-rendered behind
+# login); the public marketing site and Learn articles are fully indexable.
+
+Sitemap: https://clarityfinancialtools.com/sitemap.xml

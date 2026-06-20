@@ -23,6 +23,7 @@ import { AuthService } from '../../services/auth.service';
         <nav class="pub-nav" [class.open]="menuOpen()">
           <a routerLink="/features" routerLinkActive="active" (click)="menuOpen.set(false)">Features</a>
           <a routerLink="/pricing" routerLinkActive="active" (click)="menuOpen.set(false)">Pricing</a>
+          <a routerLink="/learn" routerLinkActive="active" (click)="menuOpen.set(false)">Learn</a>
           <a routerLink="/about" routerLinkActive="active" (click)="menuOpen.set(false)">About</a>
           @if (auth.isLoggedIn()) {
             <a routerLink="/dashboard" class="pub-cta" (click)="menuOpen.set(false)">Go to Dashboard</a>
@@ -48,6 +49,7 @@ import { AuthService } from '../../services/auth.service';
           <nav class="pub-footer-links">
             <a routerLink="/features">Features</a>
             <a routerLink="/pricing">Pricing</a>
+            <a routerLink="/learn">Learn</a>
             <a routerLink="/about">About</a>
             <a href="https://clarityfinancialtools.com/privacy" target="_blank" rel="noopener">Privacy Policy</a>
             <a routerLink="/terms">Terms of Use</a>

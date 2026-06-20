@@ -18,7 +18,16 @@ export class SeoService {
   private meta = inject(Meta);
   private doc  = inject(DOCUMENT);
 
-  update(opts: { title?: string; description?: string; path: string }) {
+  /** Default OG image (homepage social card). */
+  private readonly defaultImage = ORIGIN + '/images/clarity-social-card.png';
+
+  update(opts: {
+    title?: string;
+    description?: string;
+    path: string;
+    image?: string;        // root-relative or absolute; falls back to the default card
+    type?: string;         // og:type — 'website' (default) or 'article'
+  }) {
     const url = ORIGIN + (opts.path === '/' ? '/' : opts.path.replace(/\/$/, ''));
     if (opts.description) {
       this.meta.updateTag({ name: 'description', content: opts.description });
@@ -29,8 +38,41 @@ export class SeoService {
       this.meta.updateTag({ property: 'og:title', content: opts.title });
       this.meta.updateTag({ name: 'twitter:title', content: opts.title });
     }
+    const img = opts.image
+      ? (opts.image.startsWith('http') ? opts.image : ORIGIN + opts.image)
+      : this.defaultImage;
+    this.meta.updateTag({ property: 'og:image', content: img });
+    this.meta.updateTag({ name: 'twitter:image', content: img });
+    this.meta.updateTag({ property: 'og:type', content: opts.type || 'website' });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.setCanonical(url);
+  }
+
+  /** Resolve a root-relative path to an absolute canonical URL. */
+  absoluteUrl(path: string): string {
+    return ORIGIN + (path === '/' ? '/' : path.replace(/\/$/, ''));
+  }
+
+  /**
+   * Inject (or replace) a JSON-LD structured-data block by id. Crawlable by
+   * search engines. Pass `null` to remove a previously-set block.
+   */
+  setJsonLd(id: string, data: object | null) {
+    const elId = 'ld-' + id;
+    let script = this.doc.getElementById(elId) as HTMLScriptElement | null;
+    if (!data) { script?.remove(); return; }
+    if (!script) {
+      script = this.doc.createElement('script');
+      script.id = elId;
+      script.type = 'application/ld+json';
+      this.doc.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(data);
+  }
+
+  /** Allow or block indexing for the current route. Public Learn = index. */
+  setRobots(content: 'index,follow' | 'noindex,nofollow') {
+    this.meta.updateTag({ name: 'robots', content });
   }
 
   private setCanonical(url: string) {

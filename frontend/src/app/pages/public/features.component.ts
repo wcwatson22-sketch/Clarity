@@ -25,7 +25,7 @@ import { AuthService } from '../../services/auth.service';
           <div class="feat"><h3>Assets &amp; liabilities</h3><p>Track everything you own and owe in one place.</p></div>
           <div class="feat"><h3>Net worth &amp; DTI</h3><p>Core lender-style metrics, calculated automatically.</p></div>
           <div class="feat"><h3>Snapshots</h3><p>Capture your position over time and measure progress from a baseline.</p></div>
-          <div class="feat"><h3>Learn</h3><p>Bite-sized financial education built into the app.</p></div>
+          <div class="feat"><h3>Learn</h3><p>Free financial guides — on the <a routerLink="/learn">Clarity website</a> and inside the app.</p></div>
         </div>
       </div>
 

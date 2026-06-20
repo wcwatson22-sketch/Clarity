@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { webOnlyGuard } from './guards/web-only.guard';
+import { learnPlatformGuard } from './guards/learn-platform.guard';
+import { appLearnGuard } from './guards/app-learn.guard';
 
 export const routes: Routes = [
   // ── Public marketing site (no auth; own header/footer layout) ──────────
@@ -22,6 +24,20 @@ export const routes: Routes = [
       { path: 'about', title: 'About Clarity Financial Tools',
         data: { description: 'Clarity began as a personal finance spreadsheet, rebuilt into a simple command center. Owned and operated by Clearpath Digital LLC.' },
         loadComponent: () => import('./pages/public/about.component').then(m => m.PublicAboutComponent) },
+    ],
+  },
+
+  // ── Public Learn hub + articles (crawlable; no auth) ───────────────────────
+  // Reuses the marketing PublicLayout (header/footer). learnPlatformGuard sends
+  // native-app users to the in-app Learn tab (/app-learn) instead — it does NOT
+  // use webOnlyGuard, so the app Learn experience is never broken.
+  {
+    path: 'learn',
+    canActivate: [learnPlatformGuard],
+    loadComponent: () => import('./pages/public/public-layout.component').then(m => m.PublicLayoutComponent),
+    children: [
+      { path: '', loadComponent: () => import('./pages/public/learn-hub.component').then(m => m.LearnHubComponent) },
+      { path: ':slug', loadComponent: () => import('./pages/public/learn-article.component').then(m => m.LearnArticleComponent) },
     ],
   },
 
@@ -62,9 +78,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/cash-flow/cash-flow.component').then(m => m.CashFlowComponent)
   },
+  // App Learn tab (native). On the web this redirects to the public /learn hub
+  // (appLearnGuard), so Learn is not part of the authenticated website interface.
   {
-    path: 'learn',
-    canActivate: [authGuard],
+    path: 'app-learn',
+    canActivate: [appLearnGuard, authGuard],
     loadComponent: () => import('./pages/learn/learn.component').then(m => m.LearnComponent)
   },
   {
