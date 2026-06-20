@@ -21,6 +21,7 @@ import { AuthService } from '../../services/auth.service';
         </a>
 
         <nav class="pub-nav" [class.open]="menuOpen()">
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="menuOpen.set(false)">Home</a>
           <a routerLink="/features" routerLinkActive="active" (click)="menuOpen.set(false)">Features</a>
           <a routerLink="/pricing" routerLinkActive="active" (click)="menuOpen.set(false)">Pricing</a>
           <a routerLink="/learn" routerLinkActive="active" (click)="menuOpen.set(false)">Learn</a>
@@ -74,13 +75,18 @@ import { AuthService } from '../../services/auth.service';
     }
     .pub-header {
       position: sticky; top: 0; z-index: 50; display: flex; align-items: center;
-      justify-content: space-between; gap: 16px; padding: 14px 24px; background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+      justify-content: space-between; gap: 16px; padding: 14px 24px;
+      background: linear-gradient(90deg, rgba(225,245,238,0.96), rgba(240,251,247,0.96) 60%, rgba(255,255,255,0.96));
+      backdrop-filter: blur(8px); border-bottom: 1px solid #C9EEDF;
+      box-shadow: 0 1px 0 rgba(16,24,40,0.02);
     }
-    .pub-logo { height: 30px; width: auto; display: block; }
+    .pub-brand { display: flex; align-items: center; }
+    .pub-logo { height: 46px; width: auto; display: block; transition: transform .15s; }
+    .pub-brand:hover .pub-logo { transform: scale(1.03); }
     .pub-nav { display: flex; align-items: center; gap: 26px; }
-    .pub-nav a { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color .15s; }
-    .pub-nav a:hover, .pub-nav a.active { color: var(--ink); }
+    .pub-nav a { font-size: 14px; font-weight: 500; color: #2F4A42; text-decoration: none; transition: color .15s; }
+    .pub-nav a:hover { color: var(--g); }
+    .pub-nav a.active:not(.pub-cta):not(.pub-login) { color: #085041; font-weight: 700; }
     .pub-nav a.pub-login { color: var(--g); font-weight: 600; }
     .pub-nav a.pub-cta {
       background: var(--g); color: #fff; padding: 9px 18px; border-radius: 10px; font-weight: 600;

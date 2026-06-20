@@ -22,6 +22,38 @@ import { AuthService } from '../../services/auth.service';
       <p class="hero-note">Free forever — no credit card, no trial expiration.</p>
     </section>
 
+    <!-- Product previews -->
+    <section class="wrap previews">
+      <h2>A clear view of every part of your finances</h2>
+      <p class="previews-sub">Real screens from Clarity — your dashboard, cash flow, loan prep, and learning center.</p>
+      <div class="shots">
+        <figure class="shot">
+          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+            <img src="images/preview-dashboard.png" alt="Clarity dashboard showing net worth, assets, liabilities, DTI, and snapshot movement" loading="lazy" width="1100" height="1036" />
+          </div>
+          <figcaption>Dashboard — net worth, assets &amp; liabilities at a glance</figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+            <img src="images/preview-cashflow.png" alt="Clarity cash flow view showing take-home pay, outflow, free cash flow, DTI, and the 50/30/20 rule" loading="lazy" width="1100" height="837" />
+          </div>
+          <figcaption>Cash Flow — where your take-home pay goes</figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+            <img src="images/preview-loanprep.png" alt="Clarity loan prep view with mortgage readiness targets and a documents-to-gather checklist" loading="lazy" width="1100" height="1136" />
+          </div>
+          <figcaption>Loan Prep — get ready before you apply <span class="shot-prem">Premium</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+            <img src="images/preview-learn.png" alt="Clarity learning center with financial education lessons across categories" loading="lazy" width="1100" height="1056" />
+          </div>
+          <figcaption>Learn — plain-English financial guides, free</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <!-- Core benefits -->
     <section class="band">
       <div class="wrap">
@@ -108,7 +140,13 @@ import { AuthService } from '../../services/auth.service';
     .grid-2 { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: repeat(3, 1fr); }
 
-    .hero { max-width: 820px; margin: 0 auto; padding: 80px 24px 56px; text-align: center; }
+    .hero {
+      max-width: 100%; margin: 0; padding: 80px 24px 64px; text-align: center;
+      background:
+        radial-gradient(900px 380px at 50% -60px, #D7F2E8 0%, rgba(215,242,232,0) 70%),
+        linear-gradient(180deg, #F2FBF7 0%, #FFFFFF 100%);
+    }
+    .hero > * { max-width: 820px; margin-left: auto; margin-right: auto; }
     .hero h1 { font-size: 44px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 18px; }
     .lede { font-size: 19px; color: var(--muted); line-height: 1.6; margin: 0 auto 28px; max-width: 640px; }
     .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -122,6 +160,24 @@ import { AuthService } from '../../services/auth.service';
     .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
     .card h3 { font-size: 17px; font-weight: 700; margin: 0 0 8px; }
     .card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    /* Product previews */
+    .previews { padding: 64px 24px 8px; text-align: center; }
+    .previews-sub { font-size: 16px; color: var(--muted); margin: -18px auto 36px; max-width: 620px; line-height: 1.6; }
+    .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; }
+    .shot { margin: 0; }
+    .shot-frame {
+      border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+      background: linear-gradient(180deg, #F0FBF7, #fff);
+      box-shadow: 0 18px 40px rgba(16,24,40,0.10); transition: transform .18s, box-shadow .18s;
+    }
+    .shot-frame:hover { transform: translateY(-4px); box-shadow: 0 26px 56px rgba(16,24,40,0.14); }
+    .dots { display: flex; gap: 6px; padding: 11px 14px; border-bottom: 1px solid #EAF5F0; background: #fff; }
+    .dots i { width: 10px; height: 10px; border-radius: 50%; background: #E5E7EB; display: inline-block; }
+    .dots i:nth-child(1) { background: #FCA5A5; } .dots i:nth-child(2) { background: #FCD34D; } .dots i:nth-child(3) { background: #86EFAC; }
+    .shot-frame img { display: block; width: 100%; height: auto; }
+    .shot figcaption { font-size: 14px; color: #374151; font-weight: 600; margin-top: 14px; }
+    .shot-prem { display: inline-block; font-size: 11px; font-weight: 700; color: var(--g); background: #E1F5EE; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
 
     .how { padding: 64px 24px; }
     .step { text-align: center; padding: 12px; }
@@ -149,6 +205,7 @@ import { AuthService } from '../../services/auth.service';
     @media (max-width: 760px) {
       .hero h1 { font-size: 32px; } .lede { font-size: 17px; }
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .shots { grid-template-columns: 1fr; gap: 22px; }
       h2 { font-size: 23px; }
     }
   `],
