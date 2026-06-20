@@ -16,8 +16,8 @@ import { AuthService } from '../../services/auth.service';
     <div class="pub" (keydown.escape)="menuOpen.set(false)">
       <a class="skip-link" href="#main-content">Skip to content</a>
       <header class="pub-header">
-        <a routerLink="/" class="pub-brand" (click)="menuOpen.set(false)">
-          <img src="icons/logo.png" alt="Clarity Financial Tools" class="pub-logo" />
+        <a routerLink="/" class="pub-brand" (click)="menuOpen.set(false)" aria-label="Clarity Financial Tools — home">
+          <img src="icons/logo-wordmark.png" alt="Clarity Financial Tools" class="pub-logo" />
         </a>
 
         <nav class="pub-nav" [class.open]="menuOpen()">
@@ -81,7 +81,8 @@ import { AuthService } from '../../services/auth.service';
       box-shadow: 0 1px 0 rgba(16,24,40,0.02);
     }
     .pub-brand { display: flex; align-items: center; }
-    .pub-logo { height: 46px; width: auto; display: block; transition: transform .15s; }
+    .pub-logo { height: 44px; width: auto; display: block; transition: transform .15s; }
+    @media (max-width: 760px) { .pub-logo { height: 38px; } }
     .pub-brand:hover .pub-logo { transform: scale(1.03); }
     .pub-nav { display: flex; align-items: center; gap: 26px; }
     .pub-nav a { font-size: 14px; font-weight: 500; color: #2F4A42; text-decoration: none; transition: color .15s; }

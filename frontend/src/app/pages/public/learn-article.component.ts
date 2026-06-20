@@ -190,6 +190,9 @@ export class LearnArticleComponent {
   private lastSeoSlug = '';
   private applySeo(a: LearnArticle) {
     if (this.lastSeoSlug === a.slug) return;
+    // Navigating to a different article (e.g. a related link at the bottom of
+    // the page) should start at the top, not retain the previous scroll.
+    if (this.lastSeoSlug && typeof window !== 'undefined') window.scrollTo({ top: 0 });
     this.lastSeoSlug = a.slug;
     const path = '/learn/' + a.slug;
     this.seo.update({ title: a.seoTitle, description: a.summary, path, image: a.featuredImage, type: 'article' });

@@ -1,5 +1,5 @@
 import { ApplicationConfig, ErrorHandler, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
 import { Capacitor } from '@capacitor/core';
@@ -10,7 +10,10 @@ import { GlobalErrorHandler } from './components/error-boundary/error-boundary.c
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes),
+    // Scroll to the top on every navigation (e.g. clicking a related Learn
+    // article should start at the top, not retain the previous scroll position),
+    // and restore position on back/forward.
+    provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
     provideHttpClient(withInterceptors([authInterceptor, nativeHttpInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
     // Disable service worker on native (Capacitor) — iOS 16+ supports SW in WKWebView

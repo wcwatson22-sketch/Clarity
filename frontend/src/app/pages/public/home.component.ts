@@ -52,6 +52,7 @@ import { AuthService } from '../../services/auth.service';
           <figcaption>Learn — plain-English financial guides, free</figcaption>
         </figure>
       </div>
+      <p class="shots-note">The figures shown above are sample values from a test account — not real user data.</p>
     </section>
 
     <!-- Core benefits -->
@@ -178,6 +179,7 @@ import { AuthService } from '../../services/auth.service';
     .shot-frame img { display: block; width: 100%; height: auto; }
     .shot figcaption { font-size: 14px; color: #374151; font-weight: 600; margin-top: 14px; }
     .shot-prem { display: inline-block; font-size: 11px; font-weight: 700; color: var(--g); background: #E1F5EE; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
+    .shots-note { font-size: 12.5px; color: #9CA3AF; text-align: center; margin: 26px auto 0; max-width: 560px; font-style: italic; }
 
     .how { padding: 64px 24px; }
     .step { text-align: center; padding: 12px; }
