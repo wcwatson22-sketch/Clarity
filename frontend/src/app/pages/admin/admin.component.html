@@ -5,7 +5,10 @@
       <h1 class="page-title">🛡️ Admin — User Roster</h1>
       <p class="page-sub">Confidential. Do not share. Access logged.</p>
     </div>
-    <button class="export-btn" (click)="exportCsv()" [disabled]="loading()">⬇ Export CSV</button>
+    <div class="header-actions">
+      <a class="manage-learn-btn" routerLink="/admin/learn">📚 Manage Learn Articles</a>
+      <button class="export-btn" (click)="exportCsv()" [disabled]="loading()">⬇ Export CSV</button>
+    </div>
   </div>
 
   @if (loading()) {

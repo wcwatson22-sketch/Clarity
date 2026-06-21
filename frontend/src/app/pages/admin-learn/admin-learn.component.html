@@ -1,0 +1,170 @@
+<div class="al">
+  <header class="al-top">
+    <div>
+      <a routerLink="/admin" class="al-back">← Admin</a>
+      <h1>Learn Articles</h1>
+    </div>
+    @if (mode() === 'list') {
+      <button class="al-btn al-primary" (click)="newArticle()">＋ New Article</button>
+    }
+  </header>
+
+  <!-- ── LIST ─────────────────────────────────────────────────────────── -->
+  @if (mode() === 'list') {
+    <div class="al-filters">
+      <input class="al-search" type="search" placeholder="Search by title…"
+             [(ngModel)]="fQuery" (input)="reload()" />
+      <select [(ngModel)]="fStatus" (change)="reload()">
+        <option value="all">All statuses</option>
+        <option value="published">Published</option>
+        <option value="draft">Draft / Unpublished</option>
+      </select>
+      <select [(ngModel)]="fCategory" (change)="reload()">
+        <option value="">All categories</option>
+        @for (c of categories; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+      </select>
+      <label class="al-check"><input type="checkbox" [(ngModel)]="fFeatured" (change)="reload()" /> Featured only</label>
+    </div>
+
+    @if (loading()) { <p class="al-muted">Loading…</p> }
+    @else if (!rows().length) { <p class="al-muted">No articles match.</p> }
+    @else {
+      <div class="al-table-wrap">
+        <table class="al-table">
+          <thead>
+            <tr>
+              <th>Title</th><th>Slug</th><th>Category</th><th>Status</th>
+              <th>Featured</th><th>Published</th><th>Updated</th><th class="al-actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.id) {
+              <tr>
+                <td class="al-title-cell">{{ r.title }}</td>
+                <td><code>{{ r.slug }}</code></td>
+                <td>{{ catName(r.category) }}</td>
+                <td>
+                  <span class="al-badge" [class.al-pub]="r.isPublished" [class.al-draft]="!r.isPublished">
+                    {{ r.isPublished ? 'Published' : 'Draft' }}
+                  </span>
+                </td>
+                <td>{{ r.isFeatured ? '★' : '—' }}</td>
+                <td>{{ r.publishedAt ? (r.publishedAt | date:'mediumDate') : '—' }}</td>
+                <td>{{ r.updatedAt | date:'mediumDate' }}</td>
+                <td class="al-row-actions">
+                  <button (click)="edit(r)">Edit</button>
+                  @if (r.isPublished) {
+                    <a [href]="'/learn/' + r.slug" target="_blank" rel="noopener">Preview</a>
+                    <button (click)="togglePublish(r)">Unpublish</button>
+                  } @else {
+                    <button (click)="togglePublish(r)">Publish</button>
+                  }
+                  <button (click)="duplicate(r)">Duplicate</button>
+                  <button class="al-danger" (click)="askDelete(r)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- ── EDITOR ───────────────────────────────────────────────────────── -->
+  @if (mode() === 'edit') {
+    <div class="al-editor">
+      <div class="al-edit-head">
+        <h2>{{ form.id ? 'Edit Article' : 'New Article' }}</h2>
+        <div class="al-edit-head-actions">
+          <button class="al-btn" (click)="showPreview.set(!showPreview())">{{ showPreview() ? 'Hide preview' : 'Preview' }}</button>
+          <button class="al-btn" (click)="cancelEdit()">Cancel</button>
+          <button class="al-btn al-primary" (click)="save()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </div>
+
+      @if (formError()) { <p class="al-error">{{ formError() }}</p> }
+
+      <div class="al-grid">
+        <div class="al-main">
+          <label>Title <input [(ngModel)]="form.title" maxlength="200" /></label>
+          <label>URL slug <input [(ngModel)]="form.slug" placeholder="auto-generated from title if blank" /></label>
+          <label>Short summary <textarea rows="2" [(ngModel)]="form.summary" maxlength="400"></textarea></label>
+
+          <div class="al-toolbar">
+            <button (click)="insert('<h2>', '</h2>', 'Heading')">H2</button>
+            <button (click)="insert('<h3>', '</h3>', 'Subheading')">H3</button>
+            <button (click)="insert('<p>', '</p>', 'Paragraph')">¶</button>
+            <button (click)="insert('<strong>', '</strong>', 'bold')"><b>B</b></button>
+            <button (click)="insert('<em>', '</em>', 'italic')"><i>I</i></button>
+            <button (click)="insert('<ul>\n  <li>', '</li>\n</ul>', 'item')">• List</button>
+            <button (click)="insert('<a href=&quot;https://&quot;>', '</a>', 'link text')">Link</button>
+            <button (click)="insert('<blockquote>', '</blockquote>', 'quote')">❝</button>
+            <button (click)="insertExample()">Example box</button>
+          </div>
+          <label>Article body (HTML)
+            <textarea #bodyTa class="al-body" rows="16" [(ngModel)]="form.content"
+              placeholder="Write the article using the buttons above or plain HTML…"></textarea>
+          </label>
+          <p class="al-hint">Scripts and event handlers are stripped automatically on save and render.</p>
+        </div>
+
+        <aside class="al-side">
+          <label class="al-toggle"><input type="checkbox" [(ngModel)]="form.isPublished" /> Published</label>
+          <label class="al-toggle"><input type="checkbox" [(ngModel)]="form.isFeatured" /> Featured</label>
+
+          <label>Category
+            <select [(ngModel)]="form.category">
+              @for (c of categories; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+            </select>
+          </label>
+          <label>Disclaimer
+            <select [(ngModel)]="form.disclaimerType">
+              @for (d of disclaimers; track d.v) { <option [value]="d.v">{{ d.label }}</option> }
+            </select>
+          </label>
+          <label>Featured image URL <input [(ngModel)]="form.featuredImageUrl" placeholder="https://…" /></label>
+          <p class="al-hint">JPG/PNG/WebP URL. Direct upload is a planned enhancement.</p>
+          <label>SEO title <input [(ngModel)]="form.seoTitle" maxlength="120" /></label>
+          <label>Meta description <textarea rows="2" [(ngModel)]="form.metaDescription" maxlength="200"></textarea></label>
+          <label>Related slugs <input [(ngModel)]="relatedText" placeholder="slug-a, slug-b" /></label>
+          <label>Reading time (min) <input type="number" min="1" [(ngModel)]="form.readingTimeMinutes" /></label>
+          <label>Sort order <input type="number" [(ngModel)]="form.sortOrder" /></label>
+          <label>Author / publisher <input [(ngModel)]="form.authorName" /></label>
+          @if (form.id) {
+            <p class="al-meta-dates">
+              Published: {{ form.publishedAt ? (form.publishedAt | date:'medium') : '—' }}<br>
+              Updated: {{ form.updatedAt ? (form.updatedAt | date:'medium') : '—' }}
+            </p>
+          }
+        </aside>
+      </div>
+
+      @if (showPreview()) {
+        <section class="al-preview">
+          <div class="al-preview-tag">Preview — how it will appear publicly (admin-only, not indexed)</div>
+          <h1 class="al-prev-title">{{ form.title || 'Untitled' }}</h1>
+          <p class="al-prev-sum">{{ form.summary }}</p>
+          <div class="al-prev-body" [innerHTML]="form.content"></div>
+        </section>
+      }
+    </div>
+  }
+
+  <!-- ── DELETE CONFIRM ───────────────────────────────────────────────── -->
+  @if (deleteTarget(); as t) {
+    <div class="al-modal-backdrop" (click)="cancelDelete()">
+      <div class="al-modal" (click)="$event.stopPropagation()">
+        <h3>Delete article?</h3>
+        <p>You're about to permanently delete <strong>{{ t.title }}</strong> (<code>/learn/{{ t.slug }}</code>).</p>
+        @if (t.isPublished) {
+          <p class="al-warn">⚠ This article is <strong>published</strong> — its public URL will return 404 after deletion.</p>
+        }
+        <p class="al-muted">This action is recorded in the admin audit log and cannot be undone.</p>
+        <div class="al-modal-actions">
+          <button class="al-btn" (click)="cancelDelete()">Cancel</button>
+          <button class="al-btn al-danger-solid" (click)="confirmDelete()">Delete permanently</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

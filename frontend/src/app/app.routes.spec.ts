@@ -28,6 +28,12 @@ describe('app routes', () => {
     expect(find('admin')!.canActivate).toContain(adminGuard);
   });
 
+  it('protects the Learn CMS (/admin/learn) with adminGuard', () => {
+    const r = routes.find(x => x.path === 'admin/learn');
+    expect(r).toBeTruthy();
+    expect(r!.canActivate).toContain(adminGuard);
+  });
+
   it('leaves login and signup publicly reachable (no guard)', () => {
     expect(find('login')!.canActivate).toBeUndefined();
     expect(find('signup')!.canActivate).toBeUndefined();

@@ -19,6 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Lesson>    Lessons    => Set<Lesson>();
     public DbSet<EmailLog>  EmailLogs  => Set<EmailLog>();
     public DbSet<RealEstateProperty> RealEstateProperties => Set<RealEstateProperty>();
+    public DbSet<LearnArticle> LearnArticles => Set<LearnArticle>();
+    public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
 
     private static readonly JsonSerializerOptions _json = new();
 
@@ -147,6 +149,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId);
             // Index: real estate properties always queried per user
             e.HasIndex(p => p.UserId);
+        });
+
+        // ── LearnArticle ─────────────────────────────────────────────────────
+        mb.Entity<LearnArticle>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.HasIndex(a => a.Slug).IsUnique();   // public URL key
+            e.HasIndex(a => a.IsPublished);        // public hub filters published
+            e.HasIndex(a => a.Category);
+            e.HasIndex(a => a.PublishedAt);
+        });
+
+        // ── AdminAuditLog ────────────────────────────────────────────────────
+        mb.Entity<AdminAuditLog>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.HasIndex(a => a.CreatedAt);
+            e.HasIndex(a => a.ActorUserId);
         });
     }
 }

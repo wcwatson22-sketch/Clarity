@@ -421,6 +421,100 @@ try
             Log.Information("Seeded {Count} lessons into database.", LessonStore.All.Count);
         }
 
+        // ── LearnArticles + AdminAuditLogs tables (Learn CMS) ───────────────────
+        try
+        {
+            using var createLA = conn.CreateCommand();
+            createLA.CommandText = """
+                CREATE TABLE IF NOT EXISTS "LearnArticles" (
+                    "Id"                 INTEGER NOT NULL CONSTRAINT "PK_LearnArticles" PRIMARY KEY AUTOINCREMENT,
+                    "Title"              TEXT NOT NULL DEFAULT '',
+                    "Slug"               TEXT NOT NULL DEFAULT '',
+                    "Summary"            TEXT NOT NULL DEFAULT '',
+                    "Category"           TEXT NOT NULL DEFAULT '',
+                    "Content"            TEXT NOT NULL DEFAULT '',
+                    "FeaturedImageUrl"   TEXT NOT NULL DEFAULT '',
+                    "SeoTitle"           TEXT NOT NULL DEFAULT '',
+                    "MetaDescription"    TEXT NOT NULL DEFAULT '',
+                    "IsPublished"        INTEGER NOT NULL DEFAULT 0,
+                    "IsFeatured"         INTEGER NOT NULL DEFAULT 0,
+                    "DisclaimerType"     TEXT NOT NULL DEFAULT 'none',
+                    "RelatedArticleIds"  TEXT NOT NULL DEFAULT '[]',
+                    "SortOrder"          INTEGER NOT NULL DEFAULT 0,
+                    "ReadingTimeMinutes" INTEGER NOT NULL DEFAULT 3,
+                    "AuthorName"         TEXT NOT NULL DEFAULT 'Clarity Financial Tools',
+                    "PublishedAt"        TEXT NULL,
+                    "CreatedAt"          TEXT NOT NULL DEFAULT '0001-01-01 00:00:00',
+                    "UpdatedAt"          TEXT NOT NULL DEFAULT '0001-01-01 00:00:00',
+                    "CreatedByUserId"    INTEGER NULL,
+                    "UpdatedByUserId"    INTEGER NULL
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_LearnArticles_Slug" ON "LearnArticles" ("Slug");
+                CREATE INDEX IF NOT EXISTS "IX_LearnArticles_IsPublished" ON "LearnArticles" ("IsPublished");
+                CREATE INDEX IF NOT EXISTS "IX_LearnArticles_Category" ON "LearnArticles" ("Category");
+                CREATE INDEX IF NOT EXISTS "IX_LearnArticles_PublishedAt" ON "LearnArticles" ("PublishedAt");
+                CREATE TABLE IF NOT EXISTS "AdminAuditLogs" (
+                    "Id"            INTEGER NOT NULL CONSTRAINT "PK_AdminAuditLogs" PRIMARY KEY AUTOINCREMENT,
+                    "ActorUserId"   INTEGER NOT NULL DEFAULT 0,
+                    "ActorUsername" TEXT NOT NULL DEFAULT '',
+                    "Action"        TEXT NOT NULL DEFAULT '',
+                    "EntityType"    TEXT NOT NULL DEFAULT 'learn-article',
+                    "EntityId"      INTEGER NULL,
+                    "EntitySlug"    TEXT NOT NULL DEFAULT '',
+                    "Detail"        TEXT NOT NULL DEFAULT '',
+                    "CreatedAt"     TEXT NOT NULL DEFAULT '0001-01-01 00:00:00'
+                );
+                CREATE INDEX IF NOT EXISTS "IX_AdminAuditLogs_CreatedAt" ON "AdminAuditLogs" ("CreatedAt");
+                """;
+            await createLA.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex) { Log.Warning(ex, "LearnArticles/AdminAuditLogs table creation skipped"); }
+
+        // ── Seed Learn articles from learn-seed.json if the table is empty ──────
+        // One-time migration of the original static articles into the DB. Idempotent:
+        // only runs when there are zero rows, so it never duplicates or overwrites
+        // admin edits. The static frontend file remains as a runtime fallback.
+        if (!ctx.LearnArticles.Any())
+        {
+            try
+            {
+                var seedPath = Path.Combine(AppContext.BaseDirectory, "Data", "learn-seed.json");
+                if (File.Exists(seedPath))
+                {
+                    using var jsonDoc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(seedPath));
+                    var now = DateTime.UtcNow;
+                    foreach (var el in jsonDoc.RootElement.EnumerateArray())
+                    {
+                        string S(string k) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() ?? "" : "";
+                        bool B(string k) => el.TryGetProperty(k, out var v) && (v.ValueKind == System.Text.Json.JsonValueKind.True);
+                        int I(string k, int d) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.Number ? v.GetInt32() : d;
+                        var related = el.TryGetProperty("relatedArticleIds", out var r) && r.ValueKind == System.Text.Json.JsonValueKind.Array
+                            ? System.Text.Json.JsonSerializer.Serialize(r.EnumerateArray().Select(x => x.GetString()).Where(x => x != null))
+                            : "[]";
+                        var pubStr = S("publishedAt");
+                        DateTime? pub = DateTime.TryParse(pubStr, out var pd) ? DateTime.SpecifyKind(pd, DateTimeKind.Utc) : (DateTime?)now;
+                        ctx.LearnArticles.Add(new Clarity.Api.Models.LearnArticle
+                        {
+                            Title = S("title"), Slug = S("slug"), Summary = S("summary"),
+                            Category = S("category"), Content = S("content"),
+                            FeaturedImageUrl = S("featuredImageUrl"), SeoTitle = S("seoTitle"),
+                            MetaDescription = S("metaDescription"),
+                            IsPublished = B("isPublished"), IsFeatured = B("isFeatured"),
+                            DisclaimerType = string.IsNullOrWhiteSpace(S("disclaimerType")) ? "none" : S("disclaimerType"),
+                            RelatedArticleIds = related,
+                            ReadingTimeMinutes = I("readingTimeMinutes", 3),
+                            PublishedAt = B("isPublished") ? pub : null,
+                            CreatedAt = now, UpdatedAt = now,
+                        });
+                    }
+                    await ctx.SaveChangesAsync();
+                    Log.Information("Seeded {Count} Learn articles into database from learn-seed.json.", ctx.LearnArticles.Count());
+                }
+                else Log.Warning("learn-seed.json not found at {Path} — Learn articles not seeded.", seedPath);
+            }
+            catch (Exception ex) { Log.Error(ex, "Learn article seeding failed"); }
+        }
+
         // ── RealEstateProperties table (added after initial schema) ─────────────
         try
         {

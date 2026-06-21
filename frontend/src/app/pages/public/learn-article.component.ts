@@ -1,18 +1,17 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
 import { LearnAdComponent } from '../../components/learn-ad.component';
 import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
+import { categoryName, LEARN_DISCLAIMERS } from '../../content/learn-content';
 import {
-  getArticle, relatedArticles, categoryName, LearnArticle,
-  LEARN_DISCLAIMERS,
-} from '../../content/learn-content';
+  LearnContentService, PublicArticle, PublicArticleListItem,
+  CATEGORY_FEATURE, CategoryFeature,
+} from '../../services/learn-content.service';
 
 /**
  * Public Learn article — /learn/:slug. Renders inside the marketing
@@ -40,8 +39,9 @@ import {
           </p>
         </header>
 
-        <!-- Authored HTML body (no user input) -->
-        <div class="la-body" [innerHTML]="body()"></div>
+        <!-- Article body — rendered with Angular's HTML sanitizer (strips any
+             scripts/handlers); content is also sanitized server-side on save. -->
+        <div class="la-body" [innerHTML]="a.content"></div>
 
         <!-- Optional ad slot — disabled behind a feature flag by default -->
         <app-learn-ad slot="inline" />
@@ -50,14 +50,14 @@ import {
           <p class="la-disclaimer">{{ disclaimer() }}</p>
         }
 
-        @if (a.feature; as f) {
+        @if (feature(); as f) {
           <aside class="la-feature">
             <div class="la-feature-text">
               <strong>{{ f.label }}</strong>
               @if (f.note) { <span>{{ f.note }}</span> }
               @if (f.premium) { <span class="la-premium">Premium feature</span> }
             </div>
-            <a [routerLink]="f.route" class="la-feature-btn" (click)="trackFeature(a, f.premium)">Open</a>
+            <a [routerLink]="f.route" class="la-feature-btn" (click)="trackFeature(f)">Open</a>
           </aside>
         }
 
@@ -65,7 +65,7 @@ import {
           <section class="la-related">
             <h2>Related articles</h2>
             <div class="la-related-grid">
-              @for (r of related(); track r.id) {
+              @for (r of related(); track r.slug) {
                 <a class="la-related-card" [routerLink]="['/learn', r.slug]" (click)="trackRelated(r)">
                   <h3>{{ r.title }}</h3>
                   <p>{{ r.summary }}</p>
@@ -161,57 +161,56 @@ export class LearnArticleComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private seo = inject(SeoService);
-  private sanitizer = inject(DomSanitizer);
   private analytics = inject(LearnAnalyticsService);
+  private content = inject(LearnContentService);
 
-  private slug = toSignal(this.route.paramMap.pipe(map(p => p.get('slug') ?? '')), { initialValue: '' });
+  readonly article = signal<PublicArticle | null>(null);
+  readonly related = signal<PublicArticleListItem[]>([]);
 
-  readonly article = computed<LearnArticle | undefined>(() => {
-    const a = getArticle(this.slug());
-    if (!a && this.slug()) {
-      // Unknown slug → send the visitor back to the hub.
-      this.router.navigateByUrl('/learn', { replaceUrl: true });
-      return undefined;
-    }
-    if (a) this.applySeo(a);
-    return a;
-  });
-
-  readonly body = computed<SafeHtml>(() =>
-    this.sanitizer.bypassSecurityTrustHtml(this.article()?.bodyHtml ?? ''));
-
-  readonly related = computed(() => {
+  readonly feature = computed<CategoryFeature | null>(() => {
     const a = this.article();
-    return a ? relatedArticles(a) : [];
+    return a ? (CATEGORY_FEATURE[a.category] ?? null) : null;
   });
 
   readonly disclaimer = computed(() => {
     const t = this.article()?.disclaimerType;
-    return t && t !== 'none' ? LEARN_DISCLAIMERS[t] : '';
+    return t && t !== 'none' ? (LEARN_DISCLAIMERS as Record<string, string>)[t] ?? '' : '';
   });
 
   /** Loan/DTI/underwriting articles get the extra lending-variability note. */
   readonly loanArticle = computed(() => this.article()?.disclaimerType === 'standard');
 
-  private lastSeoSlug = '';
-  private applySeo(a: LearnArticle) {
-    if (this.lastSeoSlug === a.slug) return;
-    // Navigating to a different article (e.g. a related link at the bottom of
-    // the page) should start at the top, not retain the previous scroll.
-    if (this.lastSeoSlug && typeof window !== 'undefined') window.scrollTo({ top: 0 });
-    this.lastSeoSlug = a.slug;
+  constructor() {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(pm => {
+      const slug = pm.get('slug') ?? '';
+      this.content.get(slug).subscribe(a => {
+        if (!a) { this.router.navigateByUrl('/learn', { replaceUrl: true }); return; }
+        this.article.set(a);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+        this.applySeo(a);
+        // Resolve related cards (title/summary) from the list by slug.
+        this.content.list().subscribe(list =>
+          this.related.set(a.relatedSlugs
+            .map(s => list.find(x => x.slug === s))
+            .filter((x): x is PublicArticleListItem => !!x)));
+      });
+    });
+  }
+
+  private applySeo(a: PublicArticle) {
     const path = '/learn/' + a.slug;
-    this.seo.update({ title: a.seoTitle, description: a.summary, path, image: a.featuredImage, type: 'article' });
+    const img = a.featuredImage || '/images/clarity-social-card.png';
+    this.seo.update({ title: a.seoTitle, description: a.metaDescription, path, image: img, type: 'article' });
     this.seo.setRobots('index,follow');
     this.seo.setJsonLd('article', {
       '@context': 'https://schema.org',
       '@type': 'Article',
       headline: a.title,
-      description: a.summary,
-      image: this.seo.absoluteUrl(a.featuredImage),
+      description: a.metaDescription,
+      image: this.seo.absoluteUrl(img),
       datePublished: a.publishedAt,
       dateModified: a.updatedAt,
-      author: { '@type': 'Organization', name: 'Clarity Financial Tools' },
+      author: { '@type': 'Organization', name: a.authorName },
       publisher: {
         '@type': 'Organization',
         name: 'Clarity Financial Tools',
@@ -232,9 +231,9 @@ export class LearnArticleComponent {
   }
 
   catName(id: string) { return categoryName(id); }
-  trackRelated(r: LearnArticle) { this.analytics.track('learn_related_clicked', { slug: r.slug }); }
-  trackFeature(a: LearnArticle, premium?: boolean) {
-    this.analytics.track(premium ? 'learn_premium_link_clicked' : 'learn_cta_clicked', { slug: a.slug, to: a.feature?.route });
+  trackRelated(r: PublicArticleListItem) { this.analytics.track('learn_related_clicked', { slug: r.slug }); }
+  trackFeature(f: CategoryFeature) {
+    this.analytics.track(f.premium ? 'learn_premium_link_clicked' : 'learn_cta_clicked', { slug: this.article()?.slug, to: f.route });
   }
   trackSignup() { this.analytics.track('learn_account_create_started', { slug: this.article()?.slug, label: 'article_cta' }); }
 }

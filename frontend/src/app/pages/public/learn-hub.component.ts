@@ -5,10 +5,8 @@ import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
 import { LearnSubmissionComponent } from '../../components/learn-submission.component';
 import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
-import {
-  LEARN_CATEGORIES, publishedArticles, featuredArticles,
-  articlesByCategory, LearnArticle,
-} from '../../content/learn-content';
+import { LEARN_CATEGORIES } from '../../content/learn-content';
+import { LearnContentService, PublicArticleListItem } from '../../services/learn-content.service';
 
 /**
  * Public Learn hub — /learn. Renders inside the marketing PublicLayout.
@@ -61,7 +59,7 @@ import {
         <section class="lh-section">
           <h2 class="lh-h2">Featured guides</h2>
           <div class="lh-grid">
-            @for (a of featured(); track a.id) {
+            @for (a of featured(); track a.slug) {
               <a class="lh-card lh-card-feat" [routerLink]="['/learn', a.slug]" (click)="trackArticle(a)">
                 <span class="lh-card-cat">{{ catName(a.category) }}</span>
                 <h3>{{ a.title }}</h3>
@@ -82,7 +80,7 @@ import {
           </h2>
           @if (filtered().length) {
             <div class="lh-grid">
-              @for (a of filtered(); track a.id) {
+              @for (a of filtered(); track a.slug) {
                 <a class="lh-card" [routerLink]="['/learn', a.slug]" (click)="trackArticle(a)">
                   <span class="lh-card-cat">{{ catName(a.category) }}</span>
                   <h3>{{ a.title }}</h3>
@@ -103,7 +101,7 @@ import {
               <h2 class="lh-h2">{{ c.name }}</h2>
               <p class="lh-cat-blurb">{{ c.blurb }}</p>
               <div class="lh-grid">
-                @for (a of byCat(c.id); track a.id) {
+                @for (a of byCat(c.id); track a.slug) {
                   <a class="lh-card" [routerLink]="['/learn', a.slug]" (click)="trackArticle(a)">
                     <h3>{{ a.title }}</h3>
                     <p>{{ a.summary }}</p>
@@ -190,18 +188,19 @@ export class LearnHubComponent implements OnInit {
   readonly auth = inject(AuthService);
   private seo = inject(SeoService);
   private analytics = inject(LearnAnalyticsService);
+  private content = inject(LearnContentService);
 
   readonly categories = LEARN_CATEGORIES;
-  readonly featured = signal<LearnArticle[]>(featuredArticles());
-  private all = publishedArticles();
+  readonly all = signal<PublicArticleListItem[]>([]);
+  readonly featured = computed(() => this.all().filter(a => a.isFeatured));
 
   query = signal('');
   activeCat = signal<string>('all');
 
-  readonly filtered = computed<LearnArticle[]>(() => {
+  readonly filtered = computed<PublicArticleListItem[]>(() => {
     const q = this.query().trim().toLowerCase();
     const cat = this.activeCat();
-    return this.all.filter(a => {
+    return this.all().filter(a => {
       const catOk = cat === 'all' || a.category === cat;
       const qOk = !q || (a.title + ' ' + a.summary).toLowerCase().includes(q);
       return catOk && qOk;
@@ -209,6 +208,21 @@ export class LearnHubComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.content.list().subscribe(list => {
+      this.all.set(list);
+      this.seo.setJsonLd('learn-hub', {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Learn About Your Financial Picture',
+        description: 'Educational guides to cash flow, debt, DTI, net worth, loan preparation, and real estate.',
+        url: this.seo.absoluteUrl('/learn'),
+        hasPart: list.map(a => ({
+          '@type': 'Article',
+          headline: a.title,
+          url: this.seo.absoluteUrl('/learn/' + a.slug),
+        })),
+      });
+    });
     this.seo.update({
       title: 'Learn About Your Financial Picture | Clarity Financial Tools',
       description: 'Straightforward guides to cash flow, debt, DTI, net worth, loan preparation, and investment real estate — free from Clarity Financial Tools.',
@@ -216,28 +230,16 @@ export class LearnHubComponent implements OnInit {
       type: 'website',
     });
     this.seo.setRobots('index,follow');
-    this.seo.setJsonLd('learn-hub', {
-      '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: 'Learn About Your Financial Picture',
-      description: 'Educational guides to cash flow, debt, DTI, net worth, loan preparation, and real estate.',
-      url: this.seo.absoluteUrl('/learn'),
-      hasPart: this.all.map(a => ({
-        '@type': 'Article',
-        headline: a.title,
-        url: this.seo.absoluteUrl('/learn/' + a.slug),
-      })),
-    });
     this.analytics.track('learn_hub_viewed');
   }
 
   catName(id: string) { return this.categories.find(c => c.id === id)?.name ?? ''; }
-  byCat(id: string) { return articlesByCategory(id); }
+  byCat(id: string) { return this.all().filter(a => a.category === id); }
 
   setCat(id: string) { this.activeCat.set(id); }
   onSearch(v: string) { this.query.set(v); }
   reset() { this.query.set(''); this.activeCat.set('all'); }
 
-  trackArticle(a: LearnArticle) { this.analytics.track('learn_article_viewed', { slug: a.slug, category: a.category }); }
+  trackArticle(a: PublicArticleListItem) { this.analytics.track('learn_article_viewed', { slug: a.slug, category: a.category }); }
   trackSignup() { this.analytics.track('learn_account_create_started', { label: 'hub_cta' }); }
 }

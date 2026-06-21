@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using Clarity.Api.Data;
 using Clarity.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clarity.Api.Controllers;
 
@@ -17,8 +20,88 @@ public class LearnController(
     IConfiguration config,
     ILogger<LearnController> logger) : ControllerBase
 {
+    private const string Origin = "https://clarityfinancialtools.com";
+
     private static readonly string[] AllowedTypes =
         ["Question", "Topic Suggestion", "Comment", "Correction", "Other"];
+
+    // ── Public article reads (published only; no auth) ──────────────────────────
+
+    // GET /api/learn/articles — lightweight list for the public hub.
+    [HttpGet("articles")]
+    public async Task<IActionResult> GetArticles()
+    {
+        var list = await db.LearnArticles
+            .Where(a => a.IsPublished)
+            .OrderBy(a => a.SortOrder).ThenByDescending(a => a.PublishedAt)
+            .Select(a => new
+            {
+                a.Slug, a.Title, a.Summary, a.Category, a.IsFeatured,
+                a.ReadingTimeMinutes, a.FeaturedImageUrl,
+            })
+            .ToListAsync();
+        return Ok(list);
+    }
+
+    // GET /api/learn/articles/{slug} — full published article.
+    [HttpGet("articles/{slug}")]
+    public async Task<IActionResult> GetArticle(string slug)
+    {
+        var a = await db.LearnArticles.FirstOrDefaultAsync(x => x.Slug == slug && x.IsPublished);
+        if (a is null) return NotFound(new { error = "Article not found." });
+        return Ok(ToPublicDto(a));
+    }
+
+    // GET /api/learn/sitemap.xml — dynamic sitemap so publish/unpublish takes
+    // effect with no redeploy. Includes the static marketing routes + every
+    // published article. Caddy maps /sitemap.xml to this.
+    [HttpGet("sitemap.xml")]
+    [Produces("application/xml")]
+    public async Task<IActionResult> Sitemap()
+    {
+        var articles = await db.LearnArticles
+            .Where(a => a.IsPublished)
+            .Select(a => new { a.Slug, a.UpdatedAt })
+            .ToListAsync();
+
+        var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var sb = new StringBuilder();
+        sb.AppendLine("""<?xml version="1.0" encoding="UTF-8"?>""");
+        sb.AppendLine("""<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">""");
+        void Url(string loc, string lastmod, string freq, string pri)
+        {
+            sb.AppendLine("  <url>");
+            sb.AppendLine($"    <loc>{Origin}{loc}</loc>");
+            sb.AppendLine($"    <lastmod>{lastmod}</lastmod>");
+            sb.AppendLine($"    <changefreq>{freq}</changefreq>");
+            sb.AppendLine($"    <priority>{pri}</priority>");
+            sb.AppendLine("  </url>");
+        }
+        Url("/", today, "weekly", "1.0");
+        Url("/features", today, "monthly", "0.8");
+        Url("/pricing", today, "monthly", "0.8");
+        Url("/learn", today, "weekly", "0.9");
+        Url("/about", today, "monthly", "0.5");
+        foreach (var a in articles)
+            Url("/learn/" + a.Slug, a.UpdatedAt.ToString("yyyy-MM-dd"), "monthly", "0.7");
+        sb.AppendLine("</urlset>");
+        return Content(sb.ToString(), "application/xml", Encoding.UTF8);
+    }
+
+    internal static object ToPublicDto(Models.LearnArticle a) => new
+    {
+        a.Slug, a.Title, a.Summary, a.Category, a.Content,
+        a.FeaturedImageUrl, a.SeoTitle, a.MetaDescription,
+        a.DisclaimerType, a.IsFeatured, a.ReadingTimeMinutes, a.AuthorName,
+        RelatedArticleIds = ParseSlugs(a.RelatedArticleIds),
+        PublishedAt = a.PublishedAt, a.UpdatedAt,
+    };
+
+    internal static string[] ParseSlugs(string json)
+    {
+        try { return JsonSerializer.Deserialize<string[]>(json) ?? []; }
+        catch { return []; }
+    }
 
     // POST /api/learn/submissions
     // Public visitors (and logged-in users) submit questions / topic suggestions /
