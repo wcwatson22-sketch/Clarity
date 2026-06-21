@@ -1,6 +1,7 @@
 ﻿import { Component, inject, computed, signal, OnInit } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -864,6 +865,19 @@ export class AppComponent {
       App.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) this.lockSvc.lock();
       });
+
+      // Open external http(s) links (Privacy Policy, Terms of Use/EULA, etc.) in
+      // the system browser. Bare target="_blank" anchors do nothing inside an iOS
+      // WKWebView, which would make App Review's required subscription links appear
+      // non-functional. Internal router links (relative paths) are left untouched.
+      document.addEventListener('click', (ev) => {
+        const anchor = (ev.target as HTMLElement)?.closest?.('a');
+        const href = anchor?.getAttribute('href') ?? '';
+        if (/^https?:\/\//i.test(href)) {
+          ev.preventDefault();
+          Browser.open({ url: href }).catch(() => { /* ignore */ });
+        }
+      }, true);
     }
 
     // Auto-reload when a new service worker version is ready so users always
