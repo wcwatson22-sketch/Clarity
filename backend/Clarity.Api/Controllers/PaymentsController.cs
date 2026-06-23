@@ -237,12 +237,11 @@ public class PaymentsController(
             }
         }
 
-        // If ASC API unavailable, decode JWS payload from client (no sig verification)
-        if (txnPayload is null && !string.IsNullOrWhiteSpace(req.JwsRepresentation))
-        {
-            txnPayload = DecodeJwsPayload(req.JwsRepresentation);
-        }
-
+        // SECURITY: only an Apple-verified transaction may grant entitlement.
+        // We deliberately do NOT fall back to decoding the client-supplied JWS
+        // without signature verification — a crafted JWS could otherwise grant
+        // free Premium. If server-side verification is unavailable (e.g. the ASC
+        // key is not configured), fail closed and let the client retry/restore.
         if (txnPayload is null)
             return BadRequest(new { error = "Could not verify purchase with Apple. Please try again." });
 
