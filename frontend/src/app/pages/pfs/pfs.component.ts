@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, PercentPipe, DatePipe } from '@angular/comm
 import { RouterLink } from '@angular/router';
 import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
+import { userScopedKey } from '../../services/scoped-storage';
 import { PlanAccessService } from '../../services/plan-access.service';
 import { RealEstateService } from '../../services/real-estate.service';
 import { RealEstateProperty } from '../real-estate/real-estate.component';
@@ -48,9 +49,11 @@ export class PfsComponent implements OnInit {
   private static readonly SECOND_INC_KEY    = 'clarity_second_income';
   private static readonly SECOND_INC_EN_KEY = 'clarity_second_income_enabled';
 
-  private _secondEnabled = () => localStorage.getItem(PfsComponent.SECOND_INC_EN_KEY) === '1';
+  // User-scoped keys so PFS reads the same per-account values Cash Flow writes.
+  private k(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
+  private _secondEnabled = () => localStorage.getItem(this.k(PfsComponent.SECOND_INC_EN_KEY)) === '1';
   private _secondData    = () => {
-    try { return JSON.parse(localStorage.getItem(PfsComponent.SECOND_INC_KEY) ?? '{"gross":0,"net":0}'); }
+    try { return JSON.parse(localStorage.getItem(this.k(PfsComponent.SECOND_INC_KEY)) ?? '{"gross":0,"net":0}'); }
     catch { return { gross: 0, net: 0 }; }
   };
 

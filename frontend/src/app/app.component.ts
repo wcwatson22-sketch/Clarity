@@ -120,6 +120,7 @@ import { environment } from '../environments/environment';
                 [(ngModel)]="helpMessage"
                 rows="5">
               </textarea>
+              <p class="help-warn">Do not enter passwords, bank login credentials, Social Security numbers, full account numbers, or other sensitive authentication information.</p>
               @if (helpError()) {
                 <p class="help-error">{{ helpError() }}</p>
               }
@@ -347,6 +348,7 @@ import { environment } from '../environments/environment';
       &:hover { background: #F3F4F6; color: #374151; }
     }
     .help-subtitle { margin: 0 0 16px; font-size: 13px; color: #6B7280; line-height: 1.5; }
+    .help-warn { margin: 8px 0 0; font-size: 11.5px; color: #9CA3AF; line-height: 1.45; }
     .help-success {
       display: flex; align-items: center; gap: 12px;
       background: #F0FDF4; border: 1px solid #BBF7D0;

@@ -7,6 +7,7 @@ import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models
 import { NumericDirective } from '../../directives/numeric.directive';
 import { AuthService } from '../../services/auth.service';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
+import { userScopedKey, migrateGlobalKey } from '../../services/scoped-storage';
 
 const SECOND_INC_KEY     = 'clarity_second_income';
 const SECOND_INC_EN_KEY  = 'clarity_second_income_enabled';
@@ -47,7 +48,7 @@ export class CashFlowComponent implements OnInit {
   showAnnual  = signal(false);    // monthly ↔ annual toggle
 
   // ── Retirement contributions (monthly $; informational, NOT subtracted from FCF) ──
-  retirement = signal<RetirementContributions>(this._loadRetirement());
+  retirement = signal<RetirementContributions>({ ...EMPTY_RETIREMENT });
   /** Employee contributions only (excludes employer match) — these are the user's own savings. */
   employeeRetirement = computed(() => {
     const r = this.retirement();
@@ -57,10 +58,26 @@ export class CashFlowComponent implements OnInit {
   totalRetirementSavings = computed(() => this.employeeRetirement() + this.retirement().employerMatch);
 
   // ── Second Income (spousal / partner) ─────────────────────────────────────
-  secondIncomeEnabled = signal<boolean>(localStorage.getItem(SECOND_INC_EN_KEY) === '1');
-  secondIncome        = signal<{ gross: number; net: number }>(
-    JSON.parse(localStorage.getItem(SECOND_INC_KEY) ?? '{"gross":0,"net":0}')
-  );
+  secondIncomeEnabled = signal<boolean>(false);
+  secondIncome        = signal<{ gross: number; net: number }>({ gross: 0, net: 0 });
+
+  /** Per-user localStorage key — isolates device-local financial data by account. */
+  private k(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
+
+  constructor() {
+    const uid = this.auth.currentUser()?.id ?? null;
+    // Migrate any legacy GLOBAL keys (which could leak across accounts on a
+    // shared browser) into this user's scoped keys, deleting the global copy.
+    for (const base of [SECOND_INC_KEY, SECOND_INC_EN_KEY, RETIREMENT_KEY, LEGACY_401K_KEY, LEGACY_401K_2_KEY]) {
+      migrateGlobalKey(base, uid);
+    }
+    // Load this account's device-local values from its scoped keys.
+    this.secondIncomeEnabled.set(localStorage.getItem(this.k(SECOND_INC_EN_KEY)) === '1');
+    try {
+      this.secondIncome.set(JSON.parse(localStorage.getItem(this.k(SECOND_INC_KEY)) ?? '{"gross":0,"net":0}'));
+    } catch { /* keep default */ }
+    this.retirement.set(this._loadRetirement());
+  }
 
   // 50/30/20 — collapsed by default
   show503020 = signal(false);
@@ -255,7 +272,7 @@ export class CashFlowComponent implements OnInit {
   // ── Retirement helpers ────────────────────────────────────────────────────
   private _loadRetirement(): RetirementContributions {
     try {
-      const raw = localStorage.getItem(RETIREMENT_KEY);
+      const raw = localStorage.getItem(this.k(RETIREMENT_KEY));
       if (raw) return { ...EMPTY_RETIREMENT, ...JSON.parse(raw) };
     } catch { /* ignore */ }
     return { ...EMPTY_RETIREMENT };
@@ -263,21 +280,21 @@ export class CashFlowComponent implements OnInit {
   updateRetirement(field: keyof RetirementContributions, val: string) {
     const updated = { ...this.retirement(), [field]: this.toMonthly(val) };
     this.retirement.set(updated);
-    localStorage.setItem(RETIREMENT_KEY, JSON.stringify(updated));
+    localStorage.setItem(this.k(RETIREMENT_KEY), JSON.stringify(updated));
   }
   /** One-time migration: convert legacy 401k % (primary + second) into a monthly $ Traditional 401(k). */
   private _migrateLegacyRetirement() {
-    if (localStorage.getItem(RETIREMENT_KEY)) return;             // already on new model
-    const pct1 = parseFloat(localStorage.getItem(LEGACY_401K_KEY) ?? '0') || 0;
-    const pct2 = parseFloat(localStorage.getItem(LEGACY_401K_2_KEY) ?? '0') || 0;
+    if (localStorage.getItem(this.k(RETIREMENT_KEY))) return;     // already on new model
+    const pct1 = parseFloat(localStorage.getItem(this.k(LEGACY_401K_KEY)) ?? '0') || 0;
+    const pct2 = parseFloat(localStorage.getItem(this.k(LEGACY_401K_2_KEY)) ?? '0') || 0;
     if (pct1 === 0 && pct2 === 0) return;
     const dollars = this.primaryGrossIncome() * pct1 / 100
                   + (this.secondIncomeEnabled() ? this.secondIncome().gross * pct2 / 100 : 0);
     const migrated = { ...EMPTY_RETIREMENT, trad401k: Math.round(dollars) };
     this.retirement.set(migrated);
-    localStorage.setItem(RETIREMENT_KEY, JSON.stringify(migrated));
-    localStorage.removeItem(LEGACY_401K_KEY);
-    localStorage.removeItem(LEGACY_401K_2_KEY);
+    localStorage.setItem(this.k(RETIREMENT_KEY), JSON.stringify(migrated));
+    localStorage.removeItem(this.k(LEGACY_401K_KEY));
+    localStorage.removeItem(this.k(LEGACY_401K_2_KEY));
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -348,15 +365,15 @@ export class CashFlowComponent implements OnInit {
   toggleSecondIncome() {
     const enabled = !this.secondIncomeEnabled();
     this.secondIncomeEnabled.set(enabled);
-    localStorage.setItem(SECOND_INC_EN_KEY, enabled ? '1' : '0');
+    localStorage.setItem(this.k(SECOND_INC_EN_KEY), enabled ? '1' : '0');
   }
   updateSecondGross(val: string) {
     this.secondIncome.update(i => ({ ...i, gross: this.toMonthly(val) }));
-    localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
+    localStorage.setItem(this.k(SECOND_INC_KEY), JSON.stringify(this.secondIncome()));
   }
   updateSecondNet(val: string) {
     this.secondIncome.update(i => ({ ...i, net: this.toMonthly(val) }));
-    localStorage.setItem(SECOND_INC_KEY, JSON.stringify(this.secondIncome()));
+    localStorage.setItem(this.k(SECOND_INC_KEY), JSON.stringify(this.secondIncome()));
   }
 
   // ── Budget item CRUD ──────────────────────────────────────────────────────

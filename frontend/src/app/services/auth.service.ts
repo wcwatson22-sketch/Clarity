@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthResponse, LoginRequest, MeResponse, SignupRequest } from '../models/auth.models';
+import { migrateGlobalKeys, LEGACY_DEVICE_FINANCIAL_KEYS } from './scoped-storage';
 
 const TOKEN_KEY = 'clarity_token';
 const USER_KEY  = 'clarity_user';
@@ -75,5 +76,9 @@ export class AuthService {
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
     this._token.set(res.token);
     this._user.set(res.user);
+    // Isolate device-local financial data per account: migrate any legacy global
+    // keys into this user's namespace (and delete the global copy) so a second
+    // account on the same browser/app can never read the first account's values.
+    migrateGlobalKeys(LEGACY_DEVICE_FINANCIAL_KEYS, res.user.id);
   }
 }

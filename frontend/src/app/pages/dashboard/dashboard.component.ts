@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FinanceService } from '../../services/finance.service';
 import { AuthService } from '../../services/auth.service';
+import { userScopedKey } from '../../services/scoped-storage';
 import { ToastService } from '../../services/toast.service';
 import { AppInstallService } from '../../services/app-install.service';
 import { PushNotificationService } from '../../services/push-notification.service';
@@ -32,6 +33,8 @@ interface MovementDeltas {
 export class DashboardComponent implements OnInit {
   private svc   = inject(FinanceService);
   private auth  = inject(AuthService);
+  /** Per-user localStorage key — keeps device-local financial data isolated by account. */
+  private suKey(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
   private push  = inject(PushNotificationService);
   private toast = inject(ToastService);
   private http  = inject(HttpClient);
@@ -223,10 +226,10 @@ export class DashboardComponent implements OnInit {
     let combinedGross = inc.type === 'stable'
       ? inc.grossMonthlyIncome
       : (inc.variableMonths?.length ? inc.variableMonths.reduce((s, m) => s + m.amount, 0) / inc.variableMonths.length : 0);
-    const secondEnabled = localStorage.getItem('clarity_second_income_enabled') === '1';
+    const secondEnabled = localStorage.getItem(this.suKey('clarity_second_income_enabled')) === '1';
     if (secondEnabled) {
       try {
-        const secondData = JSON.parse(localStorage.getItem('clarity_second_income') ?? '{"gross":0,"net":0}');
+        const secondData = JSON.parse(localStorage.getItem(this.suKey('clarity_second_income')) ?? '{"gross":0,"net":0}');
         combinedGross += secondData.gross ?? 0;
       } catch {}
     }

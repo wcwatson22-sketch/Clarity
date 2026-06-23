@@ -95,13 +95,16 @@ public class ProfileController(AppDbContext db, IConfiguration config) : Control
             catch { /* best effort — proceed with deletion regardless */ }
         }
 
-        // Remove all related data (no cascade delete configured in EF)
+        // Remove all related data (no cascade delete configured in EF).
+        // Every user-owned table must be included here so account deletion never
+        // leaves orphaned financial records behind.
         db.Accounts.RemoveRange(db.Accounts.Where(a => a.UserId == userId));
         db.BudgetItems.RemoveRange(db.BudgetItems.Where(b => b.UserId == userId));
         db.Snapshots.RemoveRange(db.Snapshots.Where(s => s.UserId == userId));
         db.EducationProgress.RemoveRange(db.EducationProgress.Where(e => e.UserId == userId));
         db.SurveyResponses.RemoveRange(db.SurveyResponses.Where(s => s.UserId == userId));
         db.ResetTokens.RemoveRange(db.ResetTokens.Where(t => t.UserId == userId));
+        db.RealEstateProperties.RemoveRange(db.RealEstateProperties.Where(p => p.UserId == userId));
 
         var income = await db.Incomes.FirstOrDefaultAsync(i => i.UserId == userId);
         if (income is not null) db.Incomes.Remove(income);
