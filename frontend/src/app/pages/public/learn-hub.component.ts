@@ -7,6 +7,8 @@ import { LearnSubmissionComponent } from '../../components/learn-submission.comp
 import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
 import { LEARN_CATEGORIES } from '../../content/learn-content';
 import { LearnContentService, PublicArticleListItem } from '../../services/learn-content.service';
+import { MarketingAdUnitComponent } from '../../components/marketing-ad-unit.component';
+import { MARKETING_ADS } from '../../services/marketing-ads.config';
 
 /**
  * Public Learn hub — /learn. Renders inside the marketing PublicLayout.
@@ -15,7 +17,7 @@ import { LearnContentService, PublicArticleListItem } from '../../services/learn
 @Component({
   selector: 'app-learn-hub',
   standalone: true,
-  imports: [RouterLink, LearnSubmissionComponent, LearnDisclosureComponent],
+  imports: [RouterLink, LearnSubmissionComponent, LearnDisclosureComponent, MarketingAdUnitComponent],
   template: `
     <div class="lh">
       <!-- 1. Heading & introduction -->
@@ -69,6 +71,12 @@ import { LearnContentService, PublicArticleListItem } from '../../services/learn
             }
           </div>
         </section>
+      }
+
+      <!-- Feed ad — full-width banner after the first card cluster (not a card) -->
+      @if (ads.placements.learnFeedEnabled) {
+        <app-marketing-ad-unit placementName="learn_feed" [adSlot]="ads.slots.learnFeed"
+          format="auto" [minimumHeight]="120" />
       }
 
       <!-- Results -->
@@ -191,6 +199,7 @@ export class LearnHubComponent implements OnInit {
   private content = inject(LearnContentService);
 
   readonly categories = LEARN_CATEGORIES;
+  readonly ads = MARKETING_ADS;
   readonly all = signal<PublicArticleListItem[]>([]);
   readonly featured = computed(() => this.all().filter(a => a.isFeatured));
 

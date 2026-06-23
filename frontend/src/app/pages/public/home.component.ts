@@ -1,11 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { MarketingAdUnitComponent } from '../../components/marketing-ad-unit.component';
+import { MARKETING_ADS } from '../../services/marketing-ads.config';
 
 @Component({
   selector: 'app-public-home',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MarketingAdUnitComponent],
   template: `
     <!-- Hero -->
     <section class="hero">
@@ -22,38 +24,74 @@ import { AuthService } from '../../services/auth.service';
       <p class="hero-note">Free forever — no credit card, no trial expiration.</p>
     </section>
 
-    <!-- Product previews -->
-    <section class="wrap previews">
-      <h2>A clear view of every part of your finances</h2>
-      <p class="previews-sub">Real screens from Clarity — your dashboard, cash flow, loan prep, and learning center.</p>
-      <div class="shots">
-        <figure class="shot">
-          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-            <img src="images/preview-dashboard.png" alt="Clarity dashboard showing net worth, assets, liabilities, DTI, and snapshot movement" loading="lazy" width="1100" height="1036" />
+    <!--
+      After-hero two-column layout: main content + desktop sidebar ad rail.
+      The sidebar is hidden below 1100 px; the mobile banner appears instead.
+      Ad units self-collapse when ads are disabled or no ad is returned.
+    -->
+    <div class="home-row">
+      <div class="home-content">
+
+        <!-- Product previews -->
+        <section class="previews">
+          <h2>A clear view of every part of your finances</h2>
+          <p class="previews-sub">Real screens from Clarity — your dashboard, cash flow, loan prep, and learning center.</p>
+          <div class="shots">
+            <figure class="shot">
+              <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+                <img src="images/preview-dashboard.png" alt="Clarity dashboard showing net worth, assets, liabilities, DTI, and snapshot movement" loading="lazy" width="1100" height="1036" />
+              </div>
+              <figcaption>Dashboard — net worth, assets &amp; liabilities at a glance</figcaption>
+            </figure>
+            <figure class="shot">
+              <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+                <img src="images/preview-cashflow.png" alt="Clarity cash flow view showing take-home pay, outflow, free cash flow, DTI, and the 50/30/20 rule" loading="lazy" width="1100" height="837" />
+              </div>
+              <figcaption>Cash Flow — where your take-home pay goes</figcaption>
+            </figure>
+            <figure class="shot">
+              <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+                <img src="images/preview-loanprep.png" alt="Clarity loan prep view with mortgage readiness targets and a documents-to-gather checklist" loading="lazy" width="1100" height="1136" />
+              </div>
+              <figcaption>Loan Prep — get ready before you apply <span class="shot-prem">Premium</span></figcaption>
+            </figure>
+            <figure class="shot">
+              <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
+                <img src="images/preview-learn.png" alt="Clarity learning center with financial education lessons across categories" loading="lazy" width="1100" height="1056" />
+              </div>
+              <figcaption>Learn — plain-English financial guides, free</figcaption>
+            </figure>
           </div>
-          <figcaption>Dashboard — net worth, assets &amp; liabilities at a glance</figcaption>
-        </figure>
-        <figure class="shot">
-          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-            <img src="images/preview-cashflow.png" alt="Clarity cash flow view showing take-home pay, outflow, free cash flow, DTI, and the 50/30/20 rule" loading="lazy" width="1100" height="837" />
-          </div>
-          <figcaption>Cash Flow — where your take-home pay goes</figcaption>
-        </figure>
-        <figure class="shot">
-          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-            <img src="images/preview-loanprep.png" alt="Clarity loan prep view with mortgage readiness targets and a documents-to-gather checklist" loading="lazy" width="1100" height="1136" />
-          </div>
-          <figcaption>Loan Prep — get ready before you apply <span class="shot-prem">Premium</span></figcaption>
-        </figure>
-        <figure class="shot">
-          <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-            <img src="images/preview-learn.png" alt="Clarity learning center with financial education lessons across categories" loading="lazy" width="1100" height="1056" />
-          </div>
-          <figcaption>Learn — plain-English financial guides, free</figcaption>
-        </figure>
-      </div>
-      <p class="shots-note">The figures shown above are sample values from a test account — not real user data.</p>
-    </section>
+          <p class="shots-note">The figures shown above are sample values from a test account — not real user data.</p>
+        </section>
+
+      </div><!-- /.home-content -->
+
+      <!-- Desktop sidebar ad — hidden on mobile via mobileVisibility + CSS.
+           Sits beside the previews section; never beside a primary CTA. -->
+      @if (ads.placements.homeSidebarEnabled) {
+        <aside class="home-sidebar" aria-label="Advertisement sidebar">
+          <app-marketing-ad-unit
+            placementName="home_desktop_sidebar"
+            [adSlot]="ads.slots.homeDesktop"
+            format="auto"
+            [minimumHeight]="280"
+            mobileVisibility="hidden" />
+        </aside>
+      }
+    </div><!-- /.home-row -->
+
+    <!-- Mobile banner — visible only below 760 px, after the first content section.
+         Never above the primary CTA. -->
+    @if (ads.placements.homeMobileBannerEnabled) {
+      <app-marketing-ad-unit
+        placementName="home_mobile_banner"
+        [adSlot]="ads.slots.homeMobile"
+        format="auto"
+        [minimumHeight]="90"
+        mobileVisibility="only"
+        className="home-mobile-banner" />
+    }
 
     <!-- Core benefits -->
     <section class="band">
@@ -162,8 +200,23 @@ import { AuthService } from '../../services/auth.service';
     .card h3 { font-size: 17px; font-weight: 700; margin: 0 0 8px; }
     .card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0; }
 
-    /* Product previews */
-    .previews { padding: 64px 24px 8px; text-align: center; }
+    /* ── After-hero two-column layout ──────────────────────────────────────── */
+    .home-row {
+      display: flex; align-items: flex-start; gap: 24px;
+      max-width: 1440px; margin: 0 auto;
+    }
+    .home-content { flex: 1 1 0; min-width: 0; }
+    /* Sidebar: 300 px wide, inset from edge, top-padded to align with previews */
+    .home-sidebar {
+      flex: 0 0 300px; padding-top: 64px; padding-right: 24px;
+    }
+    /* Hide sidebar below 1100 px; the mobile banner appears instead */
+    @media (max-width: 1100px) {
+      .home-sidebar { display: none !important; }
+    }
+
+    /* Product previews (inside .home-content — no longer needs .wrap centering) */
+    .previews { padding: 64px 24px 8px; text-align: center; max-width: 1080px; margin: 0 auto; }
     .previews-sub { font-size: 16px; color: var(--muted); margin: -18px auto 36px; max-width: 620px; line-height: 1.6; }
     .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; }
     .shot { margin: 0; }
@@ -180,6 +233,10 @@ import { AuthService } from '../../services/auth.service';
     .shot figcaption { font-size: 14px; color: #374151; font-weight: 600; margin-top: 14px; }
     .shot-prem { display: inline-block; font-size: 11px; font-weight: 700; color: var(--g); background: #E1F5EE; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: middle; }
     .shots-note { font-size: 12.5px; color: #9CA3AF; text-align: center; margin: 26px auto 0; max-width: 560px; font-style: italic; }
+
+    /* Mobile banner — the ad unit's own mobileVisibility="only" hides it on
+       desktop; this class just adds horizontal breathing room on small screens. */
+    ::ng-deep .home-mobile-banner { margin-left: 16px; margin-right: 16px; }
 
     .how { padding: 64px 24px; }
     .step { text-align: center; padding: 12px; }
@@ -209,9 +266,12 @@ import { AuthService } from '../../services/auth.service';
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       .shots { grid-template-columns: 1fr; gap: 22px; }
       h2 { font-size: 23px; }
+      /* On mobile home-row collapses to a single column */
+      .home-row { display: block; }
     }
   `],
 })
 export class PublicHomeComponent {
   readonly auth = inject(AuthService);
+  readonly ads = MARKETING_ADS;
 }

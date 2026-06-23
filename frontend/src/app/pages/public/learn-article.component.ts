@@ -5,7 +5,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
-import { LearnAdComponent } from '../../components/learn-ad.component';
+import { MarketingAdUnitComponent } from '../../components/marketing-ad-unit.component';
+import { MARKETING_ADS } from '../../services/marketing-ads.config';
 import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
 import { categoryName, LEARN_DISCLAIMERS } from '../../content/learn-content';
 import {
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-learn-article',
   standalone: true,
-  imports: [RouterLink, DatePipe, LearnAdComponent, LearnDisclosureComponent],
+  imports: [RouterLink, DatePipe, MarketingAdUnitComponent, LearnDisclosureComponent],
   template: `
     @if (article(); as a) {
       <article class="la">
@@ -40,11 +41,17 @@ import {
         </header>
 
         <!-- Article body — rendered with Angular's HTML sanitizer (strips any
-             scripts/handlers); content is also sanitized server-side on save. -->
-        <div class="la-body" [innerHTML]="a.content"></div>
-
-        <!-- Optional ad slot — disabled behind a feature flag by default -->
-        <app-learn-ad slot="inline" />
+             scripts/handlers); content is also sanitized server-side on save.
+             The body is split at the first section heading so the inline ad
+             sits after the introduction and never splits a table/list/steps. -->
+        <div class="la-body" [innerHTML]="introHtml()"></div>
+        @if (restHtml()) {
+          @if (ads.placements.learnArticleInlineEnabled) {
+            <app-marketing-ad-unit placementName="learn_article_inline" [adSlot]="ads.slots.learnInline"
+              format="fluid" [minimumHeight]="120" />
+          }
+          <div class="la-body" [innerHTML]="restHtml()"></div>
+        }
 
         @if (disclaimer()) {
           <p class="la-disclaimer">{{ disclaimer() }}</p>
@@ -90,7 +97,11 @@ import {
           </div>
         </section>
 
-        <app-learn-ad slot="footer" />
+        <!-- Bottom ad — only on longer articles, after the CTA -->
+        @if (ads.placements.learnArticleBottomEnabled && isLongArticle()) {
+          <app-marketing-ad-unit placementName="learn_article_bottom" [adSlot]="ads.slots.learnBottom"
+            format="auto" [minimumHeight]="100" />
+        }
       </article>
     }
   `,
@@ -179,6 +190,13 @@ export class LearnArticleComponent {
 
   /** Loan/DTI/underwriting articles get the extra lending-variability note. */
   readonly loanArticle = computed(() => this.article()?.disclaimerType === 'standard');
+
+  // Marketing ad config + body split (intro vs. the rest, at the first heading).
+  readonly ads = MARKETING_ADS;
+  private splitIndex = () => (this.article()?.content ?? '').search(/<h2[\s>]/i);
+  readonly introHtml = computed(() => { const c = this.article()?.content ?? ''; const i = this.splitIndex(); return i > 0 ? c.slice(0, i) : c; });
+  readonly restHtml  = computed(() => { const c = this.article()?.content ?? ''; const i = this.splitIndex(); return i > 0 ? c.slice(i) : ''; });
+  readonly isLongArticle = computed(() => (this.article()?.readMinutes ?? 0) >= 5);
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(pm => {
