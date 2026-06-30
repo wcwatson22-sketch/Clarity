@@ -5,10 +5,10 @@ import { SeoService } from '../../services/seo.service';
 import { LearnAnalyticsService } from '../../services/learn-analytics.service';
 import { LearnSubmissionComponent } from '../../components/learn-submission.component';
 import { LearnDisclosureComponent } from '../../components/learn-disclosure.component';
-import { LEARN_CATEGORIES } from '../../content/learn-content';
-import { LearnContentService, PublicArticleListItem } from '../../services/learn-content.service';
 import { MarketingAdUnitComponent } from '../../components/marketing-ad-unit.component';
 import { MARKETING_ADS } from '../../services/marketing-ads.config';
+import { LEARN_CATEGORIES } from '../../content/learn-content';
+import { LearnContentService, PublicArticleListItem } from '../../services/learn-content.service';
 
 /**
  * Public Learn hub — /learn. Renders inside the marketing PublicLayout.
@@ -79,6 +79,12 @@ import { MARKETING_ADS } from '../../services/marketing-ads.config';
           format="auto" [minimumHeight]="120" />
       }
 
+      <!-- Feed ad — full-width between content clusters, not a card -->
+      @if (ads.placements.learnFeedEnabled) {
+        <app-marketing-ad-unit placementName="learn_feed" [adSlot]="ads.slots.learnFeed"
+          format="auto" [minimumHeight]="120" />
+      }
+
       <!-- Results -->
       @if (query() || activeCat() !== 'all') {
         <section class="lh-section">
@@ -120,6 +126,12 @@ import { MARKETING_ADS } from '../../services/marketing-ads.config';
             </section>
           }
         }
+      }
+
+      <!-- Optional bottom ad (page is long enough with the category sections) -->
+      @if (ads.placements.learnFeedEnabled) {
+        <app-marketing-ad-unit placementName="learn_hub_bottom" [adSlot]="ads.slots.learnBottom"
+          format="auto" [minimumHeight]="100" />
       }
 
       <!-- CTA -->
