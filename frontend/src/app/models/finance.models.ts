@@ -47,11 +47,42 @@ export interface VariableMonth {
   amount: number;
 }
 
+export type ContributionMode = 'pct' | 'amount';
+export interface ContributionInput {
+  mode: ContributionMode;   // 'pct' = % of gross income, 'amount' = $/month
+  value: number;
+}
+export interface RetirementContributions {
+  trad401k: ContributionInput;
+  roth401k: ContributionInput;
+  tradIra: ContributionInput;
+  rothIra: ContributionInput;
+  employerMatchMonthly: number;   // $/month; counts toward savings, not take-home
+}
+
 export interface IncomeData {
   type: 'stable' | 'variable';
   grossMonthlyIncome: number;
   netMonthlyIncome: number;
   variableMonths: VariableMonth[];
+
+  // Secondary / spousal income (server-persisted source of truth)
+  secondaryEnabled: boolean;
+  secondaryGrossMonthly: number;
+  secondaryNetMonthly: number;
+
+  // Retirement contributions (server-persisted)
+  retirement: RetirementContributions;
+}
+
+/** A fresh, fully-populated IncomeData (avoids undefined fields when no record exists yet). */
+export function emptyIncome(): IncomeData {
+  const c = (): ContributionInput => ({ mode: 'amount', value: 0 });
+  return {
+    type: 'stable', grossMonthlyIncome: 0, netMonthlyIncome: 0, variableMonths: [],
+    secondaryEnabled: false, secondaryGrossMonthly: 0, secondaryNetMonthly: 0,
+    retirement: { trad401k: c(), roth401k: c(), tradIra: c(), rothIra: c(), employerMatchMonthly: 0 },
+  };
 }
 
 export interface Lesson {

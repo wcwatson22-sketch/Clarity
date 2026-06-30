@@ -3,11 +3,11 @@ import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../services/finance.service';
 import { ToastService } from '../../services/toast.service';
-import { BudgetItem, BudgetGroup, IncomeData } from '../../models/finance.models';
+import { BudgetItem, BudgetGroup, IncomeData, ContributionInput, ContributionMode, emptyIncome } from '../../models/finance.models';
 import { NumericDirective } from '../../directives/numeric.directive';
 import { AuthService } from '../../services/auth.service';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
-import { userScopedKey, migrateGlobalKey } from '../../services/scoped-storage';
+import { userScopedKey } from '../../services/scoped-storage';
 
 const SECOND_INC_KEY     = 'clarity_second_income';
 const SECOND_INC_EN_KEY  = 'clarity_second_income_enabled';
@@ -15,10 +15,7 @@ const RETIREMENT_KEY     = 'clarity_retirement';      // monthly $ amounts
 const LEGACY_401K_KEY    = 'clarity_401k_pct';        // old % of primary gross
 const LEGACY_401K_2_KEY  = 'clarity_401k_pct_2';      // old % of second gross
 
-interface RetirementContributions {
-  trad401k: number; roth401k: number; tradIra: number; rothIra: number; employerMatch: number;
-}
-const EMPTY_RETIREMENT: RetirementContributions = { trad401k: 0, roth401k: 0, tradIra: 0, rothIra: 0, employerMatch: 0 };
+type RetType = 'trad401k' | 'roth401k' | 'tradIra' | 'rothIra';
 
 @Component({
   selector: 'app-cash-flow',
@@ -42,14 +39,29 @@ export class CashFlowComponent implements OnInit {
     { icon: '📊', title: '50/30/20 Benchmark', body: 'See how your spending compares to the 50/30/20 rule and get plain-English insights on your cash flow health.' },
   ];
 
-  income      = signal<IncomeData>({ type: 'stable', grossMonthlyIncome: 0, netMonthlyIncome: 0, variableMonths: [] });
+  // Server income record is the SOURCE OF TRUTH for primary + secondary income
+  // and retirement contributions (persisted, feeds Dashboard/PFS/Compare).
+  income      = signal<IncomeData>(emptyIncome());
   budgetItems = signal<BudgetItem[]>([]);
   loading     = signal(true);
   showAnnual  = signal(false);    // monthly ↔ annual toggle
 
-  // ── Retirement contributions (monthly $; informational, NOT subtracted from FCF) ──
-  retirement = signal<RetirementContributions>({ ...EMPTY_RETIREMENT });
-  /** Employee contributions only (excludes employer match) — these are the user's own savings. */
+  // ── Retirement contributions ──────────────────────────────────────────────
+  // Raw mode+value lives in income().retirement; cm() resolves each to monthly $.
+  // % mode is computed off the combined monthly gross income and auto-updates.
+  private cm(c: ContributionInput): number {
+    return c?.mode === 'pct' ? this.grossIncome() * (c.value || 0) / 100 : (c?.value || 0);
+  }
+  /** Resolved monthly $ per contribution type (employer match is already $/mo). */
+  readonly retirement = computed(() => {
+    const r = this.income().retirement;
+    return {
+      trad401k: this.cm(r.trad401k), roth401k: this.cm(r.roth401k),
+      tradIra: this.cm(r.tradIra),   rothIra: this.cm(r.rothIra),
+      employerMatch: r.employerMatchMonthly || 0,
+    };
+  });
+  /** Employee contributions only (excludes employer match) — the user's own savings. */
   employeeRetirement = computed(() => {
     const r = this.retirement();
     return r.trad401k + r.roth401k + r.tradIra + r.rothIra;
@@ -57,27 +69,24 @@ export class CashFlowComponent implements OnInit {
   /** Total retirement savings = employee contributions + employer match. */
   totalRetirementSavings = computed(() => this.employeeRetirement() + this.retirement().employerMatch);
 
-  // ── Second Income (spousal / partner) ─────────────────────────────────────
-  secondIncomeEnabled = signal<boolean>(false);
-  secondIncome        = signal<{ gross: number; net: number }>({ gross: 0, net: 0 });
+  // ── Second income (spousal / partner) — derived from the server record ─────
+  secondIncomeEnabled = computed(() => this.income().secondaryEnabled);
+  secondIncome        = computed(() => ({ gross: this.income().secondaryGrossMonthly, net: this.income().secondaryNetMonthly }));
 
-  /** Per-user localStorage key — isolates device-local financial data by account. */
+  /** Per-user localStorage key — only used for the one-time localStorage→server migration. */
   private k(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
 
-  constructor() {
-    const uid = this.auth.currentUser()?.id ?? null;
-    // Migrate any legacy GLOBAL keys (which could leak across accounts on a
-    // shared browser) into this user's scoped keys, deleting the global copy.
-    for (const base of [SECOND_INC_KEY, SECOND_INC_EN_KEY, RETIREMENT_KEY, LEGACY_401K_KEY, LEGACY_401K_2_KEY]) {
-      migrateGlobalKey(base, uid);
-    }
-    // Load this account's device-local values from its scoped keys.
-    this.secondIncomeEnabled.set(localStorage.getItem(this.k(SECOND_INC_EN_KEY)) === '1');
-    try {
-      this.secondIncome.set(JSON.parse(localStorage.getItem(this.k(SECOND_INC_KEY)) ?? '{"gross":0,"net":0}'));
-    } catch { /* keep default */ }
-    this.retirement.set(this._loadRetirement());
-  }
+  // raw (editable) retirement value/mode for the template inputs
+  readonly retTypes: { key: RetType; label: string }[] = [
+    { key: 'trad401k', label: 'Traditional 401(k)' },
+    { key: 'roth401k', label: 'Roth 401(k)' },
+    { key: 'tradIra',  label: 'Traditional IRA' },
+    { key: 'rothIra',  label: 'Roth IRA' },
+  ];
+  retModeValue(field: RetType): number { return this.income().retirement[field].value; }
+  retMode(field: RetType): ContributionMode { return this.income().retirement[field].mode; }
+  /** Resolved monthly $ for a contribution type (for the "≈ $X/mo" hint in % mode). */
+  retirementResolved(field: RetType): number { return this.retirement()[field]; }
 
   // 50/30/20 — collapsed by default
   show503020 = signal(false);
@@ -269,32 +278,60 @@ export class CashFlowComponent implements OnInit {
     return item.amount / (item.budget ?? 1);
   }
 
-  // ── Retirement helpers ────────────────────────────────────────────────────
-  private _loadRetirement(): RetirementContributions {
-    try {
-      const raw = localStorage.getItem(this.k(RETIREMENT_KEY));
-      if (raw) return { ...EMPTY_RETIREMENT, ...JSON.parse(raw) };
-    } catch { /* ignore */ }
-    return { ...EMPTY_RETIREMENT };
+  // ── Retirement updates (persist to the server income record) ────────────────
+  // Contribution value is raw (% when mode='pct', $/mo when mode='amount') — it is
+  // NOT run through the annual toggle. Employer match is always $/mo.
+  updateRetirementValue(field: RetType, val: string) {
+    const value = Math.max(0, parseFloat(val) || 0);
+    this.income.update(i => ({ ...i, retirement: { ...i.retirement, [field]: { ...i.retirement[field], value } } }));
+    this.saveIncome();
   }
-  updateRetirement(field: keyof RetirementContributions, val: string) {
-    const updated = { ...this.retirement(), [field]: this.toMonthly(val) };
-    this.retirement.set(updated);
-    localStorage.setItem(this.k(RETIREMENT_KEY), JSON.stringify(updated));
+  setRetirementMode(field: RetType, mode: ContributionMode) {
+    this.income.update(i => ({ ...i, retirement: { ...i.retirement, [field]: { ...i.retirement[field], mode } } }));
+    this.saveIncome();
   }
-  /** One-time migration: convert legacy 401k % (primary + second) into a monthly $ Traditional 401(k). */
-  private _migrateLegacyRetirement() {
-    if (localStorage.getItem(this.k(RETIREMENT_KEY))) return;     // already on new model
-    const pct1 = parseFloat(localStorage.getItem(this.k(LEGACY_401K_KEY)) ?? '0') || 0;
-    const pct2 = parseFloat(localStorage.getItem(this.k(LEGACY_401K_2_KEY)) ?? '0') || 0;
-    if (pct1 === 0 && pct2 === 0) return;
-    const dollars = this.primaryGrossIncome() * pct1 / 100
-                  + (this.secondIncomeEnabled() ? this.secondIncome().gross * pct2 / 100 : 0);
-    const migrated = { ...EMPTY_RETIREMENT, trad401k: Math.round(dollars) };
-    this.retirement.set(migrated);
-    localStorage.setItem(this.k(RETIREMENT_KEY), JSON.stringify(migrated));
-    localStorage.removeItem(this.k(LEGACY_401K_KEY));
-    localStorage.removeItem(this.k(LEGACY_401K_2_KEY));
+  updateEmployerMatch(val: string) {
+    const v = Math.max(0, parseFloat(val) || 0);
+    this.income.update(i => ({ ...i, retirement: { ...i.retirement, employerMatchMonthly: v } }));
+    this.saveIncome();
+  }
+
+  /** One-time migration of device-local (localStorage) secondary income + retirement
+   *  into the server record, so existing users keep their values. Mutates `inc`;
+   *  returns true if anything was migrated (caller then saves + we clear the keys). */
+  private _migrateLocalToServer(inc: IncomeData): boolean {
+    let changed = false;
+    if (!inc.secondaryEnabled && inc.secondaryGrossMonthly === 0 && inc.secondaryNetMonthly === 0) {
+      const en = localStorage.getItem(this.k(SECOND_INC_EN_KEY)) === '1';
+      let s: { gross?: number; net?: number } | null = null;
+      try { s = JSON.parse(localStorage.getItem(this.k(SECOND_INC_KEY)) ?? 'null'); } catch { /* ignore */ }
+      if (en || (s && (s.gross || s.net))) {
+        inc.secondaryEnabled = en;
+        inc.secondaryGrossMonthly = s?.gross || 0;
+        inc.secondaryNetMonthly = s?.net || 0;
+        changed = true;
+      }
+    }
+    const r = inc.retirement;
+    const retEmpty = !r.trad401k.value && !r.roth401k.value && !r.tradIra.value && !r.rothIra.value && !r.employerMatchMonthly;
+    if (retEmpty) {
+      let old: Record<string, number> | null = null;
+      try { old = JSON.parse(localStorage.getItem(this.k(RETIREMENT_KEY)) ?? 'null'); } catch { /* ignore */ }
+      if (old) {
+        r.trad401k = { mode: 'amount', value: old['trad401k'] || 0 };
+        r.roth401k = { mode: 'amount', value: old['roth401k'] || 0 };
+        r.tradIra  = { mode: 'amount', value: old['tradIra']  || 0 };
+        r.rothIra  = { mode: 'amount', value: old['rothIra']  || 0 };
+        r.employerMatchMonthly = old['employerMatch'] || 0;
+        changed = true;
+      }
+    }
+    if (changed) {
+      for (const key of [SECOND_INC_EN_KEY, SECOND_INC_KEY, RETIREMENT_KEY, LEGACY_401K_KEY, LEGACY_401K_2_KEY]) {
+        localStorage.removeItem(this.k(key));
+      }
+    }
+    return changed;
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -302,7 +339,18 @@ export class CashFlowComponent implements OnInit {
     let pending = 2;
     const done = () => { if (--pending === 0) this.loading.set(false); };
     this.svc.getIncome().subscribe({
-      next: i => { this.income.set(i); this._migrateLegacyRetirement(); done(); },
+      next: i => {
+        // Defensive merge so the new fields always exist (older responses / null).
+        const base = emptyIncome();
+        const merged: IncomeData = {
+          ...base, ...i,
+          retirement: { ...base.retirement, ...(i.retirement ?? {}) },
+        };
+        const changed = this._migrateLocalToServer(merged);
+        this.income.set(merged);
+        if (changed) this.saveIncome();   // push migrated local values up once
+        done();
+      },
       error: done,
     });
     this.svc.getBudget().subscribe({ next: b => { this.budgetItems.set(b); done(); }, error: done });
@@ -311,6 +359,14 @@ export class CashFlowComponent implements OnInit {
   // ── Helpers ───────────────────────────────────────────────────────────────
   sumGroup(group: BudgetGroup) {
     return this.budgetItems().filter(b => b.group === group).reduce((s, b) => s + b.amount, 0);
+  }
+  /** Parent aggregation only: sum of each item's own budget (Variable planning). */
+  groupBudget(group: BudgetGroup) {
+    return this.budgetItems().filter(b => b.group === group).reduce((s, b) => s + (b.budget ?? 0), 0);
+  }
+  /** True when any item in the group has a budget set (controls the parent budget summary). */
+  groupHasBudget(group: BudgetGroup) {
+    return this.budgetItems().some(b => b.group === group && (b.budget ?? 0) > 0);
   }
   itemsForGroup(group: BudgetGroup) { return this.budgetItems().filter(b => b.group === group); }
   private _loadGroupState(): Set<string> {
@@ -361,19 +417,18 @@ export class CashFlowComponent implements OnInit {
   }
   saveIncome() { this.svc.updateIncome(this.income()).subscribe(); }
 
-  // ── Second Income ────────────────────────────────────────────────────────
+  // ── Second Income (persisted to the server income record) ──────────────────
   toggleSecondIncome() {
-    const enabled = !this.secondIncomeEnabled();
-    this.secondIncomeEnabled.set(enabled);
-    localStorage.setItem(this.k(SECOND_INC_EN_KEY), enabled ? '1' : '0');
+    this.income.update(i => ({ ...i, secondaryEnabled: !i.secondaryEnabled }));
+    this.saveIncome();
   }
   updateSecondGross(val: string) {
-    this.secondIncome.update(i => ({ ...i, gross: this.toMonthly(val) }));
-    localStorage.setItem(this.k(SECOND_INC_KEY), JSON.stringify(this.secondIncome()));
+    this.income.update(i => ({ ...i, secondaryGrossMonthly: this.toMonthly(val) }));
+    this.saveIncome();
   }
   updateSecondNet(val: string) {
-    this.secondIncome.update(i => ({ ...i, net: this.toMonthly(val) }));
-    localStorage.setItem(this.k(SECOND_INC_KEY), JSON.stringify(this.secondIncome()));
+    this.income.update(i => ({ ...i, secondaryNetMonthly: this.toMonthly(val) }));
+    this.saveIncome();
   }
 
   // ── Budget item CRUD ──────────────────────────────────────────────────────

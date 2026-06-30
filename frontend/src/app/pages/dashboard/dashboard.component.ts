@@ -226,13 +226,8 @@ export class DashboardComponent implements OnInit {
     let combinedGross = inc.type === 'stable'
       ? inc.grossMonthlyIncome
       : (inc.variableMonths?.length ? inc.variableMonths.reduce((s, m) => s + m.amount, 0) / inc.variableMonths.length : 0);
-    const secondEnabled = localStorage.getItem(this.suKey('clarity_second_income_enabled')) === '1';
-    if (secondEnabled) {
-      try {
-        const secondData = JSON.parse(localStorage.getItem(this.suKey('clarity_second_income')) ?? '{"gross":0,"net":0}');
-        combinedGross += secondData.gross ?? 0;
-      } catch {}
-    }
+    // Secondary income now comes from the server income record (source of truth).
+    if (inc.secondaryEnabled) combinedGross += inc.secondaryGrossMonthly ?? 0;
     if (combinedGross === 0) return null;
     const monthlyDebt = this.budgetItems()
       .filter(b => b.group === 'Debt')

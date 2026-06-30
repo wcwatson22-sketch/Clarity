@@ -31,10 +31,7 @@ public class IncomeController(AppDbContext db) : ControllerBase
             record = new UserIncome { UserId = UserId };
             db.Incomes.Add(record);
         }
-        record.Type = dto.Type;
-        record.GrossMonthlyIncome = dto.GrossMonthlyIncome;
-        record.NetMonthlyIncome = dto.NetMonthlyIncome;
-        record.VariableMonths = dto.VariableMonths;
+        dto.ApplyTo(record);
         await db.SaveChangesAsync();
         return Ok(IncomeData.FromEntity(record));
     }

@@ -49,13 +49,12 @@ export class PfsComponent implements OnInit {
   private static readonly SECOND_INC_KEY    = 'clarity_second_income';
   private static readonly SECOND_INC_EN_KEY = 'clarity_second_income_enabled';
 
-  // User-scoped keys so PFS reads the same per-account values Cash Flow writes.
-  private k(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
-  private _secondEnabled = () => localStorage.getItem(this.k(PfsComponent.SECOND_INC_EN_KEY)) === '1';
-  private _secondData    = () => {
-    try { return JSON.parse(localStorage.getItem(this.k(PfsComponent.SECOND_INC_KEY)) ?? '{"gross":0,"net":0}'); }
-    catch { return { gross: 0, net: 0 }; }
-  };
+  // Secondary income comes from the server income record (source of truth).
+  private _secondEnabled = () => this.income()?.secondaryEnabled ?? false;
+  private _secondData    = () => ({
+    gross: this.income()?.secondaryGrossMonthly ?? 0,
+    net:   this.income()?.secondaryNetMonthly ?? 0,
+  });
 
   grossIncome = computed(() => {
     const i = this.income();

@@ -150,46 +150,48 @@
   <div class="income-card retirement-card">
     <div class="income-header">
       <h2 class="card-title">Retirement Contributions</h2>
-      <span class="ret-sub">{{ showAnnual() ? 'Annual' : 'Monthly' }} $ · informational</span>
+      <span class="ret-sub">Monthly · enter % of gross or $/mo</span>
     </div>
     <div class="ret-grid">
+      @for (rt of retTypes; track rt.key) {
+        <div class="field-group">
+          <label class="field-label">{{ rt.label }}</label>
+          <div class="ret-row">
+            <div class="ret-mode" role="group" [attr.aria-label]="rt.label + ' contribution mode'">
+              <button type="button" class="ret-mode-btn" [class.active]="retMode(rt.key) === 'amount'"
+                (click)="setRetirementMode(rt.key, 'amount')">$/mo</button>
+              <button type="button" class="ret-mode-btn" [class.active]="retMode(rt.key) === 'pct'"
+                (click)="setRetirementMode(rt.key, 'pct')">% gross</button>
+            </div>
+            @if (retMode(rt.key) === 'pct') {
+              <div class="input-suffix">
+                <input appNumeric class="dollar-input" placeholder="0" [value]="retModeValue(rt.key) || ''"
+                  (change)="updateRetirementValue(rt.key, $any($event.target).value)" /><span class="suffix">%</span>
+              </div>
+            } @else {
+              <div class="input-prefix"><span class="prefix">$</span>
+                <input appNumeric class="dollar-input" placeholder="0" [value]="retModeValue(rt.key) || ''"
+                  (change)="updateRetirementValue(rt.key, $any($event.target).value)" /></div>
+            }
+          </div>
+          @if (retMode(rt.key) === 'pct' && retirementResolved(rt.key) > 0) {
+            <span class="ret-calc">≈ {{ fmt(retirementResolved(rt.key)) }}/mo</span>
+          }
+        </div>
+      }
       <div class="field-group">
-        <label class="field-label">Traditional 401(k)</label>
+        <label class="field-label">Employer Match <span class="field-hint">($/mo)</span></label>
         <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().trad401k) || ''"
-            (change)="updateRetirement('trad401k', $any($event.target).value)" /></div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Roth 401(k)</label>
-        <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().roth401k) || ''"
-            (change)="updateRetirement('roth401k', $any($event.target).value)" /></div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Traditional IRA</label>
-        <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().tradIra) || ''"
-            (change)="updateRetirement('tradIra', $any($event.target).value)" /></div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Roth IRA</label>
-        <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().rothIra) || ''"
-            (change)="updateRetirement('rothIra', $any($event.target).value)" /></div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Employer Match</label>
-        <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="disp(retirement().employerMatch) || ''"
-            (change)="updateRetirement('employerMatch', $any($event.target).value)" /></div>
+          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().employerMatch || ''"
+            (change)="updateEmployerMatch($any($event.target).value)" /></div>
       </div>
     </div>
     <p class="ret-note">Employer match increases retirement savings but does not reduce your take-home pay.</p>
     @if (totalRetirementSavings() > 0) {
       <div class="ret-totals">
-        <span>Your contributions <strong>{{ fmt(disp(employeeRetirement())) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
-        <span>Employer match <strong>{{ fmt(disp(retirement().employerMatch)) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
-        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(disp(totalRetirementSavings())) }}{{ showAnnual() ? '/yr' : '/mo' }}</strong></span>
+        <span>Your contributions <strong>{{ fmt(employeeRetirement()) }}/mo</strong></span>
+        <span>Employer match <strong>{{ fmt(retirement().employerMatch) }}/mo</strong></span>
+        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(totalRetirementSavings()) }}/mo</strong></span>
       </div>
     }
   </div>
@@ -388,6 +390,9 @@
           <span class="group-total">
             {{ fmt(showAnnual() ? sumGroup(group.key) * 12 : sumGroup(group.key)) }}
           </span>
+          @if (group.key === 'Variable' && groupHasBudget(group.key)) {
+            <span class="group-budget-sum">of {{ fmt(showAnnual() ? groupBudget(group.key) * 12 : groupBudget(group.key)) }} budget</span>
+          }
         </div>
         <span class="chevron" [class.open]="isExpanded(group.key)">▾</span>
       </button>

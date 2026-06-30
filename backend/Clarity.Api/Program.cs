@@ -330,6 +330,20 @@ try
             "ALTER TABLE BudgetItems ADD COLUMN Category TEXT NULL",
             "ALTER TABLE Snapshots ADD COLUMN IsInitialBaseline INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE Users ADD COLUMN SetupCompletedAt TEXT NULL",
+            // Phase 1: secondary income + retirement contributions move to the server
+            // (source of truth). Additive, nullable/defaulted — non-destructive.
+            "ALTER TABLE Incomes ADD COLUMN SecondaryEnabled INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE Incomes ADD COLUMN SecondaryGrossMonthly TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN SecondaryNetMonthly TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN Trad401kMode TEXT NOT NULL DEFAULT 'amount'",
+            "ALTER TABLE Incomes ADD COLUMN Trad401kValue TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN Roth401kMode TEXT NOT NULL DEFAULT 'amount'",
+            "ALTER TABLE Incomes ADD COLUMN Roth401kValue TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN TradIraMode TEXT NOT NULL DEFAULT 'amount'",
+            "ALTER TABLE Incomes ADD COLUMN TradIraValue TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN RothIraMode TEXT NOT NULL DEFAULT 'amount'",
+            "ALTER TABLE Incomes ADD COLUMN RothIraValue TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN EmployerMatchMonthly TEXT NOT NULL DEFAULT '0'",
         })
         {
             try
