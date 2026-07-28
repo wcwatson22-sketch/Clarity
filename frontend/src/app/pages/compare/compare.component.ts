@@ -42,7 +42,7 @@ export class CompareComponent implements OnInit {
   showTutorial = signal(shouldShowTutorial(this.TUTORIAL_KEY, this.auth.currentUser()?.id));
   readonly tutorialSteps: TutorialStep[] = [
     { icon: '📊', title: 'See How You Compare', body: 'Compare your net worth, savings, and debt against others in your age bracket — completely anonymously.' },
-    { icon: '🔒', title: 'Private by Design', body: 'Clarity requires at least 30 users in your age bracket before showing any comparison data, so no individual can ever be identified.' },
+    { icon: '🔒', title: 'Private by Design', body: 'Clarity requires at least 30 anonymous users before showing any comparison data, so no individual can ever be identified. You\'ll be compared to your age bracket once it has enough people, or to all users in the meantime.' },
     { icon: '✅', title: 'What To Do First', body: 'Make sure your Dashboard accounts are up to date, then check back here to see where you stand. Comparisons update automatically.' },
   ];
 
@@ -78,7 +78,13 @@ export class CompareComponent implements OnInit {
   }
 
   statusLabel(s: string): string {
-    return s === 'above' ? 'Above average' : s === 'at' ? 'On track' : 'Below average';
+    // "Better/Worse than average" rather than "Above/Below average" — for
+    // lower-is-better categories (Total Debt, Monthly Expenses) the backend's
+    // "above"/"below" status already means "performing better/worse than average",
+    // not "your literal number is above/below the average number", so a literal
+    // Above/Below label reads backwards against the raw You/Avg numbers shown
+    // alongside it (e.g. debt at 8x the average showing "Below average").
+    return s === 'above' ? 'Better than average' : s === 'at' ? 'On track' : 'Worse than average';
   }
 
   fmt(v: number): string {

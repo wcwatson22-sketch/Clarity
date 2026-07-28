@@ -114,7 +114,7 @@
       }
       <div class="section-total">
         <span>Total Assets</span>
-        <span>{{ (totalAssets() + investTotalValue()) | currency:'USD':'symbol':'1.0-0' }}</span>
+        <span>{{ totalAssets() | currency:'USD':'symbol':'1.0-0' }}</span>
       </div>
     </div>
 
@@ -150,20 +150,47 @@
       }
       <div class="section-total">
         <span>Total Liabilities</span>
-        <span>{{ (totalLiabilities() + investTotalDebt()) | currency:'USD':'symbol':'1.0-0' }}</span>
+        <span>{{ totalLiabilities() | currency:'USD':'symbol':'1.0-0' }}</span>
       </div>
 
       <!-- Key Ratios -->
       <h2 class="section-title" style="margin-top:20px;">Key Ratios</h2>
       <div class="ratios-table">
+        @if (hasInvestProps()) {
+          <div class="ratio-row">
+            <span class="ratio-label">Personal DSCR</span>
+            <span class="ratio-value" [class.ratio-good]="personalDscr() != null && personalDscr()! >= 1.25"
+                  [class.ratio-warn]="personalDscr() != null && personalDscr()! >= 1.0 && personalDscr()! < 1.25"
+                  [class.ratio-bad]="personalDscr() != null && personalDscr()! < 1.0">
+              {{ personalDscr() != null ? (personalDscr()! | number:'1.2-2') + 'x' : '—' }}
+            </span>
+          </div>
+          <div class="ratio-row">
+            <span class="ratio-label">{{ portfolioDscrLabel() }}</span>
+            <span class="ratio-value" [class.ratio-good]="re.portfolioDSCR() != null && re.portfolioDSCR()! >= 1.25"
+                  [class.ratio-warn]="re.portfolioDSCR() != null && re.portfolioDSCR()! >= 1.0 && re.portfolioDSCR()! < 1.25"
+                  [class.ratio-bad]="re.portfolioDSCR() != null && re.portfolioDSCR()! < 1.0">
+              {{ re.portfolioDSCR() != null ? (re.portfolioDSCR()! | number:'1.2-2') + 'x' : '—' }}
+            </span>
+          </div>
+          <div class="ratio-row">
+            <span class="ratio-label">Global DSCR</span>
+            <span class="ratio-value" [class.ratio-good]="globalDscr() != null && globalDscr()! >= 1.25"
+                  [class.ratio-warn]="globalDscr() != null && globalDscr()! >= 1.0 && globalDscr()! < 1.25"
+                  [class.ratio-bad]="globalDscr() != null && globalDscr()! < 1.0">
+              {{ globalDscr() != null ? (globalDscr()! | number:'1.2-2') + 'x' : '—' }}
+            </span>
+          </div>
+        } @else {
+          <div class="ratio-row">
+            <span class="ratio-label">Debt-to-Income (DTI)</span>
+            <span class="ratio-value" [class.ratio-good]="dti() <= 0.36" [class.ratio-warn]="dti() > 0.36 && dti() <= 0.43" [class.ratio-bad]="dti() > 0.43">
+              {{ dti() | percent:'1.0-1' }}
+            </span>
+          </div>
+        }
         <div class="ratio-row">
-          <span class="ratio-label">Debt-to-Income (DTI)</span>
-          <span class="ratio-value" [class.ratio-good]="dti() <= 0.36" [class.ratio-warn]="dti() > 0.36 && dti() <= 0.43" [class.ratio-bad]="dti() > 0.43">
-            {{ dti() | percent:'1.0-1' }}
-          </span>
-        </div>
-        <div class="ratio-row">
-          <span class="ratio-label">Savings Rate</span>
+          <span class="ratio-label">Savings Rate (excl. retirement)</span>
           <span class="ratio-value" [class.ratio-good]="savingsRate() >= 0.15">
             {{ savingsRate() | percent:'1.0-1' }}
           </span>

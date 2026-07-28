@@ -27,18 +27,25 @@
     </div>
   } @else {
 
-    <!-- ── Current financial picture (read-only) ──────────────────────────── -->
-    <div class="li-card li-current">
-      <div class="li-card-head">
-        <h2 class="li-h2">Your Current Financial Picture</h2>
-        <a routerLink="/cash-flow" class="btn-link sm">Edit in Cash Flow</a>
+    <!-- ── Current financial picture (read-only) — not shown for the standalone ── -->
+    <!-- ── Amortization tool, which isn't a DTI-impact category                ── -->
+    @if (!isAmortizationMode()) {
+      <div class="li-card li-current">
+        <div class="li-card-head">
+          <h2 class="li-h2">Your Current Financial Picture</h2>
+          <a routerLink="/cash-flow" class="btn-link sm">Edit in Cash Flow</a>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><span class="stat-label">Gross Monthly Income</span><span class="stat-val">{{ fmt(grossIncome()) }}</span></div>
+          <div class="stat"><span class="stat-label">Existing Monthly Debt</span><span class="stat-val">{{ fmt(existingDebt()) }}</span></div>
+          @if (dscrActive()) {
+            <div class="stat"><span class="stat-label">Current DSCR</span><span class="stat-val">{{ fmtX(currentDscrVal()) }}</span></div>
+          } @else {
+            <div class="stat"><span class="stat-label">Current DTI</span><span class="stat-val">{{ pct(currentDtiVal()) }}</span></div>
+          }
+        </div>
       </div>
-      <div class="stat-row">
-        <div class="stat"><span class="stat-label">Gross Monthly Income</span><span class="stat-val">{{ fmt(grossIncome()) }}</span></div>
-        <div class="stat"><span class="stat-label">Existing Monthly Debt</span><span class="stat-val">{{ fmt(existingDebt()) }}</span></div>
-        <div class="stat"><span class="stat-label">Current DTI</span><span class="stat-val">{{ pct(currentDtiVal()) }}</span></div>
-      </div>
-    </div>
+    }
 
     <!-- ── Loan type ──────────────────────────────────────────────────────── -->
     <div class="li-card">
@@ -50,140 +57,335 @@
           </button>
         }
       </div>
+      <button class="btn-link sm amort-toggle" [class.active]="isAmortizationMode()" (click)="selectType('amortization')">
+        📉 Just want a payoff timeline instead? Try the standalone Amortization calculator →
+      </button>
     </div>
+
+    <!-- ── Debt replacement (not relevant to the standalone Amortization tool) ── -->
+    @if (!isAmortizationMode()) {
+      <div class="li-card">
+        <h2 class="li-h2">Will this loan pay off or replace an existing debt?</h2>
+        <label class="check-line">
+          <input type="checkbox" [checked]="replaces()" (change)="replaces.set($any($event.target).checked)" />
+          <span>Yes — this replaces a debt I'm already paying</span>
+        </label>
+        @if (replaces()) {
+          <label class="field"><span>Monthly payment being eliminated</span>
+            <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="replacedPayment() || ''" (input)="replacedPayment.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          @if (replacementWarning()) { <p class="warn-text">⚠️ {{ replacementWarning() }}</p> }
+          <p class="hint">This is a scenario only — your saved Cash Flow debts are never changed.</p>
+        }
+      </div>
+    }
 
     <!-- ── Proposed loan inputs ───────────────────────────────────────────── -->
     <div class="li-card">
-      <h2 class="li-h2">Proposed Loan</h2>
+      <h2 class="li-h2">{{ isAmortizationMode() ? 'Your Loan' : 'Proposed Loan' }}</h2>
+
+      @if (isRental()) {
+        <div class="field-grid">
+          <label class="field"><span>Purchase price</span>
+            <span class="adorn adorn-money">
+              <input appNumeric inputmode="decimal" [value]="purchasePriceDisplay()"
+                (input)="onPurchasePriceInput($any($event.target).value)" (focus)="onPurchasePriceFocus()" (blur)="onPurchasePriceBlur()"
+                placeholder="0" /></span></label>
+        </div>
+      }
+
       <div class="field-grid">
         <label class="field"><span>Loan amount</span>
           <span class="adorn adorn-money">
             <input appNumeric inputmode="decimal" [value]="amountDisplay()"
               (input)="onAmountInput($any($event.target).value)" (focus)="onAmountFocus()" (blur)="onAmountBlur()"
               placeholder="0" /></span></label>
-        <label class="field"><span>Interest rate</span>
+        @if (isRental() && purchasePrice() > 0) {
+          <div class="field pct-financed-field">
+            <span>% Financed</span>
+            <span class="adorn adorn-pct">
+              <input appNumeric="decimal" inputmode="decimal" [value]="pctFinanced() ? +pctFinanced().toFixed(1) : ''"
+                (input)="setPctFinanced(+$any($event.target).value || 0)" placeholder="80" /></span>
+            <div class="pct-chips">
+              @for (p of [75, 80, 85, 90]; track p) {
+                <button class="chip" [class.active]="Math.abs(pctFinanced() - p) < 0.05" (click)="setPctFinanced(p)">{{ p }}%</button>
+              }
+            </div>
+          </div>
+        }
+        <label class="field"><span>{{ isRental() ? 'Estimated rate' : 'Interest rate' }}</span>
           <span class="adorn adorn-pct">
             <input appNumeric="decimal" inputmode="decimal" [value]="rate() || ''" (input)="rate.set(+$any($event.target).value || 0)" placeholder="0.0" /></span></label>
-        <label class="field"><span>Term</span>
+        <label class="field">
+          <span>
+            {{ isRental() ? 'Amortization (months)' : 'Term (months)' }}
+            @if (isRental()) {
+              <span class="tooltip-wrap" tabindex="0">
+                <span class="tooltip-icon" aria-hidden="true">i</span>
+                <span class="sr-only">Amortization details</span>
+                <span class="tooltip-bubble" role="tooltip">
+                  Payments are calculated as if paid off over this many months. Rental property loans are typically
+                  capped at 25-year (300-month) amortization and not usually eligible for 30-year terms — the actual
+                  loan term before the balance is due is often shorter, commonly around 5 years, even though the
+                  payment is calculated using the longer amortization schedule.
+                </span>
+              </span>
+            }
+          </span>
           <span class="adorn adorn-mo">
-            <input appNumeric="integer" inputmode="numeric" [value]="term() || ''" (input)="term.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+            <input appNumeric="integer" inputmode="numeric" [value]="term() || ''" (input)="setTerm(+$any($event.target).value || 0)" [attr.max]="isRental() ? 300 : null" placeholder="0" /></span></label>
       </div>
 
-      <div class="calc-payment">
-        <span>Estimated principal &amp; interest</span>
-        <strong>{{ fmt(piPayment()) }}/mo</strong>
-      </div>
+      @if (isAmortizationMode()) {
+        <label class="field"><span>Your monthly payment</span>
+          <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="onManualPaymentInput($any($event.target).value)" placeholder="0" /></span></label>
+        <p class="hint">Pre-filled from loan amount, rate, and term — edit it if your actual payment differs.</p>
+      } @else {
+        <div class="calc-payment">
+          <span>Estimated principal &amp; interest</span>
+          <strong>{{ fmt(piPayment()) }}/mo</strong>
+        </div>
 
-      <label class="check-line">
-        <input type="checkbox" [checked]="overridePayment()" (change)="overridePayment.set($any($event.target).checked)" />
-        <span>I have a lender quote — enter the monthly payment myself</span>
-      </label>
-      @if (overridePayment()) {
-        <label class="field"><span>User-entered estimated payment</span>
-          <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="manualPayment.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
-        <p class="hint">Labeled as a user-entered estimated payment in your results.</p>
+        <label class="check-line">
+          <input type="checkbox" [checked]="overridePayment()" (change)="overridePayment.set($any($event.target).checked)" />
+          <span>I have a lender quote — enter the monthly payment myself</span>
+        </label>
+        @if (overridePayment()) {
+          <label class="field"><span>User-entered estimated payment</span>
+            <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="manualPayment() || ''" (input)="onManualPaymentInput($any($event.target).value)" placeholder="0" /></span></label>
+          <p class="hint">Labeled as a user-entered estimated payment in your results.</p>
+        }
       }
 
-      <!-- Housing extras (mortgage + rental property) -->
-      @if (isHousing()) {
+      <!-- Housing extras (mortgage only — for rental, these fall under the expense-ratio/own-expenses section below) -->
+      @if (category() === 'mortgage') {
         <h3 class="li-h3">Additional monthly housing costs (optional)</h3>
         <div class="field-grid">
           <label class="field"><span>Property taxes</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="taxes() || ''" (input)="taxes.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
-          <label class="field"><span>{{ category() === 'rental' ? 'Landlord insurance' : 'Homeowners insurance' }}</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="insurance() || ''" (input)="insurance.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          <label class="field"><span>Homeowners insurance</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="insurance() || ''" (input)="insurance.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
           <label class="field"><span>HOA dues</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="hoa() || ''" (input)="hoa.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
           <label class="field"><span>Mortgage insurance</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="mortgageIns() || ''" (input)="mortgageIns.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
           <label class="field"><span>Other housing costs</span><span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="otherHousing() || ''" (input)="otherHousing.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
         </div>
       }
-    </div>
 
-    <!-- ── Debt replacement ───────────────────────────────────────────────── -->
-    <div class="li-card">
-      <h2 class="li-h2">Will this loan pay off or replace an existing debt?</h2>
-      <label class="check-line">
-        <input type="checkbox" [checked]="replaces()" (change)="replaces.set($any($event.target).checked)" />
-        <span>Yes — this replaces a debt I'm already paying</span>
-      </label>
-      @if (replaces()) {
-        <label class="field"><span>Monthly payment being eliminated</span>
-          <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="replacedPayment() || ''" (input)="replacedPayment.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
-        @if (replacementWarning()) { <p class="warn-text">⚠️ {{ replacementWarning() }}</p> }
-        <p class="hint">This is a scenario only — your saved Cash Flow debts are never changed.</p>
+      <!-- Rental property income & DSCR (rental only) -->
+      @if (isRental()) {
+        <h3 class="li-h3">Estimated rental income (optional — for DSCR)</h3>
+        <div class="field-grid">
+          <label class="field"><span>Estimated monthly gross rent</span>
+            <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="creRent() || ''" (input)="creRent.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+        </div>
+
+        @if (creRent() > 0) {
+          <div class="method-toggle">
+            <button class="method-btn" [class.active]="creExpenseMethod() === 'ratio'" (click)="creExpenseMethod.set('ratio')">Estimate with a ratio</button>
+            <button class="method-btn" [class.active]="creExpenseMethod() === 'own'" (click)="creExpenseMethod.set('own')">Use my own expenses</button>
+          </div>
+
+          @if (creExpenseMethod() === 'ratio') {
+            <div class="ratio-chips">
+              @for (r of [25, 27.5, 30]; track r) {
+                <button class="chip" [class.active]="creRatioPct() === r" (click)="setCreRatio(r)">{{ r }}%</button>
+              }
+              <label class="chip chip-custom" [class.active]="creRatioPct() !== 25 && creRatioPct() !== 27.5 && creRatioPct() !== 30">
+                <span>Custom</span>
+                <input appNumeric="decimal" inputmode="decimal" class="chip-input" [value]="creRatioPct() || ''"
+                  (input)="creExpenseMethod.set('ratio'); creRatioPct.set(+$any($event.target).value || 0)" placeholder="%" />
+              </label>
+            </div>
+          } @else {
+            <label class="field"><span>Your estimated monthly operating expenses</span>
+              <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="creOwnExpenses() || ''" (input)="creOwnExpenses.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          }
+          <div class="noi-preview">
+            <span>Estimated NOI</span><b>{{ fmt(creNoiAnnual()) }}/yr</b>
+          </div>
+
+          <button class="how-link" (click)="creShowAdvanced.set(!creShowAdvanced())">{{ creShowAdvanced() ? '− Hide' : '+' }} advanced assumptions</button>
+          @if (creShowAdvanced()) {
+            <label class="field cre-adv"><span>Vacancy rate (optional)</span>
+              <span class="adorn adorn-pct"><input appNumeric="decimal" inputmode="decimal" [value]="creVacancyPct() || ''" (input)="creVacancyPct.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          }
+        }
       }
     </div>
 
-    <!-- ── Results ────────────────────────────────────────────────────────── -->
+    <!-- ── Amortization: payoff timeline in months, with an extra-principal or proposed-payment scenario ── -->
+    @if (canShowAmortization()) {
+      <div class="li-card">
+        <h2 class="li-h2">Amortization</h2>
+        <div class="payoff-row">
+          <span class="payoff-label">Paid off in</span>
+          <span class="payoff-value">{{ baselinePayoff().months }} months
+            @if (baselinePayoff().months >= 12) { <span class="payoff-sub">({{ fmtMonths(baselinePayoff().months) }})</span> }
+          </span>
+        </div>
+        <p class="hint">Total interest over the life of the loan: <strong>{{ fmt(baselinePayoff().totalInterest) }}</strong></p>
+
+        <h3 class="li-h3">See how a different payment changes your payoff</h3>
+        <div class="method-toggle">
+          <button class="method-btn" [class.active]="extraPaymentMode() === 'extra'" (click)="extraPaymentMode.set('extra')">Additional Principal</button>
+          <button class="method-btn" [class.active]="extraPaymentMode() === 'proposed'" (click)="extraPaymentMode.set('proposed')">Proposed Payment</button>
+        </div>
+        <div class="field-grid">
+          @if (extraPaymentMode() === 'extra') {
+            <label class="field"><span>Extra payment toward principal</span>
+              <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="extraPrincipal() || ''" (input)="extraPrincipal.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          } @else {
+            <label class="field"><span>New monthly payment</span>
+              <span class="adorn adorn-money"><input appNumeric inputmode="decimal" [value]="extraPrincipal() || ''" (input)="extraPrincipal.set(+$any($event.target).value || 0)" placeholder="0" /></span></label>
+          }
+        </div>
+
+        @if (extraPayoff(); as e) {
+          @if (e.payoffPossible) {
+            <div class="payoff-row payoff-row-new">
+              <span class="payoff-label">Paid off in</span>
+              <span class="payoff-value">{{ e.months }} months <span class="payoff-tag">with new payment</span></span>
+            </div>
+            <p class="summary">
+              That's <strong>{{ monthsSaved() }} month{{ monthsSaved() === 1 ? '' : 's' }} sooner</strong>,
+              saving an estimated <strong>{{ fmt(interestSaved()!) }}</strong> in total interest.
+            </p>
+          } @else {
+            <p class="warn-text">⚠️ This payment doesn't fully cover monthly interest at this rate — the balance wouldn't shrink. Try a larger amount.</p>
+          }
+        }
+        <p class="hint">Estimate only — assumes the amount is applied consistently every month with no other changes to rate or term.</p>
+      </div>
+    }
+
+    <!-- ── Results (DTI/DSCR-focused — not relevant to the standalone Amortization tool) ── -->
+    @if (!isAmortizationMode()) {
     <div class="li-card results">
       <h2 class="li-h2">Estimated Impact</h2>
-      <div class="result-grid">
-        <div class="rcard">
-          <span class="rcard-h">Current</span>
-          <span class="rcard-line">Monthly debt <b>{{ fmt(existingDebt()) }}</b></span>
-          <span class="rcard-line">DTI <b>{{ pct(currentDtiVal()) }}</b></span>
-        </div>
-        <div class="rcard">
-          <span class="rcard-h">With Proposed Loan</span>
-          <span class="rcard-line">Monthly debt <b>{{ fmt(projectedDebtVal()) }}</b></span>
-          <span class="rcard-line">DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
-        </div>
-        <div class="rcard">
-          <span class="rcard-h">Impact</span>
-          <span class="rcard-line">New payment <b>{{ fmt(proposedPayment()) }}</b></span>
-          @if (effectiveReplaced() > 0) { <span class="rcard-line">Payment removed <b>{{ fmt(effectiveReplaced()) }}</b></span> }
-          <span class="rcard-line">DTI change <b>{{ pts(dtiChangePts()) }}</b></span>
-        </div>
-        @if (isHousing()) {
+      @if (!canCompute()) {
+        <p class="muted">Enter a loan amount above to see your estimated impact.</p>
+      } @else if (dscrActive()) {
+        <!-- Simplified DSCR-only view — replaces the generic DTI cards for this case -->
+        <div class="result-grid">
           <div class="rcard">
-            <span class="rcard-h">{{ category() === 'rental' ? 'Housing (rental)' : 'Housing (mortgage)' }}</span>
-            <span class="rcard-line">Total housing payment <b>{{ fmt(totalHousingPayment()) }}</b></span>
-            <span class="rcard-line">Housing ratio <b>{{ pct(housingRatioVal()) }}</b></span>
-            <span class="rcard-line">Projected total DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
+            <span class="rcard-h">Property DSCR</span>
+            <span class="rcard-line">Estimated NOI <b>{{ fmt(creNoiAnnual()) }}/yr</b></span>
+            <span class="rcard-line">Annual debt service <b>{{ fmt(creAds()) }}</b></span>
+            <span class="rcard-line">
+              Projected DSCR
+              <span class="tooltip-wrap" tabindex="0">
+                <span class="tooltip-icon" aria-hidden="true">i</span>
+                <span class="sr-only">Projected DSCR details</span>
+                <span class="tooltip-bubble" role="tooltip">
+                  DSCR = net operating income ÷ annual debt service. {{ dscrReference.ideal.toFixed(2) }}x is often
+                  considered an ideal minimum, and {{ dscrReference.attractive.toFixed(2) }}x or higher is generally
+                  viewed as attractive to lenders — reference only, not a requirement. Actual lender calculations may
+                  differ based on vacancy assumptions, expense treatment, reserves, property type, and loan program.
+                </span>
+              </span>
+              <b>{{ fmtX(creDscr()) }}</b>
+            </span>
           </div>
-        }
-      </div>
-
-      <!-- Plain-language summary -->
-      @if (dtiChangePts() !== null) {
-        <p class="summary">
-          This proposed payment would change your estimated DTI from
-          <strong>{{ pct(currentDtiVal()) }}</strong> to <strong>{{ pct(projectedDtiVal()) }}</strong>
-          ({{ pts(dtiChangePts()) }}).
-        </p>
-        @if (dtiBand(); as b) { <p class="band band-{{ b.tone }}">{{ b.label }}.</p> }
-        @if (isHousing() && housingBand(); as hb) { <p class="band band-{{ hb.tone }}">Housing ratio: {{ hb.label }}.</p> }
-      }
-
-      <!-- Required disclaimer (always visible on results) -->
-      <p class="disclaimer">
-        Clarity provides educational estimates based on information you enter and commonly referenced
-        industry ranges. This is not a loan approval, prequalification, preapproval, credit decision,
-        or lending commitment. Actual underwriting standards, calculations, and approval requirements
-        vary by lender and loan program.
-      </p>
-      <button class="how-link" (click)="showHow.set(!showHow())">How this works</button>
-      @if (showHow()) {
-        <p class="how-text">
-          Results are estimates only and may not match a lender's calculations. Lenders may treat income,
-          debts, housing expenses, taxes, insurance, variable income, and other obligations differently.
-          Credit history, collateral, loan-to-value, reserves, income documentation, and additional
-          underwriting requirements may affect a lending decision. DTI is only one part of a lending
-          decision. Consult the applicable lender for actual qualification and approval requirements.
-        </p>
+          <div class="rcard">
+            <span class="rcard-h">Global DSCR (conservative)</span>
+            <span class="rcard-line">Personal + property, post-loan</span>
+            <span class="rcard-line">
+              DSCR
+              <span class="tooltip-wrap" tabindex="0">
+                <span class="tooltip-icon" aria-hidden="true">i</span>
+                <span class="sr-only">Global DSCR details</span>
+                <span class="tooltip-bubble" role="tooltip">
+                  Net (take-home) monthly income ÷ total monthly debt after this loan (existing debt + this property's
+                  payment) — a household-level view combining your personal finances with this property's debt service.
+                  Labeled "conservative" because, unlike the PFS page's Global DSCR, this doesn't add the new
+                  property's own rental income into the numerator — it's a stricter pre-approval view that doesn't
+                  count a not-yet-proven rental income stream.
+                </span>
+              </span>
+              <b>{{ fmtX(globalDscr()) }}</b>
+            </span>
+          </div>
+        </div>
+      } @else {
+        <div class="result-grid">
+          <div class="rcard">
+            <span class="rcard-h">Current</span>
+            <span class="rcard-line">Monthly debt <b>{{ fmt(existingDebt()) }}</b></span>
+            <span class="rcard-line">DTI <b>{{ pct(currentDtiVal()) }}</b></span>
+          </div>
+          <div class="rcard">
+            <span class="rcard-h">With Proposed Loan</span>
+            <span class="rcard-line">Monthly debt <b>{{ fmt(projectedDebtVal()) }}</b></span>
+            <span class="rcard-line">DTI <b>{{ pct(projectedDtiVal()) }}</b></span>
+          </div>
+          <div class="rcard">
+            <span class="rcard-h">Impact</span>
+            <span class="rcard-line">New payment <b>{{ fmt(proposedPayment()) }}</b></span>
+            @if (effectiveReplaced() > 0) { <span class="rcard-line">Payment removed <b>{{ fmt(effectiveReplaced()) }}</b></span> }
+            <span class="rcard-line">DTI change <b>{{ pts(dtiChangePts()) }}</b></span>
+          </div>
+          @if (category() === 'mortgage') {
+            <div class="rcard">
+              <span class="rcard-h">Housing</span>
+              <span class="rcard-line">Total housing payment <b>{{ fmt(totalHousingPayment()) }}</b></span>
+              <span class="rcard-line">Housing ratio <b>{{ pct(housingRatioVal()) }}</b></span>
+            </div>
+          }
+        </div>
       }
 
       @if (canCompute()) {
+        <!-- Plain-language DTI summary — not shown in the simplified rental DSCR view above (redundant with it) -->
+        @if (!dscrActive() && dtiChangePts() !== null) {
+          <p class="summary">
+            This proposed payment would change your estimated DTI from
+            <strong>{{ pct(currentDtiVal()) }}</strong> to <strong>{{ pct(projectedDtiVal()) }}</strong>
+            ({{ pts(dtiChangePts()) }}).
+          </p>
+          @if (dtiBand(); as b) { <p class="band band-{{ b.tone }}">{{ b.label }}.</p> }
+          @if (category() === 'mortgage' && housingBand(); as hb) { <p class="band band-{{ hb.tone }}">Housing ratio: {{ hb.label }}.</p> }
+        }
+
+        <!-- Required disclaimer (always visible once results exist) -->
+        <p class="disclaimer">
+          Clarity provides educational estimates based on information you enter and commonly referenced
+          industry ranges. This is not a loan approval, prequalification, preapproval, credit decision,
+          or lending commitment. Actual underwriting standards, calculations, and approval requirements
+          vary by lender and loan program.
+        </p>
+        <button class="how-link" (click)="showHow.set(!showHow())">How this works</button>
+        @if (showHow()) {
+          <p class="how-text">
+            Results are estimates only and may not match a lender's calculations. Lenders may treat income,
+            debts, housing expenses, taxes, insurance, variable income, and other obligations differently.
+            Credit history, collateral, loan-to-value, reserves, income documentation, and additional
+            underwriting requirements may affect a lending decision. DTI is only one part of a lending
+            decision. Consult the applicable lender for actual qualification and approval requirements.
+          </p>
+          @if (dscrActive()) {
+            <div class="how-detail-grid">
+              <span>Gross annual rent</span><b>{{ fmt(creAnnualGrossRent()) }}</b>
+              @if (creVacancyPct() > 0) { <span>Vacancy allowance</span><b>{{ pct(creVacancyPct()/100) }}</b> }
+              <span>Operating expense method</span><b>{{ creExpenseMethod() === 'ratio' ? (creRatioPct() + '% ratio') : 'Your own expenses' }}</b>
+              <span>Estimated annual operating expenses</span><b>{{ fmt(creAnnualOpEx()) }}</b>
+              <span>Loan assumptions</span><b>{{ fmt(amount()) }} at {{ rate() }}% / {{ term() }} mo</b>
+            </div>
+          }
+        }
+
         <button class="btn-save" (click)="saveScenario()">＋ Save this scenario</button>
       }
     </div>
+    }
 
-    <!-- ── Saved scenarios ────────────────────────────────────────────────── -->
-    @if (scenarios().length) {
+    <!-- ── Saved scenarios (not shown in the standalone Amortization tool) ─── -->
+    @if (!isAmortizationMode() && scenarios().length) {
       <div class="li-card">
         <h2 class="li-h2">Saved Scenarios</h2>
         @for (s of scenarios(); track $index) {
           <div class="scenario-row">
             <span class="sc-name">{{ s.name }}</span>
-            <span class="sc-meta">{{ fmt(s.payment) }}/mo · DTI {{ s.projectedDtiPct }}%</span>
+            <span class="sc-meta">
+              {{ fmt(s.payment) }}/mo
+              @if (s.rentalDscr) { · DSCR {{ fmtX(s.rentalDscr.dscr) }} } @else { · DTI {{ s.projectedDtiPct }}% }
+            </span>
             <button class="sc-del" (click)="deleteScenario($index)" aria-label="Delete">✕</button>
           </div>
         }
@@ -192,7 +394,7 @@
     }
 
     <div class="legal-links">
-      <a routerLink="/privacy">Privacy Policy</a><span class="dot">·</span><a routerLink="/terms">Terms of Use</a>
+      <a href="/privacy">Privacy Policy</a><span class="dot">·</span><a routerLink="/terms">Terms of Use</a>
     </div>
   }
 </div>

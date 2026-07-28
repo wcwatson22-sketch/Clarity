@@ -5,7 +5,7 @@
         <h1 class="page-title">Investment Real Estate</h1>
         <p class="page-sub">Analyze rental property cash flow, DSCR, cap rate, and 5-year projections — investment properties only</p>
       </div>
-      @if (hasAccess()) {
+      @if (hasAccess() && properties().length > 0) {
         <button class="btn-add" (click)="openAdd()">+ Add Property</button>
       }
     </div>
@@ -166,16 +166,24 @@
 
               <div class="metric-card">
                 <div class="metric-label">Cap Rate</div>
-                <div class="metric-value">{{ fmtPct(capRate()) }}</div>
-                <div class="metric-sub">NOI ÷ Purchase Price</div>
+                @if (downPayment() > 0) {
+                  <div class="metric-value">{{ fmtPct(capRate()) }}</div>
+                } @else {
+                  <div class="metric-value" style="color:#EF4444">N/A</div>
+                }
+                <div class="metric-sub">{{ downPayment() > 0 ? 'NOI ÷ Purchase Price' : 'Loan amount exceeds purchase price' }}</div>
               </div>
 
               <div class="metric-card">
                 <div class="metric-label">Cash-on-Cash</div>
-                <div class="metric-value" [style.color]="cashOnCash() >= 0.06 ? '#1D9E75' : cashOnCash() >= 0.03 ? '#D97706' : '#EF4444'">
-                  {{ fmtPct(cashOnCash()) }}
-                </div>
-                <div class="metric-sub">Annual return on down payment</div>
+                @if (downPayment() > 0) {
+                  <div class="metric-value" [style.color]="cashOnCash() >= 0.06 ? '#1D9E75' : cashOnCash() >= 0.03 ? '#D97706' : '#EF4444'">
+                    {{ fmtPct(cashOnCash()) }}
+                  </div>
+                } @else {
+                  <div class="metric-value" style="color:#EF4444">N/A</div>
+                }
+                <div class="metric-sub">{{ downPayment() > 0 ? 'Annual return on down payment' : 'Loan amount exceeds purchase price' }}</div>
               </div>
 
               <div class="metric-card">
@@ -282,7 +290,11 @@
                 <div class="line-row"><span>Loan Amount</span><span>{{ fmt(prop.loanAmount) }}</span></div>
                 <div class="line-row">
                   <span>Down Payment</span>
-                  <span>{{ fmt(downPayment()) }} ({{ fmtPct(downPaymentPct()) }})</span>
+                  @if (downPayment() > 0) {
+                    <span>{{ fmt(downPayment()) }} ({{ fmtPct(downPaymentPct()) }})</span>
+                  } @else {
+                    <span class="red">{{ fmt(downPayment()) }} — loan exceeds purchase price</span>
+                  }
                 </div>
                 <div class="line-row"><span>Interest Rate</span><span>{{ prop.interestRate }}%</span></div>
                 <div class="line-row"><span>Amortization</span><span>{{ prop.amortizationYears }} years</span></div>
@@ -312,7 +324,8 @@
               @if (show5Year()) {
                 <div class="projection-note">
                   Assumes {{ active()!.annualRentGrowthPct }}% annual rent growth and
-                  {{ active()!.annualAppreciationPct }}% appreciation. Expenses held flat.
+                  {{ active()!.annualAppreciationPct }}% appreciation. Percentage-based expenses (e.g. management fee)
+                  scale with rent each year; fixed-dollar expenses are held flat.
                 </div>
                 <div class="projection-table-wrap">
                   <table class="projection-table">
@@ -358,7 +371,7 @@
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2>{{ editingId() ? 'Edit Property' : 'Add Property' }}</h2>
-            <button class="modal-close" (click)="closeForm()">✕</button>
+            <button class="modal-close" (click)="closeForm()" aria-label="Close">✕</button>
           </div>
 
           <div class="modal-body">
@@ -542,6 +555,35 @@
             <button class="btn-save" (click)="save()" [disabled]="saving()">
               {{ saving() ? 'Saving…' : editingId() ? 'Save Changes' : 'Add Property' }}
             </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── Delete confirmation: what happens to linked Dashboard records ── -->
+    @if (deletePrompt(); as prompt) {
+      <div class="modal-overlay" (click)="cancelDeletePrompt()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>Remove "{{ prompt.address }}"?</h2>
+            <button class="modal-close" (click)="cancelDeletePrompt()" aria-label="Close">✕</button>
+          </div>
+          <div class="modal-body">
+            <p>This property is linked to the following Dashboard records:</p>
+            <ul class="linked-account-list">
+              @for (a of prompt.linkedAccounts; track a.id) {
+                <li>
+                  <span>{{ a.type === 'Asset' ? '🏠' : '🏦' }} {{ a.name }}</span>
+                  <strong>{{ a.value | currency:'USD':'symbol':'1.0-0' }}</strong>
+                </li>
+              }
+            </ul>
+            <p>Choose what to do with them:</p>
+          </div>
+          <div class="modal-footer delete-prompt-footer">
+            <button class="btn-cancel" (click)="cancelDeletePrompt()">Cancel</button>
+            <button class="btn-keep" (click)="resolveDeleteWithLinkedAccounts('unlink')">Keep on Dashboard</button>
+            <button class="btn-danger" (click)="resolveDeleteWithLinkedAccounts('delete')">Delete Both</button>
           </div>
         </div>
       </div>

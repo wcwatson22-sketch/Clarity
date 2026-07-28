@@ -45,6 +45,18 @@ try
     builder.Services.AddHttpClient(); // enables IHttpClientFactory for PaymentsController (Apple IAP)
     builder.Services.AddHostedService<CleanupHostedService>();
 
+    // ── Weekly performance report ────────────────────────────────────────────
+    // Every source degrades gracefully to "unavailable" when unconfigured, so
+    // this is always safe to register — it never sends a real email until
+    // WEEKLY_REPORT_RECIPIENT is set (see WeeklyReportOrchestratorService).
+    builder.Services.AddHttpClient<Clarity.Api.Services.Reporting.GoogleServiceAccountAuth>();
+    builder.Services.AddHttpClient<Clarity.Api.Services.Reporting.Ga4ReportingService>();
+    builder.Services.AddHttpClient<Clarity.Api.Services.Reporting.SearchConsoleReportingService>();
+    builder.Services.AddHttpClient<Clarity.Api.Services.Reporting.AppStoreConnectReportingService>();
+    builder.Services.AddScoped<Clarity.Api.Services.Reporting.DatabaseMetricsService>();
+    builder.Services.AddScoped<Clarity.Api.Services.Reporting.WeeklyReportOrchestratorService>();
+    builder.Services.AddHostedService<Clarity.Api.Services.Reporting.WeeklyReportHostedService>();
+
     builder.Services.AddControllers()
         .AddJsonOptions(opts =>
         {
@@ -66,6 +78,23 @@ try
                 {
                     PermitLimit = 10,
                     Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0,
+                }
+            ));
+
+        // Test-auth token endpoint: the real security boundary here is knowledge
+        // of TestAuth:Secret (a long random value), not this limiter — it just
+        // guards against blind brute-forcing of that secret. Sized generously
+        // (per hour, not per day) since weekly automation may reasonably make
+        // several calls in a single testing session.
+        options.AddPolicy("test-auth", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: "test-auth:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 20,
+                    Window = TimeSpan.FromHours(1),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0,
                 }
@@ -344,6 +373,24 @@ try
             "ALTER TABLE Incomes ADD COLUMN RothIraMode TEXT NOT NULL DEFAULT 'amount'",
             "ALTER TABLE Incomes ADD COLUMN RothIraValue TEXT NOT NULL DEFAULT '0'",
             "ALTER TABLE Incomes ADD COLUMN EmployerMatchMonthly TEXT NOT NULL DEFAULT '0'",
+            // Phase 2: optional liability interest rate + Real Estate <-> Dashboard
+            // account linkage. Additive, nullable — non-destructive, preserves all
+            // existing Accounts rows (they simply have NULL for these new columns).
+            "ALTER TABLE Accounts ADD COLUMN InterestRate TEXT NULL",
+            "ALTER TABLE Accounts ADD COLUMN LinkedPropertyId TEXT NULL",
+            "ALTER TABLE Accounts ADD COLUMN LinkedPropertyRole TEXT NULL",
+            // Retirement contributions v2: per-income-source, user-managed list
+            // (replaces the single shared set of 4 fixed types). Old Trad401kValue
+            // etc. columns are kept and migrated once in IncomeController, then
+            // zeroed — never deleted, so no existing data is lost.
+            "ALTER TABLE Incomes ADD COLUMN RetirementItems TEXT NOT NULL DEFAULT '[]'",
+            "ALTER TABLE Incomes ADD COLUMN EmployerMatchPrimaryMonthly TEXT NOT NULL DEFAULT '0'",
+            "ALTER TABLE Incomes ADD COLUMN EmployerMatchSecondaryMonthly TEXT NOT NULL DEFAULT '0'",
+            // Employer match v2: tiered % of contribution (e.g. "100% of first 3%,
+            // 50% of next 2%") instead of a flat $/mo guess. Old flat columns above
+            // are kept and migrated once in IncomeController, then zeroed.
+            "ALTER TABLE Incomes ADD COLUMN EmployerMatchTiersPrimary TEXT NOT NULL DEFAULT '[]'",
+            "ALTER TABLE Incomes ADD COLUMN EmployerMatchTiersSecondary TEXT NOT NULL DEFAULT '[]'",
         })
         {
             try
@@ -484,6 +531,32 @@ try
         }
         catch (Exception ex) { Log.Warning(ex, "LearnArticles/AdminAuditLogs table creation skipped"); }
 
+        // ── WeeklyReports table (weekly performance-report archive) ─────────────
+        try
+        {
+            using var createWR = conn.CreateCommand();
+            createWR.CommandText = """
+                CREATE TABLE IF NOT EXISTS "WeeklyReports" (
+                    "Id"                  INTEGER NOT NULL CONSTRAINT "PK_WeeklyReports" PRIMARY KEY AUTOINCREMENT,
+                    "PeriodStart"         TEXT NOT NULL DEFAULT '0001-01-01',
+                    "PeriodEnd"           TEXT NOT NULL DEFAULT '0001-01-01',
+                    "GeneratedAt"         TEXT NOT NULL DEFAULT '0001-01-01 00:00:00',
+                    "Status"              INTEGER NOT NULL DEFAULT 0,
+                    "WebsiteMetricsJson"  TEXT NOT NULL DEFAULT '{}',
+                    "SearchMetricsJson"   TEXT NOT NULL DEFAULT '{}',
+                    "AppStoreMetricsJson" TEXT NOT NULL DEFAULT '{}',
+                    "BusinessMetricsJson" TEXT NOT NULL DEFAULT '{}',
+                    "SummaryHtml"         TEXT NOT NULL DEFAULT '',
+                    "DeliveryStatus"      INTEGER NOT NULL DEFAULT 0,
+                    "ErrorSummary"        TEXT NULL,
+                    "TriggeredManually"   INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS "IX_WeeklyReports_Period" ON "WeeklyReports" ("PeriodStart", "PeriodEnd");
+                """;
+            await createWR.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex) { Log.Warning(ex, "WeeklyReports table creation skipped"); }
+
         // ── Seed Learn articles from learn-seed.json if the table is empty ──────
         // One-time migration of the original static articles into the DB. Idempotent:
         // only runs when there are zero rows, so it never duplicates or overwrites
@@ -529,6 +602,114 @@ try
             catch (Exception ex) { Log.Error(ex, "Learn article seeding failed"); }
         }
 
+        // ── DTI article cluster — idempotent by slug (runs regardless of whether ──
+        // the table was already seeded above, so it also reaches existing DBs). ──
+        try
+        {
+            var dtiSeedPath = Path.Combine(AppContext.BaseDirectory, "Data", "learn-seed-dti.json");
+            if (File.Exists(dtiSeedPath))
+            {
+                using var dtiDoc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(dtiSeedPath));
+                var now = DateTime.UtcNow;
+                var added = 0;
+                foreach (var el in dtiDoc.RootElement.EnumerateArray())
+                {
+                    string S(string k) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() ?? "" : "";
+                    bool B(string k) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.True;
+                    int I(string k, int d) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.Number ? v.GetInt32() : d;
+                    var slug = S("slug");
+                    if (string.IsNullOrWhiteSpace(slug) || ctx.LearnArticles.Any(a => a.Slug == slug)) continue;
+
+                    var related = el.TryGetProperty("relatedArticleIds", out var r) && r.ValueKind == System.Text.Json.JsonValueKind.Array
+                        ? System.Text.Json.JsonSerializer.Serialize(r.EnumerateArray().Select(x => x.GetString()).Where(x => x != null))
+                        : "[]";
+                    var pubStr = S("publishedAt");
+                    DateTime? pub = DateTime.TryParse(pubStr, out var pd) ? DateTime.SpecifyKind(pd, DateTimeKind.Utc) : now;
+                    ctx.LearnArticles.Add(new Clarity.Api.Models.LearnArticle
+                    {
+                        Title = S("title"), Slug = slug, Summary = S("summary"),
+                        Category = S("category"), Content = S("content"),
+                        FeaturedImageUrl = S("featuredImageUrl"), SeoTitle = S("seoTitle"),
+                        MetaDescription = S("metaDescription"),
+                        IsPublished = B("isPublished"), IsFeatured = B("isFeatured"),
+                        DisclaimerType = S("disclaimerType") is { Length: > 0 } dt ? dt : "none",
+                        RelatedArticleIds = related,
+                        SortOrder = I("sortOrder", 0), ReadingTimeMinutes = I("readingTimeMinutes", 4),
+                        AuthorName = "Clarity Financial Tools",
+                        PublishedAt = B("isPublished") ? pub : null,
+                        CreatedAt = now, UpdatedAt = now,
+                    });
+                    added++;
+                }
+                if (added > 0)
+                {
+                    await ctx.SaveChangesAsync();
+                    Log.Information("Seeded {Count} new DTI articles from learn-seed-dti.json.", added);
+
+                    // Link the existing "what-is-dti" hub article to the new cluster
+                    // (additive only — never removes an existing related slug).
+                    var hub = await ctx.LearnArticles.FirstOrDefaultAsync(a => a.Slug == "what-is-dti");
+                    if (hub is not null)
+                    {
+                        var existing = System.Text.Json.JsonSerializer.Deserialize<List<string>>(hub.RelatedArticleIds) ?? [];
+                        var toAdd = new[] { "how-to-calculate-dti", "what-debts-count-toward-dti" }.Where(s => !existing.Contains(s));
+                        existing.AddRange(toAdd);
+                        hub.RelatedArticleIds = System.Text.Json.JsonSerializer.Serialize(existing);
+                        hub.UpdatedAt = now;
+                        await ctx.SaveChangesAsync();
+                    }
+                }
+            }
+        }
+        catch (Exception ex) { Log.Error(ex, "DTI article seeding failed"); }
+
+        // ── LinkedIn-adapted article cluster — idempotent by slug ───────────────
+        try
+        {
+            var liSeedPath = Path.Combine(AppContext.BaseDirectory, "Data", "learn-seed-linkedin.json");
+            if (File.Exists(liSeedPath))
+            {
+                using var liDoc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(liSeedPath));
+                var now = DateTime.UtcNow;
+                var added = 0;
+                foreach (var el in liDoc.RootElement.EnumerateArray())
+                {
+                    string S(string k) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() ?? "" : "";
+                    bool B(string k) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.True;
+                    int I(string k, int d) => el.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.Number ? v.GetInt32() : d;
+                    var slug = S("slug");
+                    if (string.IsNullOrWhiteSpace(slug) || ctx.LearnArticles.Any(a => a.Slug == slug)) continue;
+
+                    var related = el.TryGetProperty("relatedArticleIds", out var r) && r.ValueKind == System.Text.Json.JsonValueKind.Array
+                        ? System.Text.Json.JsonSerializer.Serialize(r.EnumerateArray().Select(x => x.GetString()).Where(x => x != null))
+                        : "[]";
+                    var pubStr = S("publishedAt");
+                    DateTime? pub = DateTime.TryParse(pubStr, out var pd) ? DateTime.SpecifyKind(pd, DateTimeKind.Utc) : now;
+                    ctx.LearnArticles.Add(new Clarity.Api.Models.LearnArticle
+                    {
+                        Title = S("title"), Slug = slug, Summary = S("summary"),
+                        Category = S("category"), Content = S("content"),
+                        FeaturedImageUrl = S("featuredImageUrl"), SeoTitle = S("seoTitle"),
+                        MetaDescription = S("metaDescription"),
+                        IsPublished = B("isPublished"), IsFeatured = B("isFeatured"),
+                        DisclaimerType = S("disclaimerType") is { Length: > 0 } dt ? dt : "none",
+                        RelatedArticleIds = related,
+                        SortOrder = I("sortOrder", 0), ReadingTimeMinutes = I("readingTimeMinutes", 4),
+                        AuthorName = "Clarity Financial Tools",
+                        PublishedAt = B("isPublished") ? pub : null,
+                        CreatedAt = now, UpdatedAt = now,
+                    });
+                    added++;
+                }
+                if (added > 0)
+                {
+                    await ctx.SaveChangesAsync();
+                    Log.Information("Seeded {Count} new LinkedIn-adapted articles from learn-seed-linkedin.json.", added);
+                }
+            }
+        }
+        catch (Exception ex) { Log.Error(ex, "LinkedIn article seeding failed"); }
+
         // ── RealEstateProperties table (added after initial schema) ─────────────
         try
         {
@@ -573,16 +754,41 @@ try
         }
         catch { /* table already exists */ }
 
+        // ── PushSubscriptions table (added after initial schema) ────────────────
+        // EnsureCreated only creates tables when the DB is brand new, so on any
+        // pre-existing production DB this table was never created — the entity/DbSet
+        // existed in code but "no such table: PushSubscriptions" errors followed.
+        // Table name matches the DbSet property name (EF Core's default convention),
+        // not the C# class name (UserPushSubscription).
+        try
+        {
+            using var createPush = conn.CreateCommand();
+            createPush.CommandText = """
+                CREATE TABLE IF NOT EXISTS "PushSubscriptions" (
+                    "Id"        INTEGER NOT NULL CONSTRAINT "PK_PushSubscriptions" PRIMARY KEY AUTOINCREMENT,
+                    "UserId"    INTEGER NOT NULL,
+                    "Endpoint"  TEXT NOT NULL DEFAULT '',
+                    "P256dh"    TEXT NOT NULL DEFAULT '',
+                    "Auth"      TEXT NOT NULL DEFAULT '',
+                    "CreatedAt" TEXT NOT NULL DEFAULT '0001-01-01 00:00:00'
+                )
+                """;
+            await createPush.ExecuteNonQueryAsync();
+        }
+        catch { /* table already exists */ }
+
         // ── Database indexes (CREATE INDEX IF NOT EXISTS is always safe to re-run) ──
         // These prevent full table scans on every dashboard load. Added 2026-06.
         var indexStatements = new[]
         {
             // Per-user queries: accounts, budget, snapshots, real estate
             "CREATE INDEX IF NOT EXISTS \"IX_Accounts_UserId\"           ON \"Accounts\"           (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_Accounts_LinkedPropertyId\" ON \"Accounts\"           (\"LinkedPropertyId\")",
             "CREATE INDEX IF NOT EXISTS \"IX_BudgetItems_UserId\"         ON \"BudgetItems\"         (\"UserId\")",
             "CREATE INDEX IF NOT EXISTS \"IX_RealEstateProperties_UserId\" ON \"RealEstateProperties\" (\"UserId\")",
             "CREATE INDEX IF NOT EXISTS \"IX_PasswordResetTokens_UserId\" ON \"PasswordResetTokens\" (\"UserId\")",
-            "CREATE INDEX IF NOT EXISTS \"IX_PushSubscriptions_UserId\"   ON \"UserPushSubscription\" (\"UserId\")",
+            "CREATE INDEX IF NOT EXISTS \"IX_PushSubscriptions_UserId\"   ON \"PushSubscriptions\" (\"UserId\")",
+            "CREATE UNIQUE INDEX IF NOT EXISTS \"IX_PushSubscriptions_Endpoint\" ON \"PushSubscriptions\" (\"Endpoint\")",
             // Snapshots: simple and composite (dashboard loads ordered by date DESC)
             "CREATE INDEX IF NOT EXISTS \"IX_Snapshots_UserId\"           ON \"Snapshots\"           (\"UserId\")",
             "CREATE INDEX IF NOT EXISTS \"IX_Snapshots_UserId_CreatedAt\" ON \"Snapshots\"           (\"UserId\", \"CreatedAt\")",
