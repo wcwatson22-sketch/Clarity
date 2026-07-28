@@ -4,10 +4,20 @@
 .page-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 4px; }
 .page-sub { font-size: 12px; color: #EF4444; margin: 0; font-weight: 600; }
 
+.header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.export-btn, .manage-learn-btn {
+  background: #fff; color: #374151; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  transition: border-color 0.15s, color 0.15s;
+  &:hover { border-color: #1D9E75; color: #1D9E75; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
 .export-btn {
-  background: #1D9E75; color: #fff; border: none; border-radius: 10px;
-  padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-  &:disabled { opacity: 0.5; }
+  background: #1D9E75; color: #fff; border-color: #1D9E75;
+  &:hover { background: #085041; border-color: #085041; color: #fff; }
 }
 
 .loading-state, .error-state, .empty-state {

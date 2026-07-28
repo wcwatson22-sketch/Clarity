@@ -15,8 +15,14 @@ export class RealEstateService {
   properties = signal<(RealEstateProperty & { id: string })[]>([]);
   loaded     = signal(false);
 
+  /**
+   * Always refetches. This service is a singleton shared by PFS and Dashboard, while
+   * the Real Estate tab manages its own properties independently — if this cached
+   * after the first call, a property added/edited/deleted on the Real Estate tab
+   * would never show up here for the rest of the session. `loaded` only tracks
+   * "has resolved at least once" for initial-render loading-state UI.
+   */
   load() {
-    if (this.loaded()) return;
     if (!this.plans.canRealEstate()) {
       this.loaded.set(true);
       return;
@@ -45,6 +51,8 @@ export class RealEstateService {
 
   totalGrossRent  = computed(() => this.properties().reduce((s, p) => s + p.grossMonthlyRent, 0));
   totalNOI        = computed(() => this.properties().reduce((s, p) => s + this.propMetrics(p).noi, 0));
+  /** Monthly P&I across all properties — the "rental debt" side of a global DSCR calc. */
+  totalMonthlyDebtService = computed(() => this.properties().reduce((s, p) => s + this.propMetrics(p).pmt, 0));
   totalCashFlow   = computed(() => this.properties().reduce((s, p) => s + this.propMetrics(p).cashFlow, 0));
   totalValue      = computed(() => this.properties().reduce((s, p) => s + p.appraisedValue, 0));
   totalDebt       = computed(() => this.properties().reduce((s, p) => s + p.loanAmount, 0));

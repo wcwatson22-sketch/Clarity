@@ -1,0 +1,115 @@
+<div class="dc">
+  <nav class="dc-crumbs" aria-label="Breadcrumb">
+    <a routerLink="/">Home</a><span aria-hidden="true">›</span>
+    <a routerLink="/learn">Learn</a><span aria-hidden="true">›</span>
+    <span>DTI Calculator</span>
+  </nav>
+
+  <header class="dc-head">
+    <h1>Debt-to-Income Ratio Calculator</h1>
+    <p class="dc-sub">See how your monthly debt compares to your gross income — free, no login required.</p>
+  </header>
+
+  <div class="dc-layout">
+
+    <!-- ── Inputs ─────────────────────────────────────────────────────── -->
+    <div class="dc-card">
+      <h2 class="dc-h2">Your numbers</h2>
+
+      <label class="dc-field">
+        <span>Gross Monthly Income</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="grossIncome() || ''"
+            (input)="setField(grossIncome.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+
+      <h3 class="dc-h3">Monthly debt payments <span class="dc-optional">(leave blank if none)</span></h3>
+
+      <label class="dc-field">
+        <span>Housing payment (rent or mortgage)</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="housing() || ''"
+            (input)="setField(housing.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+      <label class="dc-field">
+        <span>Auto loan payments</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="auto() || ''"
+            (input)="setField(auto.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+      <label class="dc-field">
+        <span>Student loan payments</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="student() || ''"
+            (input)="setField(student.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+      <label class="dc-field">
+        <span>Credit card minimum payments</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="creditCards() || ''"
+            (input)="setField(creditCards.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+      <label class="dc-field">
+        <span>Personal or installment loan payments</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="personal() || ''"
+            (input)="setField(personal.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+      <label class="dc-field">
+        <span>Other monthly debt payments</span>
+        <span class="dc-adorn">
+          <input appNumeric inputmode="decimal" [value]="other() || ''"
+            (input)="setField(other.set, $any($event.target).value)" placeholder="0" />
+        </span>
+      </label>
+    </div>
+
+    <!-- ── Result ─────────────────────────────────────────────────────── -->
+    <div class="dc-card dc-result">
+      @if (!canCalculate()) {
+        <p class="dc-empty">Enter your gross monthly income to calculate your DTI.</p>
+      } @else {
+        @if (dtiPct(); as d) {
+          <div class="dc-dti-wrap" [class.dc-good]="band()?.tone === 'good'" [class.dc-ok]="band()?.tone === 'ok'" [class.dc-high]="band()?.tone === 'high'">
+            {{ onResultShown() }}
+            <span class="dc-dti-label">Your DTI</span>
+            <span class="dc-dti-val">{{ pct(d) }}</span>
+            <span class="dc-dti-band">{{ band()?.label }}</span>
+          </div>
+        }
+        <div class="dc-breakdown">
+          <div class="dc-row"><span>Total monthly debt</span><span>{{ fmt(totalDebt()) }}</span></div>
+          <div class="dc-row"><span>Gross monthly income</span><span>{{ fmt(grossIncome()) }}</span></div>
+        </div>
+        <p class="dc-explain">
+          Lenders may calculate DTI differently, and acceptable ranges vary by lender, loan type, credit profile, and other factors.
+          A lower DTI generally means more of your income is available for other financial goals.
+        </p>
+      }
+
+      <p class="dc-disclaimer">
+        Clarity provides educational estimates only. This calculator is not a loan application, prequalification, preapproval, credit decision, or lending commitment. Calculations and requirements vary by lender and loan program.
+      </p>
+
+      <div class="dc-links">
+        <a routerLink="/learn/what-is-dti" (click)="trackArticle('what-is-dti')">What is DTI?</a>
+        <a routerLink="/learn/how-to-calculate-dti" (click)="trackArticle('how-to-calculate-dti')">How to calculate DTI</a>
+      </div>
+
+      @if (!auth.isLoggedIn()) {
+        <a routerLink="/signup" class="dc-cta" (click)="trackSignup()">Save and track your full financial picture with a free Clarity account</a>
+      } @else {
+        <a routerLink="/dashboard" class="dc-cta">Go to your Dashboard</a>
+      }
+    </div>
+
+  </div>
+
+  <app-learn-disclosure variant="article" [loan]="true" />
+</div>

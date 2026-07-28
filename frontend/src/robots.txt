@@ -1,7 +1,27 @@
 User-agent: *
 Allow: /
 
-# Authenticated app screens hold no crawlable content (client-rendered behind
-# login); the public marketing site and Learn articles are fully indexable.
+# The app has no server-side rendering, so every route (public or private)
+# returns the same static HTML shell before JavaScript runs. Per-route
+# <meta name="robots"> is set client-side, which not every crawler executes
+# reliably or in time — so private/authenticated screens are also disallowed
+# here as defense in depth. The public marketing site and Learn articles
+# remain fully crawlable.
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /forgot-username
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /dashboard
+Disallow: /cash-flow
+Disallow: /app-learn
+Disallow: /settings
+Disallow: /pfs
+Disallow: /compare
+Disallow: /loan-prep
+Disallow: /loan-impact
+Disallow: /real-estate
+Disallow: /admin
 
 Sitemap: https://clarityfinancialtools.com/sitemap.xml

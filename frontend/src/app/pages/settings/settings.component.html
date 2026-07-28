@@ -342,7 +342,11 @@
 
       @if (push.permission() === 'denied') {
         <div class="alert alert-error" style="margin-top:12px">
-          Notifications are blocked. Go to your phone Settings → Clarity → Notifications to allow them.
+          @if (isNative) {
+            Notifications are blocked. Go to your phone Settings → Clarity → Notifications to allow them.
+          } @else {
+            Notifications are blocked. Allow them in your browser's site settings for this page.
+          }
         </div>
       }
     }
@@ -368,47 +372,6 @@
         <div class="replay-confirm-actions">
           <button class="btn-replay-cancel" (click)="showReplayConfirm.set(false)">Cancel</button>
           <button class="btn-replay-confirm" (click)="replayTutorial()">Yes, Replay Tutorial</button>
-        </div>
-      </div>
-    }
-  </div>
-
-  <!-- ── Danger Zone ────────────────────────────────────────────────── -->
-  <div class="settings-card danger-zone">
-    <h2 class="card-title danger-title">Danger Zone</h2>
-    <p class="card-sub">Permanent actions that cannot be undone.</p>
-
-    @if (!showDeleteConfirm()) {
-      <div class="danger-row">
-        <div>
-          <p class="danger-label">Delete Account</p>
-          <p class="danger-desc">Permanently deletes your account, all financial data, and cancels any active subscription. This cannot be undone.</p>
-        </div>
-        <button class="btn-danger" (click)="showDeleteConfirm.set(true)">Delete Account</button>
-      </div>
-    } @else {
-      <div class="delete-confirm-box">
-        <p class="delete-confirm-text">
-          This will permanently delete <strong>all your data</strong> — accounts, budgets, snapshots, and your subscription will be cancelled immediately.
-          <br><br>
-          Type <strong>DELETE</strong> below to confirm:
-        </p>
-        <input class="field-input delete-confirm-input"
-          type="text" placeholder="Type DELETE to confirm"
-          [value]="deleteConfirmText()"
-          (input)="deleteConfirmText.set($any($event.target).value)" />
-
-        @if (deleteError()) {
-          <div class="alert alert-error" style="margin-top:8px">{{ deleteError() }}</div>
-        }
-
-        <div class="delete-confirm-actions">
-          <button class="btn-confirm-delete" [disabled]="!deleteReady() || deleting()" (click)="deleteAccount()">
-            {{ deleting() ? 'Deleting…' : 'Permanently Delete My Account' }}
-          </button>
-          <button class="btn-keep-plan" (click)="showDeleteConfirm.set(false); deleteConfirmText.set('')">
-            Cancel
-          </button>
         </div>
       </div>
     }
@@ -456,11 +419,52 @@
     }
   </div>
 
+  <!-- ── Danger Zone (destructive actions live last, per settings ordering convention) ── -->
+  <div class="settings-card danger-zone">
+    <h2 class="card-title danger-title">Danger Zone</h2>
+    <p class="card-sub">Permanent actions that cannot be undone.</p>
+
+    @if (!showDeleteConfirm()) {
+      <div class="danger-row">
+        <div>
+          <p class="danger-label">Delete Account</p>
+          <p class="danger-desc">Permanently deletes your account, all financial data, and cancels any active subscription. This cannot be undone.</p>
+        </div>
+        <button class="btn-danger" (click)="showDeleteConfirm.set(true)">Delete Account</button>
+      </div>
+    } @else {
+      <div class="delete-confirm-box">
+        <p class="delete-confirm-text">
+          This will permanently delete <strong>all your data</strong> — accounts, budgets, snapshots, and your subscription will be cancelled immediately.
+          <br><br>
+          Type <strong>DELETE</strong> below to confirm:
+        </p>
+        <input class="field-input delete-confirm-input"
+          type="text" placeholder="Type DELETE to confirm"
+          [value]="deleteConfirmText()"
+          (input)="deleteConfirmText.set($any($event.target).value)" />
+
+        @if (deleteError()) {
+          <div class="alert alert-error" style="margin-top:8px">{{ deleteError() }}</div>
+        }
+
+        <div class="delete-confirm-actions">
+          <button class="btn-confirm-delete" [disabled]="!deleteReady() || deleting()" (click)="deleteAccount()">
+            {{ deleting() ? 'Deleting…' : 'Permanently Delete My Account' }}
+          </button>
+          <button class="btn-keep-plan" (click)="showDeleteConfirm.set(false); deleteConfirmText.set('')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
   <!-- ── Legal ───────────────────────────────────────────────────────── -->
   <div class="legal-links">
     <a routerLink="/terms">Terms of Use</a>
     <span class="dot">·</span>
-    <a routerLink="/privacy">Privacy Policy</a>
+    <a href="/privacy">Privacy Policy</a>
   </div>
   <div class="legal-ownership">
     <p>© 2026 Clearpath Digital LLC. All rights reserved.</p>

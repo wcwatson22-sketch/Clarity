@@ -13,17 +13,20 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/public/public-layout.component').then(m => m.PublicLayoutComponent),
     children: [
       { path: '', title: 'Clarity Financial Tools | Understand Your Full Financial Picture',
-        data: { description: 'Track cash flow, net worth, debt, assets, liabilities, DTI, and financial progress with Clarity Financial Tools.' },
+        data: { description: 'Track cash flow, net worth, debt, assets, liabilities, DTI, and financial progress with Clarity Financial Tools.', indexable: true, publicLayout: true },
         loadComponent: () => import('./pages/public/home.component').then(m => m.PublicHomeComponent) },
       { path: 'features', title: 'Features | Clarity Financial Tools',
-        data: { description: 'See what Clarity offers free and with Premium — cash flow, net worth, DTI, snapshots, Compare, Loan Prep, and real estate analysis.' },
+        data: { description: 'See what Clarity offers free and with Premium — cash flow, net worth, DTI, snapshots, Compare, Loan Prep, and real estate analysis.', indexable: true, publicLayout: true },
         loadComponent: () => import('./pages/public/features.component').then(m => m.PublicFeaturesComponent) },
       { path: 'pricing', title: 'Pricing | Clarity Financial Tools',
-        data: { description: 'Clarity is free forever. Upgrade to Premium for $2.99/month to unlock Compare, Loan Prep, and Real Estate tools.' },
+        data: { description: 'Clarity is free forever. Upgrade to Premium for $2.99/month to unlock Compare, Loan Prep, and Real Estate tools.', indexable: true, publicLayout: true },
         loadComponent: () => import('./pages/public/pricing.component').then(m => m.PublicPricingComponent) },
       { path: 'about', title: 'About Clarity Financial Tools',
-        data: { description: 'Clarity began as a personal finance spreadsheet, rebuilt into a simple command center. Owned and operated by Clearpath Digital LLC.' },
+        data: { description: 'Clarity began as a personal finance spreadsheet, rebuilt into a simple command center. Owned and operated by Clearpath Digital LLC.', indexable: true, publicLayout: true },
         loadComponent: () => import('./pages/public/about.component').then(m => m.PublicAboutComponent) },
+      { path: 'calculators/debt-to-income-ratio', title: 'Free Debt-to-Income Ratio Calculator | Clarity',
+        data: { description: 'Calculate your debt-to-income ratio for free. Compare your monthly debt payments with your gross income and learn how DTI is generally evaluated.', indexable: true, publicLayout: true },
+        loadComponent: () => import('./pages/public/dti-calculator/dti-calculator.component').then(m => m.DtiCalculatorComponent) },
     ],
   },
 
@@ -36,8 +39,8 @@ export const routes: Routes = [
     canActivate: [learnPlatformGuard],
     loadComponent: () => import('./pages/public/public-layout.component').then(m => m.PublicLayoutComponent),
     children: [
-      { path: '', loadComponent: () => import('./pages/public/learn-hub.component').then(m => m.LearnHubComponent) },
-      { path: ':slug', loadComponent: () => import('./pages/public/learn-article.component').then(m => m.LearnArticleComponent) },
+      { path: '', data: { indexable: true, publicLayout: true }, loadComponent: () => import('./pages/public/learn-hub.component').then(m => m.LearnHubComponent) },
+      { path: ':slug', data: { indexable: true, publicLayout: true }, loadComponent: () => import('./pages/public/learn-article.component').then(m => m.LearnArticleComponent) },
     ],
   },
 
@@ -126,12 +129,30 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin-learn/admin-learn.component').then(m => m.AdminLearnComponent)
   },
   {
-    path: 'terms',
-    loadComponent: () => import('./pages/legal/terms.component').then(m => m.TermsComponent)
+    path: 'admin/reports/weekly',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin-reports/admin-reports.component').then(m => m.AdminReportsComponent)
   },
+
+  // ── Public legal pages (crawlable; no auth) ─────────────────────────────
+  // Reuses the marketing PublicLayout (header/footer), same as /learn. No
+  // webOnlyGuard here — Signup and Settings link to these on every platform
+  // (including native), so they must never redirect away like the marketing
+  // site does inside the app.
+  //
+  // NOTE: /privacy has no Angular route. A static file at public/privacy/index.html
+  // (built for the Apple App Store privacy-URL requirement) is served directly at
+  // that path and takes precedence — that is the one authoritative Privacy Policy.
+  // Every in-app link to it uses a plain <a href="/privacy"> (full page load),
+  // never routerLink, so it isn't swallowed by the Angular router's '**' redirect.
   {
-    path: 'privacy',
-    loadComponent: () => import('./pages/legal/privacy.component').then(m => m.PrivacyComponent)
+    path: '',
+    loadComponent: () => import('./pages/public/public-layout.component').then(m => m.PublicLayoutComponent),
+    children: [
+      { path: 'terms', title: 'Terms of Use | Clarity Financial Tools',
+        data: { description: 'The Terms of Use governing your access to Clarity Financial Tools.', indexable: true, publicLayout: true },
+        loadComponent: () => import('./pages/legal/terms.component').then(m => m.TermsComponent) },
+    ],
   },
 
   { path: '**', redirectTo: '' }

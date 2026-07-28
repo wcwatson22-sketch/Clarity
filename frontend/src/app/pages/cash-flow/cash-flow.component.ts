@@ -3,7 +3,10 @@ import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../services/finance.service';
 import { ToastService } from '../../services/toast.service';
-import { BudgetItem, BudgetGroup, IncomeData, ContributionInput, ContributionMode, emptyIncome } from '../../models/finance.models';
+import {
+  BudgetItem, BudgetGroup, IncomeData, ContributionMode, RetirementType, RetirementItem,
+  IncomeSource, RETIREMENT_TYPE_LABELS, emptyIncome, MatchTier,
+} from '../../models/finance.models';
 import { NumericDirective } from '../../directives/numeric.directive';
 import { AuthService } from '../../services/auth.service';
 import { TabTutorialComponent, TutorialStep, shouldShowTutorial, tutorialKey } from '../../components/tab-tutorial/tab-tutorial.component';
@@ -11,11 +14,6 @@ import { userScopedKey } from '../../services/scoped-storage';
 
 const SECOND_INC_KEY     = 'clarity_second_income';
 const SECOND_INC_EN_KEY  = 'clarity_second_income_enabled';
-const RETIREMENT_KEY     = 'clarity_retirement';      // monthly $ amounts
-const LEGACY_401K_KEY    = 'clarity_401k_pct';        // old % of primary gross
-const LEGACY_401K_2_KEY  = 'clarity_401k_pct_2';      // old % of second gross
-
-type RetType = 'trad401k' | 'roth401k' | 'tradIra' | 'rothIra';
 
 @Component({
   selector: 'app-cash-flow',
@@ -46,28 +44,74 @@ export class CashFlowComponent implements OnInit {
   loading     = signal(true);
   showAnnual  = signal(false);    // monthly ↔ annual toggle
 
-  // ── Retirement contributions ──────────────────────────────────────────────
-  // Raw mode+value lives in income().retirement; cm() resolves each to monthly $.
-  // % mode is computed off the combined monthly gross income and auto-updates.
-  private cm(c: ContributionInput): number {
-    return c?.mode === 'pct' ? this.grossIncome() * (c.value || 0) / 100 : (c?.value || 0);
+  // ── Retirement contributions — per income source, user-managed list ─────────
+  // Each item is tied to a specific income source (primary or secondary) so a
+  // spouse's contribution rate/amount and employer match are entirely
+  // independent from the primary earner's.
+  readonly retTypes: { key: RetirementType; label: string }[] =
+    (Object.keys(RETIREMENT_TYPE_LABELS) as RetirementType[]).map(key => ({ key, label: RETIREMENT_TYPE_LABELS[key] }));
+
+  retirementItems          = computed(() => this.income().retirementItems);
+  primaryRetirementItems   = computed(() => this.retirementItems().filter(i => i.incomeSource === 'primary'));
+  secondaryRetirementItems = computed(() => this.retirementItems().filter(i => i.incomeSource === 'secondary'));
+
+  /** Resolves one item to its monthly $, based on ITS OWN income source's gross. */
+  resolveItem(item: RetirementItem): number {
+    const basis = item.incomeSource === 'secondary' ? this.secondIncome().gross : this.primaryGrossIncome();
+    return item.mode === 'pct' ? basis * (item.value || 0) / 100 : (item.value || 0);
   }
-  /** Resolved monthly $ per contribution type (employer match is already $/mo). */
-  readonly retirement = computed(() => {
-    const r = this.income().retirement;
-    return {
-      trad401k: this.cm(r.trad401k), roth401k: this.cm(r.roth401k),
-      tradIra: this.cm(r.tradIra),   rothIra: this.cm(r.rothIra),
-      employerMatch: r.employerMatchMonthly || 0,
-    };
-  });
-  /** Employee contributions only (excludes employer match) — the user's own savings. */
-  employeeRetirement = computed(() => {
-    const r = this.retirement();
-    return r.trad401k + r.roth401k + r.tradIra + r.rothIra;
-  });
-  /** Total retirement savings = employee contributions + employer match. */
-  totalRetirementSavings = computed(() => this.employeeRetirement() + this.retirement().employerMatch);
+
+  /** Employee's own contribution rate for a source, as a % of that source's gross
+   *  (mixed $/% items are all resolved to $ first, then expressed as one effective %). */
+  contributionPct(source: IncomeSource): number {
+    const gross = source === 'primary' ? this.primaryGrossIncome() : this.secondIncome().gross;
+    if (gross <= 0) return 0;
+    const items = source === 'primary' ? this.primaryRetirementItems() : this.secondaryRetirementItems();
+    const dollars = items.reduce((s, i) => s + this.resolveItem(i), 0);
+    return dollars / gross * 100;
+  }
+  /** Applies a tiered match formula against the employee's contribution rate,
+   *  returning the resulting employer match in $/mo. */
+  private resolveMatch(source: IncomeSource): number {
+    const gross = source === 'primary' ? this.primaryGrossIncome() : this.secondIncome().gross;
+    const tiers = source === 'primary' ? this.income().employerMatchTiersPrimary : this.income().employerMatchTiersSecondary;
+    if (gross <= 0 || !tiers?.length) return 0;
+    let remaining = this.contributionPct(source);
+    let matchedPct = 0;
+    for (const t of tiers) {
+      const applied = Math.max(0, Math.min(remaining, t.contributionPercent));
+      matchedPct += applied * (t.matchPercent / 100);
+      remaining -= applied;
+      if (remaining <= 0) break;
+    }
+    return gross * matchedPct / 100;
+  }
+  employerMatchPrimary   = computed(() => this.resolveMatch('primary'));
+  employerMatchSecondary = computed(() => this.secondIncomeEnabled() ? this.resolveMatch('secondary') : 0);
+  totalEmployerMatch     = computed(() => this.employerMatchPrimary() + this.employerMatchSecondary());
+  matchTiersPrimary   = computed(() => this.income().employerMatchTiersPrimary ?? []);
+  matchTiersSecondary = computed(() => this.income().employerMatchTiersSecondary ?? []);
+
+  /** Employee contributions only (excludes employer match), all active sources combined. */
+  employeeRetirement = computed(() =>
+    this.retirementItems()
+      .filter(i => i.incomeSource === 'primary' || this.secondIncomeEnabled())
+      .reduce((sum, i) => sum + this.resolveItem(i), 0)
+  );
+  /** Total retirement savings = employee contributions + employer match, all sources. */
+  totalRetirementSavings = computed(() => this.employeeRetirement() + this.totalEmployerMatch());
+
+  /** Which contribution types are not yet added for a given income source (the "+ Add" picker). */
+  availableRetirementTypes(source: IncomeSource) {
+    const used = new Set(this.retirementItems().filter(i => i.incomeSource === source).map(i => i.type));
+    return this.retTypes.filter(t => !used.has(t.key));
+  }
+  retTypeLabel(type: RetirementType): string { return RETIREMENT_TYPE_LABELS[type]; }
+  /** Bound to the "+ Add contribution" <select>; ignores the empty placeholder value. */
+  onAddRetirement(source: IncomeSource, type: string) {
+    if (!type) return;
+    this.addRetirementItem(source, type as RetirementType);
+  }
 
   // ── Second income (spousal / partner) — derived from the server record ─────
   secondIncomeEnabled = computed(() => this.income().secondaryEnabled);
@@ -75,18 +119,7 @@ export class CashFlowComponent implements OnInit {
 
   /** Per-user localStorage key — only used for the one-time localStorage→server migration. */
   private k(base: string): string { return userScopedKey(base, this.auth.currentUser()?.id ?? null); }
-
-  // raw (editable) retirement value/mode for the template inputs
-  readonly retTypes: { key: RetType; label: string }[] = [
-    { key: 'trad401k', label: 'Traditional 401(k)' },
-    { key: 'roth401k', label: 'Roth 401(k)' },
-    { key: 'tradIra',  label: 'Traditional IRA' },
-    { key: 'rothIra',  label: 'Roth IRA' },
-  ];
-  retModeValue(field: RetType): number { return this.income().retirement[field].value; }
-  retMode(field: RetType): ContributionMode { return this.income().retirement[field].mode; }
-  /** Resolved monthly $ for a contribution type (for the "≈ $X/mo" hint in % mode). */
-  retirementResolved(field: RetType): number { return this.retirement()[field]; }
+  private newRetirementId(): string { return `ri_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
 
   // 50/30/20 — collapsed by default
   show503020 = signal(false);
@@ -281,24 +314,54 @@ export class CashFlowComponent implements OnInit {
   // ── Retirement updates (persist to the server income record) ────────────────
   // Contribution value is raw (% when mode='pct', $/mo when mode='amount') — it is
   // NOT run through the annual toggle. Employer match is always $/mo.
-  updateRetirementValue(field: RetType, val: string) {
+  addRetirementItem(source: IncomeSource, type: RetirementType) {
+    const item: RetirementItem = { id: this.newRetirementId(), incomeSource: source, type, mode: 'amount', value: 0 };
+    this.income.update(i => ({ ...i, retirementItems: [...i.retirementItems, item] }));
+    this.saveIncome();
+  }
+  removeRetirementItem(id: string) {
+    this.income.update(i => ({ ...i, retirementItems: i.retirementItems.filter(x => x.id !== id) }));
+    this.saveIncome();
+  }
+  updateRetirementItemValue(id: string, val: string) {
     const value = Math.max(0, parseFloat(val) || 0);
-    this.income.update(i => ({ ...i, retirement: { ...i.retirement, [field]: { ...i.retirement[field], value } } }));
+    this.income.update(i => ({ ...i, retirementItems: i.retirementItems.map(x => x.id === id ? { ...x, value } : x) }));
     this.saveIncome();
   }
-  setRetirementMode(field: RetType, mode: ContributionMode) {
-    this.income.update(i => ({ ...i, retirement: { ...i.retirement, [field]: { ...i.retirement[field], mode } } }));
+  toggleRetirementItemMode(id: string) {
+    this.income.update(i => ({
+      ...i,
+      retirementItems: i.retirementItems.map(x => x.id === id ? { ...x, mode: (x.mode === 'pct' ? 'amount' : 'pct') as ContributionMode } : x),
+    }));
     this.saveIncome();
   }
-  updateEmployerMatch(val: string) {
+  private tiersKey(source: IncomeSource): 'employerMatchTiersPrimary' | 'employerMatchTiersSecondary' {
+    return source === 'primary' ? 'employerMatchTiersPrimary' : 'employerMatchTiersSecondary';
+  }
+  addMatchTier(source: IncomeSource) {
+    const key = this.tiersKey(source);
+    this.income.update(i => ({ ...i, [key]: [...i[key], { matchPercent: 100, contributionPercent: 0 }] }));
+    this.saveIncome();
+  }
+  removeMatchTier(source: IncomeSource, idx: number) {
+    const key = this.tiersKey(source);
+    this.income.update(i => ({ ...i, [key]: i[key].filter((_, x) => x !== idx) }));
+    this.saveIncome();
+  }
+  updateMatchTier(source: IncomeSource, idx: number, field: keyof MatchTier, val: string) {
+    const key = this.tiersKey(source);
     const v = Math.max(0, parseFloat(val) || 0);
-    this.income.update(i => ({ ...i, retirement: { ...i.retirement, employerMatchMonthly: v } }));
+    this.income.update(i => ({
+      ...i,
+      [key]: i[key].map((t, x) => x === idx ? { ...t, [field]: v } : t),
+    }));
     this.saveIncome();
   }
 
-  /** One-time migration of device-local (localStorage) secondary income + retirement
-   *  into the server record, so existing users keep their values. Mutates `inc`;
-   *  returns true if anything was migrated (caller then saves + we clear the keys). */
+  /** One-time migration of device-local (localStorage) secondary income into the
+   *  server record, so existing users keep their values. (Retirement contributions
+   *  no longer need this path — the backend migrates its own legacy shape on GET.)
+   *  Mutates `inc`; returns true if anything was migrated. */
   private _migrateLocalToServer(inc: IncomeData): boolean {
     let changed = false;
     if (!inc.secondaryEnabled && inc.secondaryGrossMonthly === 0 && inc.secondaryNetMonthly === 0) {
@@ -312,22 +375,8 @@ export class CashFlowComponent implements OnInit {
         changed = true;
       }
     }
-    const r = inc.retirement;
-    const retEmpty = !r.trad401k.value && !r.roth401k.value && !r.tradIra.value && !r.rothIra.value && !r.employerMatchMonthly;
-    if (retEmpty) {
-      let old: Record<string, number> | null = null;
-      try { old = JSON.parse(localStorage.getItem(this.k(RETIREMENT_KEY)) ?? 'null'); } catch { /* ignore */ }
-      if (old) {
-        r.trad401k = { mode: 'amount', value: old['trad401k'] || 0 };
-        r.roth401k = { mode: 'amount', value: old['roth401k'] || 0 };
-        r.tradIra  = { mode: 'amount', value: old['tradIra']  || 0 };
-        r.rothIra  = { mode: 'amount', value: old['rothIra']  || 0 };
-        r.employerMatchMonthly = old['employerMatch'] || 0;
-        changed = true;
-      }
-    }
     if (changed) {
-      for (const key of [SECOND_INC_EN_KEY, SECOND_INC_KEY, RETIREMENT_KEY, LEGACY_401K_KEY, LEGACY_401K_2_KEY]) {
+      for (const key of [SECOND_INC_EN_KEY, SECOND_INC_KEY]) {
         localStorage.removeItem(this.k(key));
       }
     }
@@ -342,10 +391,7 @@ export class CashFlowComponent implements OnInit {
       next: i => {
         // Defensive merge so the new fields always exist (older responses / null).
         const base = emptyIncome();
-        const merged: IncomeData = {
-          ...base, ...i,
-          retirement: { ...base.retirement, ...(i.retirement ?? {}) },
-        };
+        const merged: IncomeData = { ...base, ...i, retirementItems: i.retirementItems ?? [] };
         const changed = this._migrateLocalToServer(merged);
         this.income.set(merged);
         if (changed) this.saveIncome();   // push migrated local values up once

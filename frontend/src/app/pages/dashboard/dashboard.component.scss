@@ -546,6 +546,17 @@
 }
 .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9CA3AF; font-weight: 600; }
 .metric-label-bold { font-weight: 800; color: #374151; }
+.metric-label-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.metric-toggle-pill {
+  display: inline-flex; align-items: center; background: #F3F4F6; border: none; border-radius: 20px;
+  padding: 2px; cursor: pointer; flex-shrink: 0;
+  span {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; color: #9CA3AF;
+    padding: 3px 8px; border-radius: 16px; transition: all .15s;
+    &.active { background: #1D9E75; color: #fff; }
+  }
+  &:hover span:not(.active) { color: #6B7280; }
+}
 .metric-value { font-size: 20px; font-weight: 700; color: #111827; }
 .metric-value.green { color: #1D9E75; }
 .metric-value.coral { color: #EF4444; }
@@ -629,11 +640,34 @@
 }
 .account-row:hover { background: #FAFAFA; }
 
+.account-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
 .account-name {
-  flex: 1; font-size: 14px; color: #374151;
+  font-size: 14px; color: #374151;
   cursor: pointer; border-bottom: 1px dashed transparent;
 }
 .account-name:hover { border-bottom-color: #D1D5DB; }
+
+/* Account sub-row: type badge, optional interest rate, Real Estate sync badge */
+.account-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.account-type-badge, .account-rate-badge {
+  font-size: 11px; color: #6B7280; background: #F3F4F6;
+  border-radius: 6px; padding: 2px 7px; cursor: pointer;
+  border: 1px solid transparent; transition: border-color 0.15s, color 0.15s;
+}
+.account-type-badge:hover, .account-rate-badge:hover { border-color: #D1D5DB; color: #374151; }
+.rate-input {
+  width: 70px; font-size: 11px; color: #374151;
+  border: 1px solid #1D9E75; border-radius: 6px;
+  padding: 2px 6px; outline: none;
+}
+.linked-badge {
+  font-size: 11px; font-weight: 600; color: #1D9E75; background: #E1F5EE;
+  border-radius: 6px; padding: 2px 7px; text-decoration: none;
+  border: 1px solid #A7F3D0;
+}
+.linked-badge:hover { background: #D1F0E4; }
+.value-display.value-linked { cursor: default; color: #085041; }
 
 .name-input {
   flex: 1; font-size: 14px; color: #374151;
@@ -666,6 +700,30 @@
   border-radius: 6px; transition: color 0.15s, background 0.15s;
 }
 .delete-btn:hover { color: #EF4444; background: #FAECE7; }
+
+.history-btn {
+  background: none; border: none; color: #9CA3AF;
+  cursor: pointer; font-size: 12px; padding: 4px 6px;
+  border-radius: 6px; transition: color 0.15s, background 0.15s;
+}
+.history-btn:hover { color: #1D9E75; background: #F0FBF7; }
+
+.history-panel {
+  background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 10px 12px; margin: 2px 0 8px; display: flex; flex-direction: column; gap: 4px;
+}
+.history-title { font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+.history-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 3px 0; border-bottom: 1px solid #F3F4F6; }
+.history-row:last-child { border-bottom: none; }
+.history-date { color: #6B7280; min-width: 70px; }
+.history-value { color: #111827; font-weight: 600; flex: 1; }
+.history-change { font-weight: 600; min-width: 70px; text-align: right; }
+.history-change.green { color: #1D9E75; }
+.history-change.coral { color: #EF4444; }
+.history-change.muted { color: #9CA3AF; font-weight: 400; }
+.history-total { border-top: 1.5px solid #E5E7EB; border-bottom: none; margin-top: 4px; padding-top: 7px; }
+.history-total .history-date { font-weight: 700; color: #374151; }
+.history-total .history-change { font-size: 13.5px; }
 
 /* Anchored (protected) accounts */
 .anchor-spacer {

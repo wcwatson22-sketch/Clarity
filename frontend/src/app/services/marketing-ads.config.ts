@@ -17,3 +17,14 @@ export function isApprovedAdRoute(path: string): boolean {
 export function adsenseScriptUrl(clientId: string): string {
   return `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}`;
 }
+
+/**
+ * Google's certified CMP ("Privacy & Messaging" in AdSense) script URL. Detects
+ * EEA/UK/Swiss visitors and shows the consent message configured in the AdSense
+ * dashboard; also enforces ad-request consent for those regions independent of
+ * this app's own gating. Expects a bare publisher id (no "ca-" prefix).
+ */
+export function fundingChoicesScriptUrl(clientId: string): string {
+  const pub = clientId.replace(/^ca-/, '');
+  return `https://fundingchoicesmessages.google.com/i/${encodeURIComponent(pub)}?ers=1`;
+}

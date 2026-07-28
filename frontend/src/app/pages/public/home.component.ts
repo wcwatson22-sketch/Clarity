@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 import { MarketingAdUnitComponent } from '../../components/marketing-ad-unit.component';
 import { MARKETING_ADS } from '../../services/marketing-ads.config';
 
@@ -39,25 +40,25 @@ import { MARKETING_ADS } from '../../services/marketing-ads.config';
           <div class="shots">
             <figure class="shot">
               <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-                <img src="images/preview-dashboard.png" alt="Clarity dashboard showing net worth, assets, liabilities, DTI, and snapshot movement" loading="lazy" width="1100" height="1036" />
+                <img src="images/preview-dashboard.webp" alt="Clarity dashboard showing net worth, assets, liabilities, DTI, and snapshot movement" loading="lazy" width="1100" height="1036" />
               </div>
               <figcaption>Dashboard — net worth, assets &amp; liabilities at a glance</figcaption>
             </figure>
             <figure class="shot">
               <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-                <img src="images/preview-cashflow.png" alt="Clarity cash flow view showing take-home pay, outflow, free cash flow, DTI, and the 50/30/20 rule" loading="lazy" width="1100" height="837" />
+                <img src="images/preview-cashflow.webp" alt="Clarity cash flow view showing take-home pay, outflow, free cash flow, DTI, and the 50/30/20 rule" loading="lazy" width="1100" height="837" />
               </div>
               <figcaption>Cash Flow — where your take-home pay goes</figcaption>
             </figure>
             <figure class="shot">
               <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-                <img src="images/preview-loanprep.png" alt="Clarity loan prep view with mortgage readiness targets and a documents-to-gather checklist" loading="lazy" width="1100" height="1136" />
+                <img src="images/preview-loanprep.webp" alt="Clarity loan prep view with mortgage readiness targets and a documents-to-gather checklist" loading="lazy" width="1100" height="1136" />
               </div>
               <figcaption>Loan Prep — get ready before you apply <span class="shot-prem">Premium</span></figcaption>
             </figure>
             <figure class="shot">
               <div class="shot-frame"><span class="dots"><i></i><i></i><i></i></span>
-                <img src="images/preview-learn.png" alt="Clarity learning center with financial education lessons across categories" loading="lazy" width="1100" height="1056" />
+                <img src="images/preview-learn.webp" alt="Clarity learning center with financial education lessons across categories" loading="lazy" width="1100" height="1056" />
               </div>
               <figcaption>Learn — plain-English financial guides, free</figcaption>
             </figure>
@@ -271,7 +272,50 @@ import { MARKETING_ADS } from '../../services/marketing-ads.config';
     }
   `],
 })
-export class PublicHomeComponent {
+export class PublicHomeComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly ads = MARKETING_ADS;
+  private seo = inject(SeoService);
+
+  ngOnInit(): void {
+    const url = this.seo.absoluteUrl('/');
+    const logo = this.seo.absoluteUrl('/icons/icon-512x512.png');
+
+    // setJsonLd replaces the script tag by id, so re-entering this route never
+    // duplicates these blocks — only ever one of each on the page at a time.
+    this.seo.setJsonLd('org', {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Clarity Financial Tools',
+      url,
+      logo,
+      // Clearpath Digital LLC owns/operates Clarity — stated publicly in the
+      // site footer and About page; not an unverified claim.
+      parentOrganization: { '@type': 'Organization', name: 'Clearpath Digital LLC' },
+    });
+
+    this.seo.setJsonLd('website', {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Clarity Financial Tools',
+      url,
+      publisher: { '@type': 'Organization', name: 'Clarity Financial Tools' },
+      // No SearchAction — the site has no working public search feature today.
+    });
+
+    this.seo.setJsonLd('software-app', {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Clarity Financial Tools',
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web, iOS',
+      url,
+      description: 'Track cash flow, net worth, debt, assets, liabilities, and DTI in one financial command center.',
+      offers: [
+        { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+        { '@type': 'Offer', name: 'Premium', price: '2.99', priceCurrency: 'USD',
+          description: 'Adds Compare, Loan Prep, and Real Estate.' },
+      ],
+    });
+  }
 }

@@ -1,6 +1,8 @@
 <div class="legal-page">
   <div class="legal-card">
-    <a routerLink="/settings" class="back-link">← Back to Settings</a>
+    @if (auth.isLoggedIn()) {
+      <a routerLink="/settings" class="back-link">← Back to Settings</a>
+    }
 
     <h1>Terms of Service</h1>
     <p class="effective">Effective Date: May 15, 2025</p>
@@ -22,7 +24,7 @@
     <p>You agree not to use Clarity to: (a) violate any applicable law or regulation; (b) attempt to gain unauthorized access to our systems; (c) transmit malicious code or engage in any activity that disrupts our service; or (d) misrepresent your identity or affiliation.</p>
 
     <h2>5. Data and Privacy</h2>
-    <p>Your financial data belongs to you. We use it solely to provide and improve the Clarity service. We do not sell your personal information to third parties. See our <a routerLink="/privacy">Privacy Policy</a> for details.</p>
+    <p>Your financial data belongs to you. We use it solely to provide and improve the Clarity service. We do not sell your personal information to third parties. See our <a href="/privacy">Privacy Policy</a> for details.</p>
 
     <h2>6. Disclaimer of Financial Advice</h2>
     <p>All content, insights, and metrics provided by Clarity are for informational and organizational purposes only. Nothing on Clarity constitutes professional financial, investment, tax, or legal advice. Always consult a qualified professional before making financial decisions.</p>

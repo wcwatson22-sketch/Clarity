@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-terms',
@@ -8,4 +9,6 @@ import { RouterLink } from '@angular/router';
   templateUrl: './terms.component.html',
   styleUrl: './legal.component.scss'
 })
-export class TermsComponent {}
+export class TermsComponent {
+  readonly auth = inject(AuthService);
+}

@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<RealEstateProperty> RealEstateProperties => Set<RealEstateProperty>();
     public DbSet<LearnArticle> LearnArticles => Set<LearnArticle>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
+    public DbSet<WeeklyReport> WeeklyReports => Set<WeeklyReport>();
 
     private static readonly JsonSerializerOptions _json = new();
 
@@ -51,6 +52,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(a => a.User).WithMany(u => u.Accounts).HasForeignKey(a => a.UserId);
             // Index: every account query filters by UserId — prevents full table scan
             e.HasIndex(a => a.UserId);
+            // Index: Real Estate sync looks up linked accounts by property id
+            e.HasIndex(a => a.LinkedPropertyId);
         });
 
         // ── BudgetItem ─────────────────────────────────────────────────────────
@@ -72,6 +75,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 v => JsonSerializer.Serialize(v, _json),
                 v => JsonSerializer.Deserialize<List<VariableMonth>>(v, _json) ?? new(),
                 ListComparer<VariableMonth>())  // ← value comparer: stops spurious UPDATE on unchanged months
+             .HasColumnType("TEXT");
+            e.Property(i => i.RetirementItems)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<RetirementItem>>(v, _json) ?? new(),
+                ListComparer<RetirementItem>())
+             .HasColumnType("TEXT");
+            e.Property(i => i.EmployerMatchTiersPrimary)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<MatchTier>>(v, _json) ?? new(),
+                ListComparer<MatchTier>())
+             .HasColumnType("TEXT");
+            e.Property(i => i.EmployerMatchTiersSecondary)
+             .HasConversion(
+                v => JsonSerializer.Serialize(v, _json),
+                v => JsonSerializer.Deserialize<List<MatchTier>>(v, _json) ?? new(),
+                ListComparer<MatchTier>())
              .HasColumnType("TEXT");
         });
 

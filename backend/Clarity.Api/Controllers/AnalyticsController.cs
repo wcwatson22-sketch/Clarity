@@ -35,7 +35,22 @@ public class AnalyticsController(AppDbContext db, AnalyticsService analytics) : 
                 Comparisons: []));
 
         var bracketStats = await analytics.GetBracketStatsForAgeAsync(user.Age);
-        if (bracketStats is null)
+        var usingAllUsersFallback = false;
+
+        // If the user's own age bracket doesn't have 30 people yet, fall back to
+        // comparing against all users once the site overall has 30 — keeps Compare
+        // functional early on instead of waiting for every bracket to fill up.
+        if (bracketStats is null || !bracketStats.HasEnoughData)
+        {
+            var allUsersStats = await analytics.GetAllUsersFallbackStatsAsync();
+            if (allUsersStats is not null)
+            {
+                bracketStats = allUsersStats;
+                usingAllUsersFallback = true;
+            }
+        }
+
+        if (bracketStats is null || !bracketStats.HasEnoughData)
             return Ok(new UserComparisonResponse(
                 AgeBracket: AnalyticsService.GetAgeBracket(user.Age),
                 HasEnoughData: false,
@@ -43,6 +58,12 @@ public class AnalyticsController(AppDbContext db, AnalyticsService analytics) : 
                 Comparisons: []));
 
         var comparison = analytics.GetUserComparison(myData, bracketStats);
+        if (usingAllUsersFallback)
+            comparison = comparison with
+            {
+                AgeBracket = AnalyticsService.GetAgeBracket(user.Age),
+                Message = "Not enough users in your age bracket yet — compared to all Clarity users instead.",
+            };
         return Ok(comparison);
     }
 

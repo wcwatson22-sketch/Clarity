@@ -13,7 +13,7 @@ export const environment = {
     enabled: false,                          // ADS_ENABLED
     clientId: 'ca-pub-XXXXXXXXXXXXXXXX',      // ADSENSE_CLIENT_ID
     devPlaceholders: true,                   // ADS_DEV_PLACEHOLDERS (show neutral placeholders locally)
-    requireConsent: false,                   // TODO(legal): set true + wire a CMP for GDPR/UK/CH regions
+    requireConsent: false,                   // off in dev — no real clientId to load Google's CMP against
     slots: {
       homeDesktop: 'XXXXXXXXXX',             // ADSENSE_SLOT_HOME_DESKTOP
       homeMobile:  'XXXXXXXXXX',             // ADSENSE_SLOT_HOME_MOBILE

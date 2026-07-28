@@ -82,6 +82,7 @@ public class LearnController(
         Url("/pricing", today, "monthly", "0.8");
         Url("/learn", today, "weekly", "0.9");
         Url("/about", today, "monthly", "0.5");
+        Url("/calculators/debt-to-income-ratio", today, "monthly", "0.8");
         foreach (var a in articles)
             Url("/learn/" + a.Slug, a.UpdatedAt.ToString("yyyy-MM-dd"), "monthly", "0.7");
         sb.AppendLine("</urlset>");

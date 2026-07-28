@@ -51,6 +51,7 @@ import { environment } from '../environments/environment';
               <a [routerLink]="item.path" routerLinkActive="nav-active" class="nav-link">
                 <span class="nav-icon" [innerHTML]="item.icon"></span>
                 <span>{{ item.label }}</span>
+                @if (isLockedNavItem(item.path)) { <span class="nav-lock">🔒</span> }
               </a>
             </li>
 
@@ -280,6 +281,7 @@ import { environment } from '../environments/environment';
     .nav-active { background: #E1F5EE !important; color: #1D9E75 !important; }
     .nav-admin { color: #D97706 !important; &.nav-active { background: #FEF3C7 !important; color: #D97706 !important; } }
     .nav-icon { display: flex; align-items: center; }
+    .nav-lock { margin-left: auto; font-size: 11px; opacity: 0.6; }
 
     /* User footer */
     .sidebar-footer {
@@ -624,6 +626,22 @@ export class AppComponent {
     { initialValue: this.router.url }
   );
 
+  /** The deepest matched route's `data`, re-evaluated on every navigation.
+   *  This is the single source of truth for `publicLayout` — see isPublicPage
+   *  below — so a new public route only needs one `data: { publicLayout: true }`
+   *  entry in app.routes.ts instead of a second hardcoded prefix list here. */
+  private currentRouteData = toSignal(
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+      map(() => {
+        let r = this.router.routerState.root;
+        while (r.firstChild) r = r.firstChild;
+        return r.snapshot.data;
+      })
+    ),
+    { initialValue: {} as Record<string, unknown> }
+  );
+
   readonly isAdmin = computed(() => this.auth.currentUser()?.isAdmin === true);
 
   readonly isAuthPage = computed(() => {
@@ -633,15 +651,16 @@ export class AppComponent {
            url.startsWith('/reset-password') || url.startsWith('/verify-email');
   });
 
-  /** Public marketing routes (home, features, pricing, about, learn) — own header/footer.
-   *  Note: '/app-learn' is the in-app Learn tab and is intentionally NOT public
-   *  ('/app-learn'.startsWith('/learn') === false), so it keeps the app shell. */
-  readonly isPublicPage = computed(() => {
-    const url = (this.currentUrl() ?? '').split('?')[0];
-    return url === '/' || url === '' ||
-           url.startsWith('/features') || url.startsWith('/pricing') ||
-           url.startsWith('/about') || url.startsWith('/learn');
-  });
+  /** Public marketing routes (home, features, pricing, about, learn, public
+   *  calculators) — own header/footer, no authenticated app chrome. Derived from
+   *  each route's own `data: { publicLayout: true }` in app.routes.ts (the single
+   *  source of truth) rather than a second hardcoded prefix list here — adding a
+   *  new public route only requires setting that flag on the route, not also
+   *  remembering to update this component. /terms and /privacy are intentionally
+   *  excluded: those pages are also linked from within the authenticated app
+   *  (Settings → "Back to Settings") and are designed to render inside the app
+   *  shell, not the public marketing layout. */
+  readonly isPublicPage = computed(() => this.currentRouteData()?.['publicLayout'] === true);
 
   /** True when the authenticated app chrome (sidebar, bottom nav, banners, modals)
    *  should be hidden — i.e. on auth pages and public marketing pages. */
@@ -804,6 +823,14 @@ export class AppComponent {
     return ['/compare', '/loan-prep', '/real-estate', '/pfs', '/admin'].some(p => url.startsWith(p));
   });
 
+  private readonly premiumPaths = ['/compare', '/loan-prep', '/real-estate'];
+  /** True when this sidebar item is a Premium tool the current user hasn't unlocked
+   *  — shown with a restrained lock badge rather than hidden, matching the mobile
+   *  "More" sheet's locked-tool treatment. */
+  isLockedNavItem(path: string): boolean {
+    return this.premiumPaths.includes(path) && !this.plan.isPremium();
+  }
+
   constructor() {
     this.navItems = this._rawNavItems.map(item => ({
       ...item,
@@ -838,6 +865,11 @@ export class AppComponent {
     ];
 
     // Per-route SEO: update description / canonical / OG on each navigation.
+    // Robots defaults to noindex — only routes explicitly marked `indexable: true`
+    // in app.routes.ts (marketing pages, Learn, legal pages) are ever indexed.
+    // This is the safety net for every authenticated/private route (Dashboard,
+    // Cash Flow, Settings, Compare, Loan Prep, Real Estate, Admin, login/signup,
+    // etc.), which never sets this flag.
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
       let r = this.router.routerState.root;
       while (r.firstChild) r = r.firstChild;
@@ -847,6 +879,7 @@ export class AppComponent {
         description: snap.data?.['description'],
         path: (e as NavigationEnd).urlAfterRedirects,
       });
+      this.seo.setRobots(snap.data?.['indexable'] === true ? 'index,follow' : 'noindex,nofollow');
     });
 
     // Refresh user data from server on every app load so emailVerified,

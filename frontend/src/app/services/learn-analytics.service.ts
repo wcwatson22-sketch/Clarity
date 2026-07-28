@@ -20,7 +20,12 @@ export type LearnEvent =
   | 'learn_related_clicked'
   | 'learn_submission_opened'
   | 'learn_submission_completed'
-  | 'learn_submission_failed';
+  | 'learn_submission_failed'
+  | 'dti_calculator_viewed'
+  | 'dti_calculator_started'
+  | 'dti_calculator_completed'
+  | 'dti_calculator_signup_clicked'
+  | 'dti_calculator_article_clicked';
 
 interface LearnEventPayload {
   // Only non-sensitive identifiers — never income, assets, DTI, balances, etc.

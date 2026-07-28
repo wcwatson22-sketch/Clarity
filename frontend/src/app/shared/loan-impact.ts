@@ -9,7 +9,7 @@
 // credit decision, or lending commitment.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type LoanCategory = 'mortgage' | 'rental' | 'auto' | 'personal' | 'student' | 'other';
+export type LoanCategory = 'mortgage' | 'rental' | 'auto' | 'personal' | 'student' | 'other' | 'amortization';
 
 /** Standard amortized monthly principal & interest payment. */
 export function monthlyPayment(principal: number, annualRatePct: number, termMonths: number): number {
@@ -18,6 +18,37 @@ export function monthlyPayment(principal: number, annualRatePct: number, termMon
   if (r === 0) return principal / termMonths;          // 0% loan
   const f = Math.pow(1 + r, termMonths);
   return principal * (r * f) / (f - 1);
+}
+
+export interface PayoffResult {
+  months: number;
+  totalInterest: number;
+  /** False if the payment doesn't even cover monthly interest — balance would never shrink. */
+  payoffPossible: boolean;
+}
+
+/**
+ * Simulates month-by-month amortization to find how many months it actually takes to
+ * pay off a loan at a given monthly payment (which may be larger than the minimum
+ * required payment, e.g. extra principal). Unlike `monthlyPayment()` (which solves for
+ * the payment that exactly amortizes over a fixed term), this solves the inverse:
+ * given a payment, how long does payoff take.
+ */
+export function simulatePayoff(
+  principal: number, annualRatePct: number, payment: number, maxMonths = 1200,
+): PayoffResult {
+  if (!(principal > 0) || !(payment > 0)) return { months: 0, totalInterest: 0, payoffPossible: true };
+  const r = (annualRatePct / 100) / 12;
+  let balance = principal, months = 0, totalInterest = 0;
+  while (balance > 0.01 && months < maxMonths) {
+    const interest = balance * r;
+    const principalPortion = payment - interest;
+    if (principalPortion <= 0) return { months, totalInterest, payoffPossible: false };
+    totalInterest += interest;
+    balance -= Math.min(principalPortion, balance);
+    months++;
+  }
+  return { months, totalInterest, payoffPossible: balance <= 0.01 };
 }
 
 /** Sum of optional mortgage escrow/housing add-ons (all default to 0). */
@@ -100,6 +131,9 @@ export const REFERENCE_RANGES: Record<LoanCategory, RangeBand[]> = {
     { upTo: 0.43, label: 'Within a commonly referenced range', tone: 'moderate' },
     { upTo: null, label: 'Above a commonly referenced range — review with a lender', tone: 'higher' },
   ],
+  // Amortization is a standalone payoff-timeline tool, not a DTI-impact category —
+  // this entry only exists to satisfy the Record type; the DTI band is never shown for it.
+  amortization: [],
 };
 
 /** Housing-ratio reference bands (mortgage only). */
@@ -116,3 +150,58 @@ export function evaluateRange(ratio: number, bands: RangeBand[]): RangeBand {
   }
   return bands[bands.length - 1];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rental Property — property-level DSCR analysis.
+//
+// Two mutually-exclusive expense methods: a simplified percentage-of-rent ratio,
+// or a single user-entered "own expenses" figure. Never combine both. Property
+// taxes/insurance are expected to already be folded into whichever expense figure
+// the user supplies (ratio or own-expenses) — never added again separately, and
+// never deducted from debt service.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CreExpenseMethod = 'ratio' | 'own';
+
+/** Annual gross rent = monthly gross rent × 12. Negative input clamps to 0. */
+export function annualGrossRent(monthlyGrossRent: number): number {
+  return Math.max(0, monthlyGrossRent || 0) * 12;
+}
+
+/** Annual vacancy allowance deducted from gross rent (0–100%, clamped). */
+export function vacancyAllowance(annualGross: number, vacancyPct: number): number {
+  const v = Math.min(100, Math.max(0, vacancyPct || 0)) / 100;
+  return annualGross * v;
+}
+
+/** Effective gross income = annual gross rent − vacancy allowance. */
+export function effectiveGrossIncome(annualGross: number, vacancyPct: number): number {
+  return annualGross - vacancyAllowance(annualGross, vacancyPct);
+}
+
+/** Simplified-method annual operating expenses = annual gross rent × ratio. */
+export function ratioOperatingExpenses(annualGross: number, expenseRatioPct: number): number {
+  return annualGross * (Math.max(0, expenseRatioPct || 0) / 100);
+}
+
+/**
+ * Net Operating Income. Never include principal & interest here — P&I is
+ * annual debt service, computed and applied separately.
+ */
+export function netOperatingIncome(effectiveGrossIncome: number, annualOperatingExpenses: number): number {
+  return effectiveGrossIncome - annualOperatingExpenses;
+}
+
+/** Annual debt service = monthly P&I × 12. */
+export function annualDebtService(monthlyPI: number): number {
+  return Math.max(0, monthlyPI || 0) * 12;
+}
+
+/** Property DSCR = NOI ÷ annual debt service. Null when debt service is 0 (undefined ratio, e.g. no loan entered). */
+export function propertyDscr(noi: number, adsAnnual: number): number | null {
+  if (!(adsAnnual > 0)) return null;
+  return noi / adsAnnual;
+}
+
+/** Reference DSCR thresholds shown as guidance only — never an editable target. */
+export const DSCR_REFERENCE = { ideal: 1.25, attractive: 1.35 };

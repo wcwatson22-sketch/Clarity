@@ -450,9 +450,11 @@
   .sum-val   { font-size: 20px; }
 }
 
-/* ── Retirement Contributions card ──────────────────────────────────────────── */
+/* ── Retirement Contributions card ───────────────────────────────────────────
+   Compact, single-line-per-item list (add/remove — no fixed rows for unused
+   contribution types). A tiny click-to-toggle $/% badge replaces the old
+   two-button pill so each row stays to one line. */
 .retirement-card .ret-sub { font-size: 12px; color: #9CA3AF; }
-.ret-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
 .ret-note { font-size: 12px; color: #6B7280; margin: 12px 0 0; line-height: 1.5; font-style: italic; }
 .ret-totals {
   display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; padding-top: 12px;
@@ -460,6 +462,68 @@
   strong { color: #111827; }
 }
 .ret-total-strong strong { color: #1D9E75; }
+
+.ret-source-label {
+  display: block; font-size: 11px; font-weight: 700; color: #6B7280;
+  text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px;
+}
+.ret-source-label-2 { margin-top: 18px; }
+
+.ret-list { display: flex; flex-direction: column; gap: 6px; }
+.ret-item-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0;
+}
+.ret-item-label { flex: 1; min-width: 0; font-size: 13.5px; color: #374151; }
+.ret-mode-toggle {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px;
+  background: #F3F4F6; border: 1px solid #E5E7EB; color: #6B7280;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.ret-mode-toggle:hover { border-color: #1D9E75; color: #1D9E75; }
+.ret-item-input {
+  flex-shrink: 0; width: 84px; text-align: right;
+  border: 1px solid #E5E7EB; border-radius: 8px;
+  padding: 6px 10px; font-size: 13.5px; color: #111827; font-weight: 500;
+  outline: none; transition: border-color 0.15s;
+}
+.ret-item-input:focus { border-color: #1D9E75; }
+.ret-item-calc { flex-shrink: 0; font-size: 11px; color: #1D9E75; white-space: nowrap; }
+.ret-item-remove {
+  flex-shrink: 0; background: none; border: none; color: #D1D5DB;
+  cursor: pointer; font-size: 12px; padding: 4px 6px;
+  border-radius: 6px; transition: color 0.15s, background 0.15s;
+}
+.ret-item-remove:hover { color: #EF4444; background: #FAECE7; }
+
+.ret-add-select {
+  margin-top: 2px; align-self: flex-start;
+  border: none; background: none; color: #9CA3AF; font-size: 12.5px;
+  padding: 4px 0; cursor: pointer; outline: none;
+  transition: color 0.15s;
+}
+.ret-add-select:hover { color: #1D9E75; }
+.ret-add-link {
+  align-self: flex-start; margin: 2px 0 0; border: none; background: none;
+  color: #9CA3AF; font-size: 12.5px; padding: 4px 0; cursor: pointer;
+  transition: color 0.15s;
+}
+.ret-add-link:hover { color: #1D9E75; }
+
+/* Employer match — a plain sentence per tier, not a boxy form. */
+.ret-match { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.ret-match-title { font-size: 11px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.04em; }
+.ret-tier-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 13.5px; color: #374151;
+}
+.ret-tier-input {
+  width: 42px; text-align: center; border: none; border-bottom: 1px solid #E5E7EB;
+  padding: 2px 0; font-size: 13.5px; color: #111827; font-weight: 600;
+  outline: none; transition: border-color 0.15s;
+}
+.ret-tier-input:focus { border-color: #1D9E75; }
 
 /* ── Per-item Variable budgets ──────────────────────────────────────────────── */
 .budget-input { max-width: 110px; }

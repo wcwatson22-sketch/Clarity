@@ -1,0 +1,52 @@
+<div class="page">
+  <a class="back-link" routerLink="/admin">← Back to Admin</a>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Weekly Performance Reports</h1>
+      <p class="page-sub">Aggregated metrics only — never individual user financial data.</p>
+    </div>
+    <button class="btn-primary" (click)="runNow()" [disabled]="running()">
+      {{ running() ? 'Running…' : '+ Run Report Now' }}
+    </button>
+  </div>
+
+  @if (error()) { <div class="alert alert-error">{{ error() }}</div> }
+
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (reports().length === 0) {
+    <div class="empty-state">
+      <p>No reports have been generated yet.</p>
+      <button class="btn-primary" (click)="runNow()" [disabled]="running()">+ Run Report Now</button>
+    </div>
+  } @else {
+    <table class="report-table">
+      <thead>
+        <tr><th>Period</th><th>Generated</th><th>Status</th><th>Delivery</th><th>Trigger</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (r of reports(); track r.id) {
+          <tr>
+            <td>{{ r.periodStart | date:'MMM d' }} – {{ r.periodEnd | date:'MMM d, yyyy' }}</td>
+            <td>{{ r.generatedAt | date:'MMM d, h:mm a' }}</td>
+            <td><span class="chip" [class]="statusTone(r.status)">{{ r.status }}</span></td>
+            <td><span class="chip" [class]="r.deliveryStatus === 'Sent' ? 'good' : r.deliveryStatus === 'Failed' ? 'bad' : 'neutral'">{{ r.deliveryStatus }}</span></td>
+            <td>{{ r.triggeredManually ? 'Manual' : 'Scheduled' }}</td>
+            <td class="actions">
+              <button class="btn-link" (click)="view(r.id)">{{ selectedId() === r.id ? 'Hide' : 'View' }}</button>
+              <button class="btn-link" (click)="resend(r.id)">Resend</button>
+              <button class="btn-link btn-link-danger" (click)="deleteReport(r.id, r.periodStart, r.periodEnd)">Delete</button>
+            </td>
+          </tr>
+          @if (r.errorSummary) {
+            <tr class="error-row"><td colspan="6">⚠ {{ r.errorSummary }}</td></tr>
+          }
+          @if (selectedId() === r.id && selectedHtml()) {
+            <tr><td colspan="6"><div class="report-preview" [innerHTML]="selectedHtml()"></div></td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  }
+</div>

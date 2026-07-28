@@ -314,6 +314,30 @@
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
+/* Delete-with-linked-records prompt */
+.linked-account-list {
+  list-style: none; margin: 10px 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  li {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px;
+    padding: 8px 12px; font-size: 13px; color: #374151;
+  }
+}
+.delete-prompt-footer { flex-wrap: wrap; }
+.btn-keep {
+  background: #E1F5EE; color: #085041; border: 1px solid #A7F3D0;
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  &:hover { background: #C9EEDF; }
+}
+.btn-danger {
+  background: #EF4444; color: #fff; border: none;
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  &:hover { background: #B91C1C; }
+}
+
 // ── Mobile ────────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }

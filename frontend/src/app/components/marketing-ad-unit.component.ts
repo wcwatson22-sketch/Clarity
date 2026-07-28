@@ -1,6 +1,7 @@
 import { Component, ElementRef, Input, ViewChild, inject, signal, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MarketingAdScriptLoader } from '../services/marketing-ad-script-loader.service';
+import { ConsentScriptLoader } from '../services/consent-script-loader.service';
 import { MARKETING_ADS } from '../services/marketing-ads.config';
 
 type AdMode = 'pending' | 'live' | 'placeholder' | 'hidden';
@@ -80,10 +81,15 @@ export class MarketingAdUnitComponent implements AfterViewInit {
   private pushed = false;
 
   private loader = inject(MarketingAdScriptLoader);
+  private consentLoader = inject(ConsentScriptLoader);
   private router = inject(Router);
 
   ngAfterViewInit(): void {
     const path = this.router.url;
+
+    // Load Google's certified consent CMP wherever an ad placement can appear —
+    // it must load regardless of consent state, since collecting consent is its job.
+    this.consentLoader.ensureLoaded(path);
 
     // Local-dev / explicit test placeholder so placements are visible without live ads.
     if (this.testMode || (MARKETING_ADS.devPlaceholders && !this.loader.canServeAds(path))) {

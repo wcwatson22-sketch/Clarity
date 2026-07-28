@@ -98,6 +98,31 @@ export class PfsComponent implements OnInit {
   investTotalDebt  = computed(() => this.re.totalDebt());
   investTotalEquity= computed(() => this.re.totalEquity());
 
+  /** "Property DSCR" for a single property, "Total DSCR" once there's more than one —
+   *  re.portfolioDSCR() is a weighted average that already works correctly for either case. */
+  readonly portfolioDscrLabel = computed(() => this.investProps().length > 1 ? 'Total DSCR' : 'Property DSCR');
+
+  /** Personal DSCR = NET (take-home) income ÷ personal monthly debt only — no rental
+   *  income/debt included (that's Property/Global DSCR below). Same net-based convention
+   *  as Dashboard's Personal DSCR. Only shown once there's an investment property, i.e.
+   *  once DSCR has replaced DTI on this page. */
+  readonly personalDscr = computed(() => {
+    if (!this.hasInvestProps()) return null;
+    const debt = this.totalDebt();
+    return debt > 0 ? this.netIncome() / debt : null;
+  });
+
+  /** Global DSCR = (personal NET income + rental NOI) ÷ (personal debt + rental debt service) —
+   *  a single household-wide solvency ratio combining personal and investment-property cash flow.
+   *  Net (not gross) income, since DSCR measures actual capacity to service debt from real
+   *  cash flow. Only meaningful once there's at least one investment property. */
+  readonly globalDscr = computed(() => {
+    if (!this.hasInvestProps()) return null;
+    const debt = this.totalDebt() + this.re.totalMonthlyDebtService();
+    if (!(debt > 0)) return null;
+    return (this.netIncome() + this.re.totalNOI()) / debt;
+  });
+
   /** Threshold: at or below this count, show full per-property table. Above → grouped summary. */
   readonly SCHEDULE_THRESHOLD = 20;
   readonly useLargePortfolioFormat = computed(() => this.investProps().length > this.SCHEDULE_THRESHOLD);

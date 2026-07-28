@@ -63,4 +63,52 @@ describe('app routes', () => {
   it('redirects unknown routes to the public home', () => {
     expect(routes.find(r => r.path === '**')?.redirectTo).toBe('');
   });
+
+  // AppComponent derives whether to show the public marketing header/footer (vs.
+  // the authenticated sidebar/bottom-nav) from `data.publicLayout` — this is the
+  // single source of truth (see app.component.ts `isPublicPage`). A route missing
+  // this flag falls back to the authenticated shell, so every route meant to look
+  // public must explicitly declare it here.
+  describe('publicLayout route data (single source of truth for app shell visibility)', () => {
+    const marketingChildren = () => find('')!.children ?? [];
+    const learnChildren = () => find('learn')!.children ?? [];
+
+    it('flags every public marketing child route (/, /features, /pricing, /about, /calculators/...)', () => {
+      for (const path of ['', 'features', 'pricing', 'about', 'calculators/debt-to-income-ratio']) {
+        const r = marketingChildren().find(c => c.path === path);
+        expect(r).withContext(path).toBeTruthy();
+        expect(r!.data?.['publicLayout']).withContext(path).toBe(true);
+      }
+    });
+
+    it('flags the Learn hub and article routes', () => {
+      for (const path of ['', ':slug']) {
+        const r = learnChildren().find(c => c.path === path);
+        expect(r).withContext(path).toBeTruthy();
+        expect(r!.data?.['publicLayout']).withContext(path).toBe(true);
+      }
+    });
+
+    it('flags /terms — public, indexable, uses the marketing layout (no sidebar/app chrome)', () => {
+      // /terms lives in its own `path: ''` group (separate from the main
+      // marketing-site group), so search across all top-level '' groups for it.
+      const r = routes
+        .filter(top => top.path === '')
+        .flatMap(top => top.children ?? [])
+        .find(c => c.path === 'terms');
+      expect(r).toBeTruthy();
+      expect(r!.data?.['publicLayout']).toBe(true);
+    });
+
+    it('has no Angular route for /privacy — a static file at public/privacy/index.html ' +
+       'is served directly and is the single authoritative Privacy Policy', () => {
+      expect(find('privacy')).toBeUndefined();
+    });
+
+    it('does NOT flag any authenticated/private route', () => {
+      for (const path of ['dashboard', 'cash-flow', 'settings', 'compare', 'loan-prep', 'real-estate', 'admin', 'login', 'signup']) {
+        expect(find(path)?.data?.['publicLayout']).withContext(path).not.toBe(true);
+      }
+    });
+  });
 });

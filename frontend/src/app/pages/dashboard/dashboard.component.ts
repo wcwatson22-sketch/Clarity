@@ -9,7 +9,7 @@ import { ToastService } from '../../services/toast.service';
 import { AppInstallService } from '../../services/app-install.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { RealEstateService } from '../../services/real-estate.service';
-import { Account, BudgetItem, IncomeData, Snapshot } from '../../models/finance.models';
+import { Account, BudgetItem, IncomeData, Snapshot, SnapshotLineItem } from '../../models/finance.models';
 import { MeResponse } from '../../models/auth.models';
 import { environment } from '../../../environments/environment';
 import { NumericDirective } from '../../directives/numeric.directive';
@@ -93,6 +93,8 @@ export class DashboardComponent implements OnInit {
   expandedGroups = signal<Set<string>>(this._loadGroupState('clarity-cat-dash'));
   editingId       = signal<string | null>(null);
   editingValueId  = signal<string | null>(null);
+  editingCategoryId = signal<string | null>(null);
+  editingRateId     = signal<string | null>(null);
   newRowId        = signal<string | null>(null);
   snapshotSaved = signal(false);
   errorMsg      = signal<string | null>(null);
@@ -191,6 +193,7 @@ export class DashboardComponent implements OnInit {
     { value: 'land',               label: 'Land',                   group: 'Real Estate',       liquid: false },
     { value: 'vehicle',            label: 'Vehicle',                group: 'Personal Property', liquid: false },
     { value: 'collectibles',       label: 'Jewelry / Collectibles', group: 'Personal Property', liquid: false },
+    { value: 'business-ownership', label: 'Business Ownership',     group: 'Other Assets',      liquid: false },
     { value: 'asset-other',        label: 'Other Asset',            group: 'Other Assets',      liquid: false },
   ];
 
@@ -202,6 +205,8 @@ export class DashboardComponent implements OnInit {
     { value: 'mortgage',        label: 'Mortgage – Primary',   group: 'Mortgages'    },
     { value: 'mortgage-invest', label: 'Mortgage – Investment',group: 'Mortgages'    },
     { value: 'heloc',           label: 'HELOC',                group: 'Mortgages'    },
+    { value: 'line-of-credit',  label: 'Line of Credit',       group: 'Loans'        },
+    { value: 'business-debt',   label: 'Business Debt',        group: 'Other Debts'  },
     { value: 'medical-debt',    label: 'Medical Debt',         group: 'Other Debts'  },
     { value: 'tax-debt',        label: 'Tax Debt',             group: 'Other Debts'  },
     { value: 'debt-other',      label: 'Other Debt',           group: 'Other Debts'  },
@@ -234,6 +239,36 @@ export class DashboardComponent implements OnInit {
       .reduce((s, b) => s + b.amount, 0);
     return monthlyDebt / combinedGross;
   });
+
+  /** Personal DSCR = NET (take-home) income ÷ monthly debt — DSCR measures actual
+   *  capacity to service debt from real cash flow, so it's net-based, unlike DTI
+   *  (which is conventionally gross-based and unaffected by this). Null when
+   *  there's no debt to divide by (an undefined ratio) or no income on file. */
+  personalDscr = computed(() => {
+    const inc = this.income();
+    if (!inc) return null;
+    let combinedNet = inc.type === 'stable'
+      ? inc.netMonthlyIncome
+      : (inc.variableMonths?.length ? inc.variableMonths.reduce((s, m) => s + m.amount, 0) / inc.variableMonths.length * 0.75 : 0);
+    if (inc.secondaryEnabled) combinedNet += inc.secondaryNetMonthly ?? 0;
+    const monthlyDebt = this.budgetItems()
+      .filter(b => b.group === 'Debt')
+      .reduce((s, b) => s + b.amount, 0);
+    return monthlyDebt > 0 ? combinedNet / monthlyDebt : null;
+  });
+
+  /** Metric-card mode toggle (DTI ⇄ DSCR pill). Defaults to DSCR once the user has an
+   *  investment property (DSCR is the more relevant lens then), but is always
+   *  user-togglable and remembered per-account. `null` = "follow the default". */
+  private readonly metricModeKey = () => this.suKey('clarity_dash_metric_dti');
+  private showDtiOverride = signal<boolean | null>(null);
+  readonly displayDti = computed(() => this.showDtiOverride() ?? !this.re.hasProperties());
+  toggleMetricMode() {
+    const next = !this.displayDti();
+    this.showDtiOverride.set(next);
+    localStorage.setItem(this.metricModeKey(), next ? '1' : '0');
+  }
+
   itemsTracked = computed(() => this.accounts().length);
 
   // ── Computed: groups ─────────────────────────────────────────────────────
@@ -252,6 +287,50 @@ export class DashboardComponent implements OnInit {
       return { name, accounts: accts, total: accts.reduce((s, a) => s + a.value, 0) };
     });
   });
+
+  // ── Per-account history (month-over-month, from saved snapshots) ─────────
+  /** Which account's history panel is currently expanded — one at a time. */
+  historyOpenId = signal<string | null>(null);
+  toggleHistory(accountId: string) {
+    this.historyOpenId.set(this.historyOpenId() === accountId ? null : accountId);
+  }
+
+  /** Whether this account appears in at least one saved snapshot — the History
+   *  button is only shown when there's actually something to show. */
+  hasHistory(accountId: string): boolean {
+    return this.snapshots().some(s => s.lineItems?.some(li => li.accountId === accountId));
+  }
+
+  /** One entry per calendar month (the earliest snapshot within that month), oldest
+   *  first, with the change vs. the prior month's entry. Matched by AccountId, so
+   *  renames/recategorizing an account between snapshots doesn't break its history. */
+  accountHistory(accountId: string): { date: Date; value: number; change: number | null }[] {
+    const rows = this.snapshots()
+      .map(s => ({ date: new Date(s.createdAt), item: s.lineItems?.find(li => li.accountId === accountId) }))
+      .filter((r): r is { date: Date; item: NonNullable<typeof r.item> } => !!r.item)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Keep only the earliest snapshot per calendar month — since `rows` is already
+    // sorted ascending, the first one seen for a given month key is the earliest.
+    const byMonth = new Map<string, { date: Date; item: SnapshotLineItem }>();
+    for (const r of rows) {
+      const key = `${r.date.getFullYear()}-${r.date.getMonth()}`;
+      if (!byMonth.has(key)) byMonth.set(key, r);
+    }
+
+    const monthly = [...byMonth.values()].sort((a, b) => a.date.getTime() - b.date.getTime());
+    return monthly.map((r, i) => ({
+      date: r.date,
+      value: r.item.value,
+      change: i > 0 ? r.item.value - monthly[i - 1].item.value : null,
+    }));
+  }
+
+  /** Total change from the earliest to the most recent entry in an account's history.
+   *  Null when there's only one entry (nothing to compare against). */
+  totalHistoryChange(history: { value: number }[]): number | null {
+    return history.length > 1 ? history[history.length - 1].value - history[0].value : null;
+  }
 
   // ── Computed: LTV ────────────────────────────────────────────────────────
   homeValue       = computed(() => this.accounts().find(a => a.category === 'property')?.value ?? 0);
@@ -348,6 +427,9 @@ export class DashboardComponent implements OnInit {
     if (!this.auth.currentUser()?.firstName) {
       this.showFirstNameModal.set(true);
     }
+
+    const storedMetricMode = localStorage.getItem(this.metricModeKey());
+    if (storedMetricMode !== null) this.showDtiOverride.set(storedMetricMode === '1');
 
     let pending = 4;
     const done = () => {
@@ -470,13 +552,32 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  /** True when this account's Value is synced from a Real Estate property (that
+   *  property is the source of truth — edit it from the Real Estate tab). */
+  isLinked(account: Account): boolean { return !!account.linkedPropertyId; }
+
+  /** Optional liability interest rate. Blank clears it (kept as "unknown", not 0%). */
+  updateInterestRate(account: Account, raw: string) {
+    const trimmed = raw.trim();
+    const rate = trimmed === '' ? null : Math.max(0, Math.min(100, parseFloat(trimmed) || 0));
+    this.svc.updateAccount(account.id, { ...account, interestRate: rate }).subscribe(updated =>
+      this.accounts.update(list => list.map(a => a.id === updated.id ? updated : a))
+    );
+  }
+
   deleteAccount(id: string, name: string) {
+    const account = this.accounts().find(a => a.id === id);
+    if (account && this.isLinked(account)) {
+      this.toast.error('This is linked to a Real Estate property. Delete or unlink it from the Real Estate tab.');
+      return;
+    }
     if (!confirm(`Remove "${name}"? This cannot be undone.`)) return;
     if (this.newRowId() === id) this.newRowId.set(null);
     if (this.editingId() === id) this.editingId.set(null);
-    this.svc.deleteAccount(id).subscribe(() =>
-      this.accounts.update(list => list.filter(a => a.id !== id))
-    );
+    this.svc.deleteAccount(id).subscribe({
+      next: () => this.accounts.update(list => list.filter(a => a.id !== id)),
+      error: (err: HttpErrorResponse) => this.showError(err.error?.error ?? 'Could not delete this record.'),
+    });
   }
 
   private showError(msg: string) {
@@ -512,6 +613,10 @@ export class DashboardComponent implements OnInit {
 
   getCategories(type: string) {
     return type === 'Asset' ? this.assetCategories : this.liabilityCategories;
+  }
+
+  catLabel(account: Account): string {
+    return this.getCategories(account.type).find(c => c.value === account.category)?.label ?? account.category;
   }
 
   // ── Snapshot ─────────────────────────────────────────────────────────────

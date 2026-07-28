@@ -23,7 +23,7 @@ import { AuthService } from '../../services/auth.service';
           <div class="feat"><h3>Retirement contributions</h3><p>Traditional/Roth 401(k) and IRA, in monthly dollars.</p></div>
           <div class="feat"><h3>Employer match</h3><p>Counts toward savings without reducing your take-home pay.</p></div>
           <div class="feat"><h3>Assets &amp; liabilities</h3><p>Track everything you own and owe in one place.</p></div>
-          <div class="feat"><h3>Net worth &amp; DTI</h3><p>Core lender-style metrics, calculated automatically.</p></div>
+          <div class="feat"><h3>Net worth &amp; DTI</h3><p>Core lender-style metrics, calculated automatically. Try the free <a routerLink="/calculators/debt-to-income-ratio">DTI calculator</a> — no account needed.</p></div>
           <div class="feat"><h3>Snapshots</h3><p>Capture your position over time and measure progress from a baseline.</p></div>
           <div class="feat"><h3>Learn</h3><p>Free financial guides — on the <a routerLink="/learn">Clarity website</a> and inside the app.</p></div>
         </div>

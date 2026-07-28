@@ -10,10 +10,10 @@ export const environment = {
   // a MarketingAdUnit mounts on an approved route. Flip `enabled` to true and
   // fill in clientId + slot ids once advertising is approved and configured.
   marketingAds: {
-    enabled: false,                          // ADS_ENABLED
-    clientId: 'ca-pub-XXXXXXXXXXXXXXXX',      // ADSENSE_CLIENT_ID
+    enabled: false,                          // ADS_ENABLED — still off pending AdSense site review
+    clientId: 'ca-pub-7165941493821836',      // ADSENSE_CLIENT_ID
     devPlaceholders: false,                  // no placeholders in production
-    requireConsent: false,                   // TODO(legal): set true + wire a CMP for GDPR/UK/CH regions
+    requireConsent: true,                    // Gated by Google's CMP (ConsentScriptLoader) — see AdSense > Privacy & messaging
     slots: {
       homeDesktop: 'XXXXXXXXXX',             // ADSENSE_SLOT_HOME_DESKTOP
       homeMobile:  'XXXXXXXXXX',             // ADSENSE_SLOT_HOME_MOBILE

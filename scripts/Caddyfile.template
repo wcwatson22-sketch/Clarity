@@ -45,6 +45,17 @@ __DOMAIN__ {
         reverse_proxy 127.0.0.1:5000
     }
 
+    # ── Dynamic sitemap ───────────────────────────────────────────────────────
+    # /sitemap.xml is the public URL search engines fetch, but the real,
+    # DB-backed sitemap (published Learn articles only, accurate lastmod) lives
+    # at the API's /api/learn/sitemap.xml route. Rewrite so the friendly URL
+    # always hits the live endpoint instead of falling through to a stale
+    # static file.
+    handle /sitemap.xml {
+        rewrite * /api/learn/sitemap.xml
+        reverse_proxy 127.0.0.1:5000
+    }
+
     # ── Static file serving ───────────────────────────────────────────────────
     root * /var/www/clarity
     file_server

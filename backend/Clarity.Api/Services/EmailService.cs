@@ -541,6 +541,14 @@ public class EmailService(
         return await SendAsync(toEmail, "New Clarity Learn Submission", html, "learn-submission", replyTo: replyTo);
     }
 
+    /// <summary>
+    /// Sends pre-rendered HTML as-is — used by internal reporting (e.g. the weekly
+    /// performance report) that builds its own complete email body. Callers are
+    /// responsible for ensuring the HTML contains no secrets or user financial data.
+    /// </summary>
+    public Task<bool> SendRawHtmlAsync(string toEmail, string subject, string html, string emailType) =>
+        SendAsync(toEmail, subject, html, emailType);
+
     private async Task<bool> SendAsync(string toEmail, string subject, string html,
         string emailType = "unknown", int? userId = null, string? replyTo = null)
     {

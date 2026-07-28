@@ -37,6 +37,14 @@ public class AnalyticsService(AppDbContext db)
             .GroupBy(s => s.UserId)
             .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.CreatedAt).First());
 
+        // Net worth / assets / liabilities are computed LIVE from current Account
+        // rows (same approach Dashboard and PFS use), not from the last saved
+        // Snapshot — a Snapshot can be stale (e.g. taken before a Real Estate
+        // property was added), which previously made Compare show outdated totals
+        // that silently disagreed with what the user sees on Dashboard/PFS.
+        var allAccounts = await db.Accounts.AsNoTracking().ToListAsync();
+        var accountsByUser = allAccounts.GroupBy(a => a.UserId).ToDictionary(g => g.Key, g => g.ToList());
+
         var incomes = await db.Incomes.AsNoTracking().ToListAsync();
         var incomeByUser = incomes.ToDictionary(i => i.UserId);
 
@@ -49,6 +57,17 @@ public class AnalyticsService(AppDbContext db)
             var snapshot = latestSnapshots.GetValueOrDefault(u.Id);
             var income = incomeByUser.GetValueOrDefault(u.Id);
             var budgets = budgetByUser.GetValueOrDefault(u.Id, []);
+            var userAccounts = accountsByUser.GetValueOrDefault(u.Id, []);
+
+            decimal? liveTotalAssets = null, liveTotalLiabilities = null, liveNetWorth = null;
+            if (userAccounts.Count > 0)
+            {
+                var assets = userAccounts.Where(a => a.Type == AccountType.Asset).Sum(a => a.Value);
+                var liabilities = userAccounts.Where(a => a.Type == AccountType.Liability).Sum(a => a.Value);
+                liveTotalAssets = assets;
+                liveTotalLiabilities = liabilities;
+                liveNetWorth = assets - liabilities;
+            }
 
             var monthlyExpenses = budgets
                 .Where(b => b.Group is BudgetGroup.Fixed or BudgetGroup.Variable or BudgetGroup.Debt)
@@ -83,9 +102,9 @@ public class AnalyticsService(AppDbContext db)
                 Age = u.Age,
                 CreatedAt = u.CreatedAt,
                 HasProfile = hasProfile,
-                NetWorth = snapshot?.NetWorth,
-                TotalAssets = snapshot?.TotalAssets,
-                TotalLiabilities = snapshot?.TotalLiabilities,
+                NetWorth = liveNetWorth,
+                TotalAssets = liveTotalAssets,
+                TotalLiabilities = liveTotalLiabilities,
                 MonthlyIncome = monthlyIncome > 0 ? monthlyIncome : null,
                 MonthlyExpenses = monthlyExpenses > 0 ? monthlyExpenses : null,
                 MonthlySavings = monthlySavings > 0 ? monthlySavings : null,
@@ -168,6 +187,17 @@ public class AnalyticsService(AppDbContext db)
         var bracket = GetAgeBracket(age);
         var all = await GetBracketStatsAsync();
         return all.GetValueOrDefault(bracket);
+    }
+
+    // ── All-users fallback (min 30 total, regardless of age) ─────────────────
+    // Used when a user's own age bracket doesn't yet have 30 people — rather than
+    // blocking Compare entirely, fall back to comparing against everyone once the
+    // site overall has enough anonymous users to protect individual privacy.
+    public async Task<BracketStats?> GetAllUsersFallbackStatsAsync()
+    {
+        var all = await GetAllUserFinancialDataAsync();
+        if (all.Count < MinUsersForStats) return null;
+        return new BracketStats("All Users", all.Count, true, string.Empty, CalcAverages(all));
     }
 
     // ── Build comparison list for a single user ───────────────────────────────

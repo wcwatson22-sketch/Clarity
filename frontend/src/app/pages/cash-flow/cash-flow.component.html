@@ -150,48 +150,106 @@
   <div class="income-card retirement-card">
     <div class="income-header">
       <h2 class="card-title">Retirement Contributions</h2>
-      <span class="ret-sub">Monthly · enter % of gross or $/mo</span>
+      <span class="ret-sub">% of gross or $/mo</span>
     </div>
-    <div class="ret-grid">
-      @for (rt of retTypes; track rt.key) {
-        <div class="field-group">
-          <label class="field-label">{{ rt.label }}</label>
-          <div class="ret-row">
-            <div class="ret-mode" role="group" [attr.aria-label]="rt.label + ' contribution mode'">
-              <button type="button" class="ret-mode-btn" [class.active]="retMode(rt.key) === 'amount'"
-                (click)="setRetirementMode(rt.key, 'amount')">$/mo</button>
-              <button type="button" class="ret-mode-btn" [class.active]="retMode(rt.key) === 'pct'"
-                (click)="setRetirementMode(rt.key, 'pct')">% gross</button>
-            </div>
-            @if (retMode(rt.key) === 'pct') {
-              <div class="input-suffix">
-                <input appNumeric class="dollar-input" placeholder="0" [value]="retModeValue(rt.key) || ''"
-                  (change)="updateRetirementValue(rt.key, $any($event.target).value)" /><span class="suffix">%</span>
-              </div>
-            } @else {
-              <div class="input-prefix"><span class="prefix">$</span>
-                <input appNumeric class="dollar-input" placeholder="0" [value]="retModeValue(rt.key) || ''"
-                  (change)="updateRetirementValue(rt.key, $any($event.target).value)" /></div>
-            }
-          </div>
-          @if (retMode(rt.key) === 'pct' && retirementResolved(rt.key) > 0) {
-            <span class="ret-calc">≈ {{ fmt(retirementResolved(rt.key)) }}/mo</span>
+
+    @if (secondIncomeEnabled()) { <span class="ret-source-label">Income 1</span> }
+    <div class="ret-list">
+      @for (item of primaryRetirementItems(); track item.id) {
+        <div class="ret-item-row">
+          <span class="ret-item-label">{{ retTypeLabel(item.type) }}</span>
+          <button type="button" class="ret-mode-toggle" (click)="toggleRetirementItemMode(item.id)"
+            [title]="item.mode === 'pct' ? 'Switch to $/mo' : 'Switch to % of gross'">{{ item.mode === 'pct' ? '%' : '$' }}</button>
+          <input appNumeric class="ret-item-input" placeholder="0" [value]="item.value || ''"
+            (change)="updateRetirementItemValue(item.id, $any($event.target).value)" />
+          @if (item.mode === 'pct' && resolveItem(item) > 0) {
+            <span class="ret-item-calc">≈ {{ fmt(resolveItem(item)) }}/mo</span>
           }
+          <button type="button" class="ret-item-remove" (click)="removeRetirementItem(item.id)" title="Remove" attr.aria-label="Remove {{ retTypeLabel(item.type) }}">✕</button>
         </div>
       }
-      <div class="field-group">
-        <label class="field-label">Employer Match <span class="field-hint">($/mo)</span></label>
-        <div class="input-prefix"><span class="prefix">$</span>
-          <input appNumeric class="dollar-input" placeholder="0" [value]="retirement().employerMatch || ''"
-            (change)="updateEmployerMatch($any($event.target).value)" /></div>
+      @if (availableRetirementTypes('primary').length) {
+        <select class="ret-add-select" (change)="onAddRetirement('primary', $any($event.target).value); $any($event.target).value=''">
+          <option value="" disabled selected>+ Add contribution</option>
+          @for (t of availableRetirementTypes('primary'); track t.key) {
+            <option [value]="t.key">{{ t.label }}</option>
+          }
+        </select>
+      }
+
+      <div class="ret-match">
+        <span class="ret-match-title">Employer match</span>
+        @for (tier of matchTiersPrimary(); track $index) {
+          <div class="ret-tier-row">
+            <input appNumeric class="ret-tier-input" [value]="tier.matchPercent || ''"
+              (change)="updateMatchTier('primary', $index, 'matchPercent', $any($event.target).value)" />%
+            of {{ $index === 0 ? 'first' : 'next' }}
+            <input appNumeric class="ret-tier-input" [value]="tier.contributionPercent || ''"
+              (change)="updateMatchTier('primary', $index, 'contributionPercent', $any($event.target).value)" />% you contribute
+            <button type="button" class="ret-item-remove" (click)="removeMatchTier('primary', $index)" title="Remove tier" aria-label="Remove match tier">✕</button>
+          </div>
+        }
+        <button type="button" class="ret-add-link" (click)="addMatchTier('primary')">
+          {{ matchTiersPrimary().length ? '+ Add another tier' : '+ Add employer match' }}
+        </button>
+        @if (employerMatchPrimary() > 0) {
+          <span class="ret-item-calc">≈ {{ fmt(employerMatchPrimary()) }}/mo match</span>
+        }
       </div>
     </div>
-    <p class="ret-note">Employer match increases retirement savings but does not reduce your take-home pay.</p>
+
+    @if (secondIncomeEnabled()) {
+      <span class="ret-source-label ret-source-label-2">Income 2</span>
+      <div class="ret-list">
+        @for (item of secondaryRetirementItems(); track item.id) {
+          <div class="ret-item-row">
+            <span class="ret-item-label">{{ retTypeLabel(item.type) }}</span>
+            <button type="button" class="ret-mode-toggle" (click)="toggleRetirementItemMode(item.id)"
+              [title]="item.mode === 'pct' ? 'Switch to $/mo' : 'Switch to % of gross'">{{ item.mode === 'pct' ? '%' : '$' }}</button>
+            <input appNumeric class="ret-item-input" placeholder="0" [value]="item.value || ''"
+              (change)="updateRetirementItemValue(item.id, $any($event.target).value)" />
+            @if (item.mode === 'pct' && resolveItem(item) > 0) {
+              <span class="ret-item-calc">≈ {{ fmt(resolveItem(item)) }}/mo</span>
+            }
+            <button type="button" class="ret-item-remove" (click)="removeRetirementItem(item.id)" title="Remove" attr.aria-label="Remove {{ retTypeLabel(item.type) }}">✕</button>
+          </div>
+        }
+        @if (availableRetirementTypes('secondary').length) {
+          <select class="ret-add-select" (change)="onAddRetirement('secondary', $any($event.target).value); $any($event.target).value=''">
+            <option value="" disabled selected>+ Add contribution</option>
+            @for (t of availableRetirementTypes('secondary'); track t.key) {
+              <option [value]="t.key">{{ t.label }}</option>
+            }
+          </select>
+        }
+
+        <div class="ret-match">
+          <span class="ret-match-title">Employer match</span>
+          @for (tier of matchTiersSecondary(); track $index) {
+            <div class="ret-tier-row">
+              <input appNumeric class="ret-tier-input" [value]="tier.matchPercent || ''"
+                (change)="updateMatchTier('secondary', $index, 'matchPercent', $any($event.target).value)" />%
+              of {{ $index === 0 ? 'first' : 'next' }}
+              <input appNumeric class="ret-tier-input" [value]="tier.contributionPercent || ''"
+                (change)="updateMatchTier('secondary', $index, 'contributionPercent', $any($event.target).value)" />% you contribute
+              <button type="button" class="ret-item-remove" (click)="removeMatchTier('secondary', $index)" title="Remove tier" aria-label="Remove match tier">✕</button>
+            </div>
+          }
+          <button type="button" class="ret-add-link" (click)="addMatchTier('secondary')">
+            {{ matchTiersSecondary().length ? '+ Add another tier' : '+ Add employer match' }}
+          </button>
+          @if (employerMatchSecondary() > 0) {
+            <span class="ret-item-calc">≈ {{ fmt(employerMatchSecondary()) }}/mo match</span>
+          }
+        </div>
+      </div>
+    }
+
     @if (totalRetirementSavings() > 0) {
       <div class="ret-totals">
         <span>Your contributions <strong>{{ fmt(employeeRetirement()) }}/mo</strong></span>
-        <span>Employer match <strong>{{ fmt(retirement().employerMatch) }}/mo</strong></span>
-        <span class="ret-total-strong">Total retirement savings <strong>{{ fmt(totalRetirementSavings()) }}/mo</strong></span>
+        <span>Employer match <strong>{{ fmt(totalEmployerMatch()) }}/mo</strong></span>
+        <span class="ret-total-strong">Total <strong>{{ fmt(totalRetirementSavings()) }}/mo</strong></span>
       </div>
     }
   </div>
@@ -282,7 +340,7 @@
           [class.green]="savingsRate() >= 0.20"
           [class.amber]="savingsRate() >= 0.10 && savingsRate() < 0.20"
           [class.coral]="savingsRate() < 0.10">{{ savingsRate() | percent:'1.0-1' }}</span>
-        <span class="metric-sub">Target: ≥ 20% of take-home</span>
+        <span class="metric-sub">Target: ≥ 20% of {{ totalRetirementSavings() > 0 ? 'gross pay (incl. retirement)' : 'take-home' }}</span>
       </div>
       <div class="metric-card">
         <span class="metric-label">Housing Ratio</span>
@@ -416,7 +474,7 @@
                     (change)="updateItem(item, 'budget', $any($event.target).value)" title="Monthly budget" />
                 </div>
               }
-              <button class="delete-btn" (click)="deleteItem(item.id, item.name)">✕</button>
+              <button class="delete-btn" (click)="deleteItem(item.id, item.name)" title="Remove" attr.aria-label="Remove {{ item.name }}">✕</button>
             </div>
             <!-- Variable budget status line -->
             @if (group.key === 'Variable') {

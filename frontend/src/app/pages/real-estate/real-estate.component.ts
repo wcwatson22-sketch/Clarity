@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, PercentPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PlanAccessService } from '../../services/plan-access.service';
@@ -97,6 +97,12 @@ export class RealEstateComponent implements OnInit {
   editingId    = signal<string | null>(null);
   activeId     = signal<string | null>(null);   // which property is expanded/viewed
   show5Year    = signal(false);
+
+  /** Populated when a delete needs to ask what to do with linked Dashboard records. */
+  deletePrompt = signal<{
+    id: string; address: string;
+    linkedAccounts: { id: string; name: string; type: 'Asset' | 'Liability'; value: number }[];
+  } | null>(null);
   expenseMode  = signal<'monthly' | 'annual'>('monthly');
 
   form = signal<RealEstateProperty>(blankProperty());
@@ -399,15 +405,43 @@ export class RealEstateComponent implements OnInit {
   deleteProperty(id: string, address: string) {
     if (!confirm(`Remove "${address}"? This cannot be undone.`)) return;
     this.http.delete(`${this.base}/real-estate/${id}`).subscribe({
-      next: () => {
-        this.properties.update(list => list.filter(p => p.id !== id));
-        if (this.activeId() === id) {
-          const remaining = this.properties();
-          this.activeId.set(remaining.length > 0 ? remaining[0].id : null);
+      next: () => this.onPropertyDeleted(id),
+      error: (err: HttpErrorResponse) => {
+        // 409 = this property has linked Dashboard records; ask what to do with them
+        // before deleting anything (never silently delete or silently detach data).
+        if (err.status === 409 && err.error?.requiresConfirmation) {
+          this.deletePrompt.set({ id, address, linkedAccounts: err.error.linkedAccounts ?? [] });
+        } else {
+          this.toast.error('Could not delete this property. Please try again.');
         }
-        this.toast.success('Property removed.');
-      }
+      },
     });
+  }
+
+  /** mode: "delete" removes the linked Dashboard records too; "unlink" keeps them
+   *  as independent, ordinary records the user can continue to edit. */
+  resolveDeleteWithLinkedAccounts(mode: 'delete' | 'unlink') {
+    const prompt = this.deletePrompt();
+    if (!prompt) return;
+    this.http.delete(`${this.base}/real-estate/${prompt.id}?linkedAccounts=${mode}`).subscribe({
+      next: () => {
+        this.onPropertyDeleted(prompt.id);
+        this.deletePrompt.set(null);
+        this.toast.success(mode === 'delete' ? 'Property and linked records removed.' : 'Property removed. Linked records kept on your Dashboard.');
+      },
+      error: () => { this.deletePrompt.set(null); this.toast.error('Could not delete this property. Please try again.'); },
+    });
+  }
+
+  cancelDeletePrompt() { this.deletePrompt.set(null); }
+
+  private onPropertyDeleted(id: string) {
+    this.properties.update(list => list.filter(p => p.id !== id));
+    if (this.activeId() === id) {
+      const remaining = this.properties();
+      this.activeId.set(remaining.length > 0 ? remaining[0].id : null);
+    }
+    if (!this.deletePrompt()) this.toast.success('Property removed.');
   }
 
   selectProperty(id: string) {

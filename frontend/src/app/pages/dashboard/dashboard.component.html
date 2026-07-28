@@ -261,15 +261,32 @@
   @if (itemsTracked() > 0) {
   <div class="metrics-grid">
     <div class="metric-card">
-      <span class="metric-label metric-label-bold">Debt-to-Income (DTI)</span>
-      @if (debtToIncome() !== null) {
-        <span class="metric-value" [class.amber]="debtToIncome()! > 0.36 && debtToIncome()! <= 0.43" [class.coral]="debtToIncome()! > 0.43">
-          {{ debtToIncome()! | percent:'1.0-1' }}
-        </span>
+      <div class="metric-label-row">
+        <span class="metric-label metric-label-bold">{{ displayDti() ? 'Debt-to-Income (DTI)' : 'Personal DSCR' }}</span>
+        <button class="metric-toggle-pill" (click)="toggleMetricMode()" [attr.aria-label]="'Switch to ' + (displayDti() ? 'DSCR' : 'DTI')">
+          <span [class.active]="!displayDti()">DSCR</span>
+          <span [class.active]="displayDti()">DTI</span>
+        </button>
+      </div>
+      @if (displayDti()) {
+        @if (debtToIncome() !== null) {
+          <span class="metric-value" [class.amber]="debtToIncome()! > 0.36 && debtToIncome()! <= 0.43" [class.coral]="debtToIncome()! > 0.43">
+            {{ debtToIncome()! | percent:'1.0-1' }}
+          </span>
+        } @else {
+          <span class="metric-value muted" style="font-size:11px;line-height:1.4">Add income &amp; debt<br>in Cash Flow</span>
+        }
+        <span class="metric-sub">&lt; 45% preferred by lenders</span>
       } @else {
-        <span class="metric-value muted" style="font-size:11px;line-height:1.4">Add income &amp; debt<br>in Cash Flow</span>
+        @if (personalDscr() !== null) {
+          <span class="metric-value" [class.amber]="personalDscr()! >= 1.0 && personalDscr()! < 1.25" [class.coral]="personalDscr()! < 1.0">
+            {{ personalDscr()!.toFixed(2) }}x
+          </span>
+        } @else {
+          <span class="metric-value muted" style="font-size:11px;line-height:1.4">Add income &amp; debt<br>in Cash Flow</span>
+        }
+        <span class="metric-sub">Net income ÷ debt payments</span>
       }
-      <span class="metric-sub">&lt; 45% preferred by lenders</span>
     </div>
     <div class="metric-card">
       <span class="metric-label metric-label-bold">Liquidity</span>
@@ -512,7 +529,9 @@
   <div class="group-section">
     <div class="group-heading-row">
       <h2 class="group-heading">Assets</h2>
-      <button class="add-item-btn" (click)="addNewAccount('Asset')">+ Add Asset</button>
+      @if (assetGroups().length > 0) {
+        <button class="add-item-btn" (click)="addNewAccount('Asset')">+ Add Asset</button>
+      }
     </div>
 
     @if (assetGroups().length === 0) {
@@ -532,8 +551,8 @@
           <span class="group-name">{{ group.name }}</span>
           <span class="group-total">{{ formatCurrency(group.total) }}</span>
           <span class="group-reorder">
-            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'up')" [disabled]="first" title="Move up">↑</button>
-            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'down')" [disabled]="last" title="Move down">↓</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'up')" [disabled]="first" title="Move up" attr.aria-label="Move {{ group.name }} group up">↑</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Asset', group.name, 'down')" [disabled]="last" title="Move down" attr.aria-label="Move {{ group.name }} group down">↓</button>
           </span>
           <span class="chevron" [class.open]="isExpanded(group.name)">▾</span>
         </button>
@@ -558,31 +577,87 @@
                   <input class="value-input" appNumeric placeholder="0"
                     [value]="account.value || ''"
                     (change)="updateValue(account, $any($event.target).value)" />
-                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove" attr.aria-label="Remove {{ account.name }}">✕</button>
                 </div>
 
               } @else {
                 <div class="account-row" [class.is-anchor-zero]="account.isAnchor && account.value === 0">
-                  @if (editingId() === account.id) {
-                    <input class="name-input" autofocus [value]="account.name"
-                      (blur)="updateName(account, $any($event.target).value)"
-                      (keydown.enter)="updateName(account, $any($event.target).value)" />
-                  } @else {
-                    <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
-                  }
+                  <div class="account-main">
+                    @if (editingId() === account.id) {
+                      <input class="name-input" autofocus [value]="account.name"
+                        (blur)="updateName(account, $any($event.target).value)"
+                        (keydown.enter)="updateName(account, $any($event.target).value)" />
+                    } @else {
+                      <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
+                    }
+                    <div class="account-sub">
+                      @if (editingCategoryId() === account.id) {
+                        <select class="cat-select-inline" autofocus
+                          (change)="updateCategory(account, $any($event.target).value); editingCategoryId.set(null)"
+                          (blur)="editingCategoryId.set(null)">
+                          @for (cat of getCategories(account.type); track cat.value) {
+                            <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <span class="account-type-badge" (click)="editingCategoryId.set(account.id)" title="Change account type">{{ catLabel(account) }}</span>
+                      }
+                      @if (isLinked(account)) {
+                        <a routerLink="/real-estate" class="linked-badge" title="Value is synced from Real Estate — edit the property to change it">🔗 Synced</a>
+                      }
+                    </div>
+                  </div>
                   @if (editingValueId() === account.id) {
                     <input class="value-input" appNumeric autofocus [value]="account.value"
                       (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
                       (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
                   } @else {
-                    <span class="value-display" (click)="editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
+                    <span class="value-display" [class.value-linked]="isLinked(account)"
+                      [title]="isLinked(account) ? 'Synced from Real Estate' : ''"
+                      (click)="isLinked(account) || editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
                   }
-                  @if (!account.isAnchor) {
-                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  @if (hasHistory(account.id)) {
+                    <button class="history-btn" (click)="toggleHistory(account.id)" title="View month-over-month history" attr.aria-label="View history for {{ account.name }}">🕒</button>
+                  }
+                  @if (!account.isAnchor && !isLinked(account)) {
+                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove" attr.aria-label="Remove {{ account.name }}">✕</button>
                   } @else {
                     <span class="anchor-spacer"></span>
                   }
                 </div>
+                @if (historyOpenId() === account.id) {
+                  <div class="history-panel">
+                    <span class="history-title">{{ account.name }} — history</span>
+                    @if (accountHistory(account.id); as history) {
+                      @for (h of history; track h.date.getTime()) {
+                        <div class="history-row">
+                          <span class="history-date">{{ h.date | date:'MMM yyyy' }}</span>
+                          <span class="history-value">{{ formatCurrency(h.value) }}</span>
+                          @if (h.change !== null) {
+                            <span class="history-change"
+                                  [class.green]="account.type === 'Liability' ? h.change <= 0 : h.change >= 0"
+                                  [class.coral]="account.type === 'Liability' ? h.change > 0 : h.change < 0">
+                              {{ h.change >= 0 ? '+' : '' }}{{ formatCurrency(h.change) }}
+                            </span>
+                          } @else {
+                            <span class="history-change muted">baseline</span>
+                          }
+                        </div>
+                      }
+                      @if (totalHistoryChange(history) !== null) {
+                        <div class="history-row history-total">
+                          <span class="history-date">Total change</span>
+                          <span class="history-value"></span>
+                          <span class="history-change"
+                                [class.green]="account.type === 'Liability' ? totalHistoryChange(history)! <= 0 : totalHistoryChange(history)! >= 0"
+                                [class.coral]="account.type === 'Liability' ? totalHistoryChange(history)! > 0 : totalHistoryChange(history)! < 0">
+                            {{ totalHistoryChange(history)! >= 0 ? '+' : '' }}{{ formatCurrency(totalHistoryChange(history)!) }}
+                          </span>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
               }
 
             }
@@ -599,7 +674,9 @@
   <div class="group-section">
     <div class="group-heading-row">
       <h2 class="group-heading">Debts & Liabilities</h2>
-      <button class="add-item-btn" (click)="addNewAccount('Liability')">+ Add Liability</button>
+      @if (liabilityGroups().length > 0) {
+        <button class="add-item-btn" (click)="addNewAccount('Liability')">+ Add Liability</button>
+      }
     </div>
 
     @if (liabilityGroups().length === 0) {
@@ -607,7 +684,7 @@
         <div class="accounts-empty-icon">💳</div>
         <p class="accounts-empty-title">No debts tracked</p>
         <p class="accounts-empty-sub">Add any loans, credit cards, or mortgages to see your full financial picture and debt-to-income ratio.</p>
-        <button class="accounts-empty-btn secondary" (click)="addNewAccount('Liability')">+ Add a Liability</button>
+        <button class="accounts-empty-btn secondary" (click)="addNewAccount('Liability')">+ Add Your First Liability</button>
       </div>
     }
 
@@ -619,8 +696,8 @@
           <span class="group-name">{{ group.name }}</span>
           <span class="group-total coral">{{ formatCurrency(group.total) }}</span>
           <span class="group-reorder">
-            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'up')" [disabled]="first" title="Move up">↑</button>
-            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'down')" [disabled]="last" title="Move down">↓</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'up')" [disabled]="first" title="Move up" attr.aria-label="Move {{ group.name }} group up">↑</button>
+            <button class="reorder-btn" (click)="$event.stopPropagation(); moveGroup('Liability', group.name, 'down')" [disabled]="last" title="Move down" attr.aria-label="Move {{ group.name }} group down">↓</button>
           </span>
           <span class="chevron" [class.open]="isExpanded(group.name)">▾</span>
         </button>
@@ -645,31 +722,97 @@
                   <input class="value-input" appNumeric placeholder="0"
                     [value]="account.value || ''"
                     (change)="updateValue(account, $any($event.target).value)" />
-                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove" attr.aria-label="Remove {{ account.name }}">✕</button>
                 </div>
 
               } @else {
                 <div class="account-row" [class.is-anchor-zero]="account.isAnchor && account.value === 0">
-                  @if (editingId() === account.id) {
-                    <input class="name-input" autofocus [value]="account.name"
-                      (blur)="updateName(account, $any($event.target).value)"
-                      (keydown.enter)="updateName(account, $any($event.target).value)" />
-                  } @else {
-                    <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
-                  }
+                  <div class="account-main">
+                    @if (editingId() === account.id) {
+                      <input class="name-input" autofocus [value]="account.name"
+                        (blur)="updateName(account, $any($event.target).value)"
+                        (keydown.enter)="updateName(account, $any($event.target).value)" />
+                    } @else {
+                      <span class="account-name" (click)="editingId.set(account.id)">{{ account.name }}</span>
+                    }
+                    <div class="account-sub">
+                      @if (editingCategoryId() === account.id) {
+                        <select class="cat-select-inline" autofocus
+                          (change)="updateCategory(account, $any($event.target).value); editingCategoryId.set(null)"
+                          (blur)="editingCategoryId.set(null)">
+                          @for (cat of getCategories(account.type); track cat.value) {
+                            <option [value]="cat.value" [selected]="account.category === cat.value">{{ cat.label }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <span class="account-type-badge" (click)="editingCategoryId.set(account.id)" title="Change account type">{{ catLabel(account) }}</span>
+                      }
+                      @if (editingRateId() === account.id) {
+                        <input class="rate-input" type="number" min="0" max="100" step="0.01" autofocus
+                          [value]="account.interestRate ?? ''" placeholder="Rate %"
+                          (blur)="updateInterestRate(account, $any($event.target).value); editingRateId.set(null)"
+                          (keydown.enter)="updateInterestRate(account, $any($event.target).value); editingRateId.set(null)" />
+                      } @else {
+                        <span class="account-rate-badge" (click)="editingRateId.set(account.id)" title="Interest Rate (Optional) — enter the current annual rate if known">
+                          {{ account.interestRate != null ? account.interestRate + '% APR' : '+ Rate' }}
+                        </span>
+                      }
+                      @if (isLinked(account)) {
+                        <a routerLink="/real-estate" class="linked-badge" title="Value is synced from Real Estate — edit the property to change it">🔗 Synced</a>
+                      }
+                    </div>
+                  </div>
                   @if (editingValueId() === account.id) {
                     <input class="value-input" appNumeric autofocus [value]="account.value"
                       (blur)="updateValue(account, $any($event.target).value); editingValueId.set(null)"
                       (keydown.enter)="updateValue(account, $any($event.target).value); editingValueId.set(null)" />
                   } @else {
-                    <span class="value-display" (click)="editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
+                    <span class="value-display" [class.value-linked]="isLinked(account)"
+                      [title]="isLinked(account) ? 'Synced from Real Estate' : ''"
+                      (click)="isLinked(account) || editingValueId.set(account.id)">{{ formatCurrencyExact(account.value) }}</span>
                   }
-                  @if (!account.isAnchor) {
-                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove">✕</button>
+                  @if (hasHistory(account.id)) {
+                    <button class="history-btn" (click)="toggleHistory(account.id)" title="View month-over-month history" attr.aria-label="View history for {{ account.name }}">🕒</button>
+                  }
+                  @if (!account.isAnchor && !isLinked(account)) {
+                    <button class="delete-btn" (click)="deleteAccount(account.id, account.name)" title="Remove" attr.aria-label="Remove {{ account.name }}">✕</button>
                   } @else {
                     <span class="anchor-spacer"></span>
                   }
                 </div>
+                @if (historyOpenId() === account.id) {
+                  <div class="history-panel">
+                    <span class="history-title">{{ account.name }} — history</span>
+                    @if (accountHistory(account.id); as history) {
+                      @for (h of history; track h.date.getTime()) {
+                        <div class="history-row">
+                          <span class="history-date">{{ h.date | date:'MMM yyyy' }}</span>
+                          <span class="history-value">{{ formatCurrency(h.value) }}</span>
+                          @if (h.change !== null) {
+                            <span class="history-change"
+                                  [class.green]="account.type === 'Liability' ? h.change <= 0 : h.change >= 0"
+                                  [class.coral]="account.type === 'Liability' ? h.change > 0 : h.change < 0">
+                              {{ h.change >= 0 ? '+' : '' }}{{ formatCurrency(h.change) }}
+                            </span>
+                          } @else {
+                            <span class="history-change muted">baseline</span>
+                          }
+                        </div>
+                      }
+                      @if (totalHistoryChange(history) !== null) {
+                        <div class="history-row history-total">
+                          <span class="history-date">Total change</span>
+                          <span class="history-value"></span>
+                          <span class="history-change"
+                                [class.green]="account.type === 'Liability' ? totalHistoryChange(history)! <= 0 : totalHistoryChange(history)! >= 0"
+                                [class.coral]="account.type === 'Liability' ? totalHistoryChange(history)! > 0 : totalHistoryChange(history)! < 0">
+                            {{ totalHistoryChange(history)! >= 0 ? '+' : '' }}{{ formatCurrency(totalHistoryChange(history)!) }}
+                          </span>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
               }
 
             }

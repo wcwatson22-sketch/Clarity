@@ -12,6 +12,11 @@
   <ItemGroup>
     <!-- One-time Learn article seed (migrates the original static articles into the DB) -->
     <Content Update="Data\learn-seed.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- DTI article cluster — inserted idempotently by slug, independent of the
+         "table is empty" seed above, so it also lands on existing databases. -->
+    <Content Update="Data\learn-seed-dti.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- LinkedIn-adapted article cluster — inserted idempotently by slug. -->
+    <Content Update="Data\learn-seed-linkedin.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

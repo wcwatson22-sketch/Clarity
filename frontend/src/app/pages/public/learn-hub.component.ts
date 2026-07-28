@@ -38,6 +38,18 @@ import { LearnContentService, PublicArticleListItem } from '../../services/learn
       <!-- 3. Publisher disclosure -->
       <app-learn-disclosure variant="publisher" />
 
+      <!-- Calculators — a small, restrained entry point rather than a new nav item -->
+      <section class="lh-calcs">
+        <h2 class="lh-h2">Calculators</h2>
+        <a class="lh-calc-card" routerLink="/calculators/debt-to-income-ratio">
+          <div>
+            <h3>Debt-to-Income Ratio Calculator</h3>
+            <p>Free, no login required — see how your monthly debt compares to your income.</p>
+          </div>
+          <span aria-hidden="true">→</span>
+        </a>
+      </section>
+
       <!-- Search + category filters -->
       <section class="lh-browse">
         <div class="lh-search">
@@ -74,12 +86,6 @@ import { LearnContentService, PublicArticleListItem } from '../../services/learn
       }
 
       <!-- Feed ad — full-width banner after the first card cluster (not a card) -->
-      @if (ads.placements.learnFeedEnabled) {
-        <app-marketing-ad-unit placementName="learn_feed" [adSlot]="ads.slots.learnFeed"
-          format="auto" [minimumHeight]="120" />
-      }
-
-      <!-- Feed ad — full-width between content clusters, not a card -->
       @if (ads.placements.learnFeedEnabled) {
         <app-marketing-ad-unit placementName="learn_feed" [adSlot]="ads.slots.learnFeed"
           format="auto" [minimumHeight]="120" />
@@ -157,6 +163,17 @@ import { LearnContentService, PublicArticleListItem } from '../../services/learn
     .lh-crumbs a { color: #6B7280; text-decoration: none; &:hover { color: #111827; } }
     .lh-hero h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; margin: 0 0 12px; line-height: 1.15; }
     .lh-intro { font-size: 16px; color: #6B7280; line-height: 1.6; max-width: 680px; margin: 0 0 20px; }
+    .lh-calcs { margin: 24px 0; }
+    .lh-calc-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      text-decoration: none; color: inherit; border: 1px solid #BBF7D0; border-radius: 16px;
+      padding: 18px 20px; background: linear-gradient(180deg,#F0FBF7,#fff);
+      transition: border-color .15s, transform .15s;
+      &:hover { transform: translateY(-2px); }
+      h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 4px; }
+      p { font-size: 13px; color: #6B7280; margin: 0; }
+      span { font-size: 18px; color: #1D9E75; flex-shrink: 0; }
+    }
     .lh-search input {
       width: 100%; max-width: 460px; box-sizing: border-box;
       padding: 12px 14px; font-size: 15px; border: 1px solid #E5E7EB; border-radius: 12px; outline: none;

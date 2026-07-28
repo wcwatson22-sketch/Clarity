@@ -14,7 +14,7 @@
       <div class="modal-card admin-modal" (click)="$event.stopPropagation()">
         <div class="admin-modal-header">
           <h3 class="modal-title">{{ adminIsNew() ? '＋ New Lesson' : '✏ Edit Lesson' }}</h3>
-          <button class="modal-close-btn" (click)="closeAdminModal()">✕</button>
+          <button class="modal-close-btn" (click)="closeAdminModal()" aria-label="Close">✕</button>
         </div>
 
         @if (adminError()) {
