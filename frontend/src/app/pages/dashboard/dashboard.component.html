@@ -326,7 +326,7 @@
               {{ m.nw >= 0 ? '+' : '' }}{{ formatCurrency(m.nw) }}
             </span>
             <span class="mv-trend" [class.green]="m.nw >= 0" [class.coral]="m.nw < 0">
-              {{ m.nw >= 0 ? '↑ Up' : '↓ Down' }}
+              {{ m.nw > 0 ? '↑ Up' : m.nw < 0 ? '↓ Down' : '→ Unchanged' }}
             </span>
           } @else {
             <span class="mv-value mv-na">—</span>
@@ -342,7 +342,7 @@
               {{ m.assets >= 0 ? '+' : '' }}{{ formatCurrency(m.assets) }}
             </span>
             <span class="mv-trend" [class.green]="m.assets >= 0" [class.coral]="m.assets < 0">
-              {{ m.assets >= 0 ? '↑ Growing' : '↓ Decreased' }}
+              {{ m.assets > 0 ? '↑ Growing' : m.assets < 0 ? '↓ Decreased' : '→ Unchanged' }}
             </span>
           } @else {
             <span class="mv-value mv-na">—</span>
@@ -383,7 +383,7 @@
               {{ y.nw >= 0 ? '+' : '' }}{{ formatCurrency(y.nw) }}
             </span>
             <span class="mv-trend" [class.green]="y.nw >= 0" [class.coral]="y.nw < 0">
-              {{ y.nw >= 0 ? '↑ Up this year' : '↓ Down this year' }}
+              {{ y.nw > 0 ? '↑ Up this year' : y.nw < 0 ? '↓ Down this year' : '→ Unchanged' }}
             </span>
           } @else {
             <span class="mv-value mv-na">—</span>
@@ -399,7 +399,7 @@
               {{ y.assets >= 0 ? '+' : '' }}{{ formatCurrency(y.assets) }}
             </span>
             <span class="mv-trend" [class.green]="y.assets >= 0" [class.coral]="y.assets < 0">
-              {{ y.assets >= 0 ? '↑ Up this year' : '↓ Down this year' }}
+              {{ y.assets > 0 ? '↑ Up this year' : y.assets < 0 ? '↓ Down this year' : '→ Unchanged' }}
             </span>
           } @else {
             <span class="mv-value mv-na">—</span>

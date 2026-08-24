@@ -68,6 +68,7 @@ export class AuthService {
     localStorage.removeItem('clarity_celebrated');
     this._token.set(null);
     this._user.set(null);
+    clearHttpCaches();
     this.router.navigate(['/login'], reason ? { queryParams: { reason } } : undefined);
   }
 
@@ -80,5 +81,25 @@ export class AuthService {
     // keys into this user's namespace (and delete the global copy) so a second
     // account on the same browser/app can never read the first account's values.
     migrateGlobalKeys(LEGACY_DEVICE_FINANCIAL_KEYS, res.user.id);
+    // Defense in depth against any stale service-worker-cached API response from
+    // a previous account on this device (see clearHttpCaches for the full story).
+    clearHttpCaches();
   }
+}
+
+/**
+ * Clears the browser's Cache Storage (used by the Angular service worker for any
+ * cached HTTP responses). This is NOT the same as localStorage/sessionStorage —
+ * it's a separate cache that previously kept per-user API responses (e.g.
+ * /api/accounts) keyed only by URL, with no awareness of which account made the
+ * request. On a shared device, that meant a second account could see the first
+ * account's cached financial data if the network was slow enough to trigger the
+ * service worker's cache fallback. The dataGroups config that caused this has
+ * been removed (see ngsw-config.json), but this clears out any already-cached
+ * entries on affected devices immediately rather than waiting on the service
+ * worker's own update cycle, and remains as a safety net going forward.
+ */
+function clearHttpCaches() {
+  if (typeof caches === 'undefined') return;
+  caches.keys().then(names => names.forEach(name => caches.delete(name))).catch(() => {});
 }
