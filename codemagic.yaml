@@ -23,9 +23,9 @@ workflows:
         # Holds ASC_PRIVATE_KEY_B64 as a secure Codemagic-managed variable —
         # never hardcode this value in this file again. (Previous key
         # 24DJNHQWAS was committed here in plaintext and publicly exposed on
-        # GitHub; it was revoked and replaced on 2026-07-23.) The actual group
-        # name in Codemagic's UI is "Secret", not the variable's own name.
-        - Secret
+        # GitHub; it was revoked and replaced on 2026-07-23.) Group name is
+        # case-sensitive in Codemagic — must match exactly, all uppercase.
+        - ASC_PRIVATE_KEY_B64
       vars:
         XCODE_PROJECT: frontend/ios/App/App.xcodeproj
         XCODE_SCHEME: App
