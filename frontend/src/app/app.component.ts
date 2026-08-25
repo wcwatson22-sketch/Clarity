@@ -883,8 +883,17 @@ export class AppComponent {
     });
 
     // Refresh user data from server on every app load so emailVerified,
-    // tier, trialEndsAt etc. are never served from a stale localStorage cache
-    this.auth.refreshIfLoggedIn();
+    // tier, trialEndsAt etc. are never served from a stale localStorage cache.
+    // Skip this while the lock screen is up on native — it owns its own
+    // refresh as part of the Face ID unlock sequence (using a Keychain-backed
+    // token, not the possibly-stale localStorage one), and firing a second,
+    // unsynchronized refresh here just races it for no benefit. This ran on
+    // every native cold start previously, since a fresh app process always
+    // starts locked (see LockService), which was one of the causes of Face ID
+    // sometimes not reliably landing the user in the app.
+    if (!(Capacitor.isNativePlatform() && this.lockSvc.locked())) {
+      this.auth.refreshIfLoggedIn();
+    }
 
     // Show Face ID opt-in prompt to returning native users who have never seen it
     this.maybeShowFaceIdPrompt();

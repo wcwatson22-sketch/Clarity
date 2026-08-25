@@ -136,6 +136,10 @@ export class SettingsComponent implements OnInit {
 
     if (this.faceIdEnabled()) {
       // ── Turning OFF ──────────────────────────────────────────────────────
+      // Clear the Keychain-stored session FIRST, before flipping the
+      // preference — so there's no window where the entry still exists but
+      // the preference says Face ID is off.
+      this.auth.clearBiometricSession();
       this.lock.setFaceId(false);
       this.toast.success('Face ID disabled. You\'ll use your password to unlock the app.');
       return;
@@ -150,7 +154,11 @@ export class SettingsComponent implements OnInit {
         cancelTitle: 'Cancel',
         iosFallbackTitle: 'Use Password',
       });
-      // Authentication succeeded — save preference
+      // Authentication succeeded — store the current session in Keychain-backed
+      // secure storage (this is what Face ID actually unlocks going forward),
+      // then save the preference.
+      const currentToken = this.auth.token();
+      if (currentToken) this.auth.storeBiometricSession(currentToken);
       this.lock.setFaceId(true);
       this.toast.success('Face ID enabled. The app will unlock with Face ID on next open.');
     } catch {
@@ -350,6 +358,13 @@ export class SettingsComponent implements OnInit {
         this.pwSuccess.set('Password changed successfully.');
         this.toast.success('Password changed successfully.');
         this.currentPw.set(''); this.newPw.set(''); this.confirmPw.set('');
+        // The current device's session token itself still works (the backend
+        // has no way to revoke an already-issued token early — a known,
+        // separate gap), but clear the Keychain-stored Face ID session so a
+        // password change at least forces a fresh password login the next
+        // time this device's saved session naturally expires, rather than
+        // Face ID silently keeping the pre-change session alive indefinitely.
+        this.auth.clearBiometricSession();
         setTimeout(() => this.pwSuccess.set(''), 3000);
       },
       error: (err) => {

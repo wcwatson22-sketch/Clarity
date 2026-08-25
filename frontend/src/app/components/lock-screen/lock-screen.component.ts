@@ -83,16 +83,37 @@ export class LockScreenComponent implements OnInit {
         iosFallbackTitle: 'Use Password',
       });
 
-      // Biometric passed — validate/refresh the saved session.
+      // Biometric passed. Retrieve the session credential from Keychain-backed
+      // secure storage (NOT the plain-localStorage token — that copy still
+      // exists for normal in-app API calls, but the Keychain copy is what
+      // Face ID is actually meant to gate access to, per the security
+      // requirement that this be a proper secure-storage-backed credential).
+      const stored = await this.auth.getBiometricSession();
+      if (!stored) {
+        // Edge case: Face ID is enabled but no session was ever stored here —
+        // e.g. Face ID was enabled before this fix shipped, or the entry was
+        // cleared (logout/disable/reinstall) without disabling the Face ID
+        // preference itself. Nothing to unlock with — fall back to login.
+        this.toLogin('expired');
+        return;
+      }
+
+      // Make the retrieved token the active session so the auth interceptor
+      // attaches it to the validation call below, then confirm it's still
+      // good (and get fresh claims — tier, isAdmin, etc.) via the existing
+      // refresh endpoint.
+      this.auth.setRawToken(stored);
       try {
         const res = await firstValueFrom(
           this.http.post<AuthResponse>(`${this.base}/auth/refresh`, {})
         );
-        this.auth.storeAuth(res);
+        this.auth.storeAuth(res); // also re-persists a fresh copy to Keychain
         this.lock.unlock();
         this.navigateAfterUnlock();
       } catch {
-        // Saved session expired/invalid → clear it and send to the main login screen.
+        // Stored session expired/invalid server-side → clear it (both the
+        // live token and the Keychain copy) and send to the main login screen.
+        this.auth.clearBiometricSession();
         this.toLogin('expired');
       }
     } catch {
