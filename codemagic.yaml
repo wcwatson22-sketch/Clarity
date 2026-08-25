@@ -29,7 +29,7 @@ workflows:
       vars:
         XCODE_PROJECT: frontend/ios/App/App.xcodeproj
         XCODE_SCHEME: App
-        ASC_KEY_ID: 49VK347UUS
+        ASC_KEY_ID: 4N5HDD9RAR
         ASC_ISSUER_ID: 55a91748-0078-45c8-ae86-f98d86a83c88
       node: 22.13.0
       xcode: 26
