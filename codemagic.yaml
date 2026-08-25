@@ -66,10 +66,30 @@ workflows:
 
       - name: Upload to TestFlight
         script: |
-          # Decode the base64 private key to a file (avoids newline corruption)
+          # Diagnostic only (safe to print — it's a length, not the key itself):
+          # confirms whether Codemagic is passing the variable through intact.
+          # Expected length is 344 for the current key file.
+          echo "ASC_PRIVATE_KEY_B64 raw length as seen by this build: ${#ASC_PRIVATE_KEY_B64}"
+
+          # Decode the base64 private key to a file. Strip ALL whitespace first
+          # (tr -d) — base64 should never contain whitespace, but a value that
+          # passed through a web form's textarea can pick up a stray trailing
+          # newline or other whitespace, which some base64 decoders choke on.
+          # Using printf instead of echo avoids adding yet another trailing
+          # newline of our own on top of whatever the variable already has.
           mkdir -p ~/.private_keys
-          echo "$ASC_PRIVATE_KEY_B64" | base64 -D > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+          printf '%s' "$ASC_PRIVATE_KEY_B64" | tr -d '[:space:]' | base64 -D > ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
           chmod 600 ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+          # Sanity-check the decoded file actually looks like a PEM key before
+          # wasting a build attempting the upload with garbage — fail fast with
+          # a clear message instead of Apple's cryptic altool -39 error.
+          if ! grep -q "BEGIN PRIVATE KEY" ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8; then
+            echo "ERROR: decoded AuthKey file does not contain a PEM private key header."
+            echo "Decoded file size: $(wc -c < ~/.private_keys/AuthKey_${ASC_KEY_ID}.p8) bytes (a valid key file is ~257 bytes)."
+            echo "This means ASC_PRIVATE_KEY_B64 in Codemagic's variable group does not hold a correct value — re-check it."
+            exit 1
+          fi
 
           # Find the built IPA
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
